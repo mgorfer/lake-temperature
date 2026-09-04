@@ -40,8 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--probe", action="store_true",
                    help="Nur nachsehen, was eHYD je Messstelle tatsächlich anbietet "
                         "(Diagnose, erzeugt keine Grafiken)")
-    p.add_argument("--year", type=int, default=date.today().year,
-                   help="Vergleichsjahr (Vorgabe: laufendes Jahr)")
+    p.add_argument("--year", type=int, default=None,
+                   help="Vergleichsjahr (Vorgabe: das jüngste Jahr mit Daten -- "
+                        "amtliche Reihen hinken der Gegenwart nach)")
     p.add_argument("--ref", default="1991-2020", metavar="VON-BIS",
                    help="Bezugszeitraum für das langjährige Mittel (Vorgabe: 1991-2020)")
     p.add_argument("--window", type=int, default=climatology.DEFAULT_WINDOW,
@@ -146,16 +147,36 @@ def run(argv: list[str] | None = None) -> int:
     annotated = climatology.with_anomaly(frame, clim)
     print(f"Bezugszeitraum:  {clim.label} ({clim.method})")
 
-    if not (annotated["year"] == args.year).any():
-        available = sorted(annotated["year"].unique())
-        raise SystemExit(f"Für {args.year} liegen keine Werte vor. Vorhanden: "
-                         f"{available[0]}–{available[-1]}")
+    # Nur Jahre, die auch einen Normalwert zum Vergleich haben.
+    available = sorted(int(y) for y in annotated.loc[annotated["anomaly"].notna(), "year"].unique())
+    if not available:
+        raise SystemExit(
+            "Kein Jahr lässt sich mit dem Bezugszeitraum vergleichen -- "
+            "--ref anpassen oder --min-samples senken."
+        )
+    if args.year is None:
+        # Amtliche Reihen erscheinen mit Verzug; das laufende Kalenderjahr
+        # als Vorgabe zu nehmen, ginge bei ihnen regelmässig ins Leere.
+        year = available[-1]
+        if year != date.today().year:
+            print(f"Vergleichsjahr:  {year} (jüngstes Jahr mit Daten; "
+                  f"vorhanden {available[0]}–{available[-1]})")
+        else:
+            print(f"Vergleichsjahr:  {year}")
+    else:
+        year = args.year
+        if year not in available:
+            raise SystemExit(
+                f"Für {year} liegen keine vergleichbaren Werte vor. "
+                f"Vorhanden: {available[0]}–{available[-1]}."
+            )
+        print(f"Vergleichsjahr:  {year}")
 
-    summary = climatology.season_summary(annotated, args.year)
-    matrix = climatology.monthly_anomaly(annotated, args.year)
-    year_rows = annotated[annotated["year"] == args.year]
+    summary = climatology.season_summary(annotated, year)
+    matrix = climatology.monthly_anomaly(annotated, year)
+    year_rows = annotated[annotated["year"] == year]
     last_day = year_rows["date"].max()
-    partial = last_day < pd.Timestamp(year=args.year, month=12, day=31)
+    partial = last_day < pd.Timestamp(year=year, month=12, day=31)
     skipped: list[str] = []
     if resolution == "daily":
         through_doy = int(year_rows.loc[year_rows["date"].idxmax(), "doy"]) if partial else None
@@ -174,13 +195,13 @@ def run(argv: list[str] | None = None) -> int:
         common = dict(th=th, source=dataset.source, is_demo=dataset.is_demo)
 
         written += [p for p in [
-            charts.anomaly_overview(summary, clim, args.year,
-                                    out=target / f"01_uebersicht_abweichung_{args.year}.png",
+            charts.anomaly_overview(summary, clim, year,
+                                    out=target / f"01_uebersicht_abweichung_{year}.png",
                                     **common),
-            charts.monthly_heatmap(matrix, clim, args.year,
-                                   out=target / f"02_monatsmatrix_{args.year}.png", **common),
-            charts.swim_days(days, clim, args.year, args.threshold,
-                             out=target / f"03_badetage_{args.year}.png",
+            charts.monthly_heatmap(matrix, clim, year,
+                                   out=target / f"02_monatsmatrix_{year}.png", **common),
+            charts.swim_days(days, clim, year, args.threshold,
+                             out=target / f"03_badetage_{year}.png",
                              through=last_day if partial else None, **common)
             if not days.empty else None,
             charts.anomaly_trend(annotated, clim,
@@ -189,8 +210,8 @@ def run(argv: list[str] | None = None) -> int:
 
         for lake in selected:
             path = charts.lake_season(
-                annotated, clim, lake.key, args.year,
-                out=target / "seen" / f"{lake.key}_{args.year}.png", **common,
+                annotated, clim, lake.key, year,
+                out=target / "seen" / f"{lake.key}_{year}.png", **common,
             )
             if path:
                 written.append(path)
@@ -200,7 +221,7 @@ def run(argv: list[str] | None = None) -> int:
         "source": dataset.source,
         "is_demo": dataset.is_demo,
         "resolution": resolution,
-        "year": args.year,
+        "year": year,
         "reference": clim.label,
         "method": clim.method,
         "threshold_c": args.threshold,

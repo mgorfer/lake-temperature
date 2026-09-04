@@ -116,3 +116,40 @@ class SummaryTest(unittest.TestCase):
 
     def test_demo_run_carries_a_warning(self):
         self.assertIn("Demodaten", summary.render({**RUN, "is_demo": True}))
+
+
+class YearSelectionTest(unittest.TestCase):
+    """Amtliche Reihen erscheinen mit Verzug -- das laufende Kalenderjahr
+    als Vorgabe ginge bei ihnen regelmässig ins Leere."""
+
+    def setUp(self):
+        import pandas as pd
+
+        self.tmp = Path(tempfile.mkdtemp())
+        self.csv = self.tmp / "reihe.csv"
+        dates = pd.date_range("1991-01-01", "2023-12-01", freq="MS")
+        month = pd.DatetimeIndex(dates).month
+        pd.DataFrame({
+            "lake_key": "woerthersee",
+            "date": dates,
+            "temp_c": 12.0 + 8.0 * (month - 6.5).map(lambda m: 1 - abs(m) / 6),
+        }).to_csv(self.csv, index=False)
+
+    def run_cli(self, *extra):
+        from seetemp import cli
+
+        out = self.tmp / f"out{len(extra)}"
+        return cli.run(["--source", "csv", "--csv", str(self.csv), "--resolution",
+                        "monthly", "--theme", "light", "--out", str(out), *extra]), out
+
+    def test_defaults_to_the_latest_year_with_data(self):
+        code, out = self.run_cli()
+        self.assertEqual(code, 0)
+        run = json.loads((out / "run.json").read_text(encoding="utf-8"))
+        self.assertEqual(run["year"], 2023)  # nicht das laufende Kalenderjahr
+
+    def test_explicit_year_without_data_is_refused(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.run_cli("--year", "2026")
+        self.assertIn("2026", str(caught.exception))
+        self.assertIn("1991", str(caught.exception))

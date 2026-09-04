@@ -55,7 +55,7 @@ Wichtige Schalter:
 | Schalter | Bedeutung |
 |---|---|
 | `--source` | `demo`, `ehyd`, `ktn` oder `csv` |
-| `--year` | Vergleichsjahr, Vorgabe: laufendes Jahr |
+| `--year` | Vergleichsjahr, Vorgabe: das jüngste Jahr mit Daten |
 | `--ref VON-BIS` | Bezugszeitraum, Vorgabe `1991-2020` (WMO-Normalperiode) |
 | `--window` | Halbe Breite des gleitenden Fensters in Tagen, Vorgabe 7 |
 | `--min-samples` | Mindestzahl Werte je Stützstelle, Vorgabe 20 (Tages-) bzw. 10 (Monatswerte) |
@@ -166,7 +166,16 @@ Messstelle ohne Dateien, Messstelle ohne Temperaturreihe. Scheitert der Abruf
 in der GitHub Action, läuft die Diagnose automatisch mit und steht in der
 Zusammenfassung des Laufs.
 
-**Konsequenz aus der Auflösung:** eHYD führt die Wassertemperatur als
+**Zwei Eigenheiten der Quelle**, beide am laufenden Dienst überprüft:
+
+*Die Reihen hinken nach.* Sie folgen dem Jahrbuch-Zyklus und enden derzeit
+mit 2023, reichen dafür aber weit zurück — die älteste Kärntner Seereihe
+beginnt im November 1910. Deshalb ist die Vorgabe für `--year` nicht das
+laufende Kalenderjahr, sondern das jüngste Jahr mit Daten; die App sagt beim
+Lauf, welches sie genommen hat. Wer tagesaktuelle Werte braucht, nimmt den
+Dienst des Landes Kärnten.
+
+*Die Auflösung ist monatlich.* eHYD führt die Wassertemperatur als
 Monatsmittel. Die App erkennt das am Abstand der Zeitstempel, bildet den
 Normalwert dann je Monat statt je Kalendertag und lässt die Badetage-Bilanz
 aus — einzelne Badetage lassen sich aus einem Monatsmittel nicht zählen. Wer
@@ -244,11 +253,12 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-26 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+28 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
-fehlende Grafiken, Maskierung, Demo-Warnung).
+fehlende Grafiken, Maskierung, Demo-Warnung) und die Wahl des
+Vergleichsjahres.
 
 ## Aufbau
 
