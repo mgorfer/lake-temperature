@@ -20,6 +20,7 @@ Je Farbschema (`output/light/`, `output/dark/`):
 
 | Datei | Inhalt |
 |---|---|
+| `00_aktuell.png` | Heutiger Wert je See gegen seinen Normalwert (nur mit `--current ktn`) |
 | `01_uebersicht_abweichung_<Jahr>.png` | Alle Seen, mittlere Abweichung der Badesaison vom Normalwert |
 | `02_monatsmatrix_<Jahr>.png` | Matrix See × Monat der Abweichungen |
 | `03_badetage_<Jahr>.png` | Tage ≥ Schwelle, aktuelles Jahr gegen das langjährige Mittel |
@@ -62,6 +63,7 @@ Wichtige Schalter:
 | `--resolution` | `auto` (aus der Quelle), `daily` oder `monthly` |
 | `--threshold` | Schwelle für die Badetage-Bilanz, Vorgabe 22 °C |
 | `--theme` | `light`, `dark` oder `both` |
+| `--current` | `ktn` holt zusätzlich die aktuellen Werte des Landes Kärnten |
 | `--probe` | nur nachsehen, was eHYD je Messstelle anbietet (keine Grafiken) |
 
 ## Automatisch auf GitHub Pages
@@ -85,7 +87,9 @@ Einmalige Einrichtung: **Settings → Pages → Source: „GitHub Actions"**.
 | `push` | bei Änderungen an Code oder Konfiguration | `ehyd` |
 
 Wöchentlich reicht, weil eHYD die Wassertemperatur als Monatsmittel führt —
-häufiger abzurufen brächte keine neuen Werte.
+häufiger abzurufen brächte keine neuen Werte. Die aktuellen Werte des Landes
+Kärnten sind im Workflow abschaltbar und standardmässig aus: der Dienst
+antwortet den Adressen von GitHub Actions nicht.
 
 **Kein stiller Rückfall auf Demodaten.** Ist eHYD nicht erreichbar, schlägt der
 Lauf fehl und die zuletzt veröffentlichte Seite bleibt stehen. Eine Seite mit
@@ -184,19 +188,54 @@ auf Anfrage bei `abt12.post@ktn.gv.at`.
 
 ### `ktn` — aktuelle Werte des Landes Kärnten
 
-Rund 250 Messstellen, 30-Minuten-Takt, ausgegeben als JSON/GeoJSON. Der
-Adapter liest GeoJSON (`features[].properties`), ArcGIS-JSON
-(`features[].attributes`) und schlichte Objektlisten.
+Rund 250 Messstellen, 30-Minuten-Takt. Die Adresse stammt aus dem Katalog von
+data.gv.at, Datensatz
+[„Hydrographische Daten Kärnten"](https://www.data.gv.at/datasets/bf851ec0-94cb-43ca-83cb-a9dc96ddea51?locale=de):
 
-Die Dienst-URL ist in `config/stations.json` unter `ktn.url` einzutragen —
-sie steht bewusst nicht fest verdrahtet im Code, weil sie serverseitig
-geändert werden kann. Zu finden ist sie über den Datensatz
-[„Hydrographische Daten Kärnten"](https://www.data.gv.at/datasets/bf851ec0-94cb-43ca-83cb-a9dc96ddea51?locale=de)
-auf data.gv.at. Das alte Portal `info.ktn.gv.at` wurde am 10.06.2021
-abgeschaltet; Verweise darauf sind veraltet.
+```
+https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json
+```
+
+Diese Quelle liefert den jüngsten Wert je See. Ihr eigentlicher Zweck ist
+nicht der Alleinbetrieb, sondern die **Ergänzung**: eHYD stellt den
+Normalwert, Kärnten den heutigen Stand.
 
 ```bash
-python -m seetemp --source ktn
+python -m seetemp --source ehyd --current ktn   # das ist der interessante Fall
+python -m seetemp --source ktn                  # nur die aktuellen Werte
+```
+
+Daraus entsteht `00_aktuell.png`: je See ein Balken mit dem gemessenen Wert,
+eine Marke auf dem Normalwert, und der Unterschied farbig — warm, wenn es
+wärmer ist als üblich, blass blau für das, was zum Normalwert fehlt. Seen
+ohne lange Reihe (Turnersee, Afritzer See, Magdalensee) erscheinen mit ihrer
+Temperatur, aber ohne Vergleichswert; eine Temperatur ohne Einordnung ist
+immer noch eine Temperatur.
+
+**Der Dienst antwortet Rechenzentrums-Adressen nicht.** Aus GitHub Actions
+heraus laufen alle `ktn.gv.at`-Adressen in einen TCP-Zeitablauf, auch die
+Startseite — aus einem österreichischen Anschluss funktioniert es in der
+Regel. Deshalb holt `./phone.sh` die aktuellen Werte von sich aus, während
+der Workflow sie nur auf ausdrücklichen Wunsch versucht. Schlägt der Abruf
+fehl, bleibt die langjährige Auswertung gültig; der Fehlschlag steht in der
+Ausgabe und in `run.json`. Selbst prüfen:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json
+```
+
+Das Feldschema ist nicht dokumentiert und liess sich beim Bau nicht abrufen.
+Der Adapter **rät deshalb nicht**: er erkennt die Felder an ihren Namen
+(deutsche Schreibweisen und Umschriften fallen zusammen, „Wörthersee" und
+„Woerthersee" also auch), und findet er sie nicht, nennt er die tatsächlich
+vorhandenen Felder samt Beispielsatz. Feste Namen lassen sich in
+`config/stations.json` unter `ktn.fields` hinterlegen.
+
+Was der Dienst gerade liefert, zeigt:
+
+```bash
+python tools/probe_ktn.py
 ```
 
 ### `csv` — eigene Messreihen
@@ -253,12 +292,14 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-28 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+42 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
-fehlende Grafiken, Maskierung, Demo-Warnung) und die Wahl des
-Vergleichsjahres.
+fehlende Grafiken, Maskierung, Demo-Warnung), die Wahl des
+Vergleichsjahres sowie die Kärntner Quelle (Felderkennung, Umlaut-Umschrift,
+GeoJSON/ArcGIS/Objektliste, Meldung bei unbekanntem Schema, Seen ohne lange
+Reihe).
 
 ## Aufbau
 
@@ -278,6 +319,7 @@ seetemp/
 config/stations.json  Stationszuordnung für die Online-Quellen
 phone.sh              Ein-Befehl-Start für Termux (Android)
 docs/ANDROID.md       Einrichtung am Handy
+tools/probe_ktn.py      Katalog und Dienst des Landes Kärnten erkunden
 tools/build_gallery.py  Übersichtsseite aus einem Ausgabeverzeichnis
 tools/summary.py        Lauf-Zusammenfassung für GitHub Actions
 .github/workflows/      Rechnen und Veröffentlichen auf GitHub Pages

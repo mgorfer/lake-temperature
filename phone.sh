@@ -5,6 +5,7 @@
 #   ./phone.sh                      # Demodaten, laufendes Jahr
 #   ./phone.sh --source ehyd        # amtliche Messreihen von eHYD
 #   ./phone.sh --source ehyd --lakes woerthersee --theme light
+#   ./phone.sh --current none        # ohne die aktuellen Werte
 #
 # Alle Schalter werden unverändert an "python -m seetemp" durchgereicht,
 # ausgenommen --out: das setzt dieses Skript.
@@ -40,8 +41,17 @@ if [ "$IS_TERMUX" -eq 1 ]; then
     fi
 fi
 
+# Der Dienst des Landes Kärnten antwortet Rechenzentren nicht, einem
+# österreichischen Mobilfunkanschluss aber schon -- am Handy sind die
+# aktuellen Werte also gerade zu holen. Eine eigene Angabe hat Vorrang.
+CURRENT="--current ktn"
+case " $* " in
+    *" --current "*) CURRENT="" ;;
+esac
+
 mkdir -p "$OUT"
-"$PYTHON" -m seetemp --out "$OUT" "$@"
+# shellcheck disable=SC2086
+"$PYTHON" -m seetemp --out "$OUT" $CURRENT "$@"
 
 # Die Galerie zeigt nur, was der Media-Scanner kennt.
 if command -v termux-media-scan >/dev/null 2>&1; then

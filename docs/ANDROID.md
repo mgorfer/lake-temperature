@@ -51,10 +51,19 @@ cd lake-temperature
 
 `phone.sh` legt die PNGs unter `~/storage/shared/Pictures/Seetemperaturen` ab
 und meldet sie dem Media-Scanner an — sie tauchen also in der Galerie auf wie
-Fotos. Alle Schalter werden durchgereicht:
+Fotos.
+
+Es holt ausserdem **die aktuellen Wassertemperaturen** vom Hydrographischen
+Dienst Kärnten dazu und stellt sie dem Normalwert gegenüber. Das ist der
+eigentliche Grund, das Ganze am Handy laufen zu lassen: der Dienst antwortet
+Rechenzentren nicht, einem österreichischen Anschluss aber schon — auf dem
+Telefon geht also etwas, was auf GitHub nicht geht. Mit `--current none`
+abschaltbar.
+
+Alle Schalter werden durchgereicht:
 
 ```bash
-./phone.sh --source ehyd                       # amtliche Messreihen
+./phone.sh --source ehyd                       # amtliche Reihen + aktuelle Werte
 ./phone.sh --source ehyd --lakes woerthersee   # nur ein See, geht schneller
 ./phone.sh --theme dark --year 2026
 ```

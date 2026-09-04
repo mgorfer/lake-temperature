@@ -414,3 +414,85 @@ def anomaly_trend(annotated: pd.DataFrame, clim, th, source, is_demo, out: Path,
     _footer(fig, th, f"Quelle: {source}")
     _watermark(fig, th, is_demo)
     return _save(fig, out)
+
+
+# ------------------------------------------------ 6: Aktuelle Werte (heute)
+
+def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
+                   measured_source: str = ""):
+    """Heutiger Wert je See gegen seinen Normalwert -- auf einer Achse.
+
+    Der massive Balken ist immer der gemessene Wert. Liegt er über dem
+    Normalwert, ist der Überschuss warm eingefärbt; liegt er darunter, zeigt
+    eine blasse Fläche, was zum Normalwert fehlt. Die Marke sitzt auf dem
+    Normalwert. Zwei Maßstäbe braucht es dafür nicht.
+    """
+    if current.empty:
+        return None
+    data = current.sort_values("temp_c", ascending=True).reset_index(drop=True)
+    names = [BY_KEY[k].name for k in data["lake_key"]]
+    pos = np.arange(len(data), dtype=float)
+    height = 0.42
+
+    fig = plt.figure(figsize=(9.6, 0.46 * len(data) + 2.5))
+    ax = _axes(fig, 0.20, 0.955, header_in=1.60, footer_in=0.88)
+    _despine(ax, th)
+
+    has_normal = data["mean"].notna()
+    for i, row in data.iterrows():
+        temp, mean = float(row["temp_c"]), row["mean"]
+        if pd.isna(mean):
+            ax.barh(i, temp, height=height, color=th.series_1, zorder=3)
+            continue
+        mean = float(mean)
+        if temp >= mean:
+            ax.barh(i, mean, height=height, color=th.series_1, zorder=3)
+            ax.barh(i, temp - mean, left=mean, height=height, color=th.warm, zorder=3)
+        else:
+            ax.barh(i, temp, height=height, color=th.series_1, zorder=3)
+            # Blass: das ist kein Messwert, sondern was zum Normalwert fehlt.
+            ax.barh(i, mean - temp, left=temp, height=height, color=th.cool,
+                    alpha=0.28, zorder=2)
+        ax.vlines(mean, i - height / 2, i + height / 2, color=th.ink, linewidth=2,
+                  zorder=5)
+
+    ax.set_yticks(pos)
+    ax.set_yticklabels(names, fontsize=10)
+    for label in ax.get_yticklabels():
+        label.set_color(th.text)
+    ax.grid(False, axis="y")
+    ax.set_xlabel("Wassertemperatur (°C)")
+    de_axis(ax, "x", digits=0)
+
+    span = float(max(data["temp_c"].max(), data["mean"].max(skipna=True) or 0))
+    ax.set_xlim(0, span * 1.30)
+    for i, row in data.iterrows():
+        end = max(float(row["temp_c"]), float(row["mean"]) if pd.notna(row["mean"]) else 0)
+        if pd.isna(row["mean"]):
+            text = f"{num(row['temp_c'])} °C   (kein Normalwert)"
+        else:
+            text = f"{num(row['temp_c'])} °C   {num(row['anomaly'], signed=True)} K"
+        ax.annotate(text, (end, i), xytext=(8, 0), textcoords="offset points",
+                    va="center", color=th.text, fontsize=9.5)
+
+    handles = [
+        Patch(facecolor=th.series_1, label="gemessener Wert"),
+        Line2D([], [], color=th.ink, linewidth=2, label=f"Normalwert {clim.label}"),
+        Patch(facecolor=th.warm, label="über dem Normalwert"),
+        Patch(facecolor=th.cool, alpha=0.28, label="fehlt zum Normalwert"),
+    ]
+    fig.legend(handles=handles, loc="lower left",
+               bbox_to_anchor=(0.012, 1 - 1.22 / fig.get_size_inches()[1]), ncol=4,
+               labelcolor=th.text_secondary, handlelength=1.5, columnspacing=1.6,
+               borderpad=0.0, handletextpad=0.6)
+
+    stamp = pd.Timestamp(data["date"].max())
+    einheit = "Tagesnormalwert" if clim.resolution == "daily" else "Monatsnormalwert"
+    _titleblock(
+        fig, th, f"Aktuelle Wassertemperatur — Stand {long_date(stamp)}",
+        f"Gemessener Wert je See gegenüber dem {einheit} aus {clim.label}. "
+        f"Sortiert nach Temperatur.\nMesswerte: {measured_source or source}",
+    )
+    _footer(fig, th, f"Normalwert: {source}")
+    _watermark(fig, th, is_demo)
+    return _save(fig, out)

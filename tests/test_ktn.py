@@ -1,0 +1,165 @@
+"""Prüfungen der Quelle "Hydrographischer Dienst Kärnten".
+
+Der Dienst antwortet Rechenzentrums-Adressen nicht, sein Feldschema ist
+nicht dokumentiert. Der Adapter muss deshalb die Felder selbst erkennen und
+bei einem unbekannten Aufbau sagen, was er vorgefunden hat.
+"""
+
+from __future__ import annotations
+
+import json
+import unittest
+from unittest import mock
+
+import pandas as pd
+
+from seetemp.sources import ktn
+
+MAPPING = {
+    "Wörther See": "woerthersee",
+    "Ossiacher See": "ossiacher_see",
+    "Turnersee": "turnersee",
+}
+
+
+def response(payload, status=200):
+    fake = mock.Mock()
+    fake.json.return_value = payload
+    fake.status_code = status
+    fake.raise_for_status.return_value = None
+    fake.headers = {"content-type": "application/json"}
+    return fake
+
+
+class FieldDetectionTest(unittest.TestCase):
+    def test_recognises_german_field_names(self):
+        keys = ["Seename", "Wassertemperatur", "Messdatum", "Wasserstand"]
+        self.assertEqual(ktn._pick(keys, ktn.NAME_HINTS), "Seename")
+        self.assertEqual(ktn._pick(keys, ktn.TEMP_HINTS), "Wassertemperatur")
+        self.assertEqual(ktn._pick(keys, ktn.DATE_HINTS), "Messdatum")
+
+    def test_recognises_short_and_upper_case_names(self):
+        keys = ["NAME", "WT", "DATUM"]
+        self.assertEqual(ktn._pick(keys, ktn.NAME_HINTS), "NAME")
+        self.assertEqual(ktn._pick(keys, ktn.TEMP_HINTS), "WT")
+
+    def test_both_spellings_of_an_umlaut_fold_together(self):
+        """Sonst greift die Zuordnung nicht, wenn der Dienst "Woerthersee" schreibt."""
+        self.assertEqual(ktn._fold("Wörther See"), ktn._fold("Woerther See"))
+        self.assertEqual(ktn._fold("Wörthersee"), "woerthersee")
+        self.assertEqual(ktn._fold(" Millstätter  See "), "millstaettersee")
+        self.assertEqual(ktn._fold("Weißensee"), ktn._fold("Weissensee"))
+
+    def test_reads_numbers_with_comma_and_unit(self):
+        self.assertAlmostEqual(ktn._number("21,4 °C"), 21.4)
+        self.assertAlmostEqual(ktn._number(19.2), 19.2)
+        self.assertAlmostEqual(ktn._number("-0,5"), -0.5)
+        self.assertIsNone(ktn._number(None))
+        self.assertIsNone(ktn._number("kein Wert"))
+
+
+class RecordShapeTest(unittest.TestCase):
+    def test_geojson(self):
+        payload = {"type": "FeatureCollection",
+                   "features": [{"properties": {"a": 1}}, {"properties": {"a": 2}}]}
+        self.assertEqual(ktn.records(payload), [{"a": 1}, {"a": 2}])
+
+    def test_arcgis(self):
+        payload = {"features": [{"attributes": {"a": 1}}]}
+        self.assertEqual(ktn.records(payload), [{"a": 1}])
+
+    def test_plain_list_and_keyed_object(self):
+        self.assertEqual(ktn.records([{"a": 1}]), [{"a": 1}])
+        keyed = ktn.records({"2001": {"a": 1}, "2002": {"a": 2}})
+        self.assertEqual([r["_schluessel"] for r in keyed], ["2001", "2002"])
+
+
+class FetchTest(unittest.TestCase):
+    PAYLOAD = [
+        # Absichtlich in der Umschrift -- der Dienst schreibt nicht garantiert Umlaute.
+        {"Seename": "Woerther See", "Wassertemperatur": "24,3", "Messdatum": "04.09.2026"},
+        {"Seename": "Ossiacher See", "Wassertemperatur": "23,1", "Messdatum": "04.09.2026"},
+        {"Seename": "Turnersee", "Wassertemperatur": "25,0", "Messdatum": "04.09.2026"},
+        {"Seename": "Unbekannter Teich", "Wassertemperatur": "19,0",
+         "Messdatum": "04.09.2026"},
+    ]
+
+    def test_reads_values_and_maps_lakes(self):
+        with mock.patch.object(ktn.requests, "get", return_value=response(self.PAYLOAD)):
+            data = ktn.fetch({"name_to_lake_key": MAPPING})
+        self.assertEqual(set(data.frame["lake_key"]), {"woerthersee", "ossiacher_see",
+                                                       "turnersee"})
+        row = data.frame.set_index("lake_key").loc["woerthersee"]
+        self.assertAlmostEqual(row["temp_c"], 24.3)
+        self.assertEqual(row["date"], pd.Timestamp("2026-09-04"))
+        self.assertTrue(any("Unbekannter Teich" in n for n in data.notes))
+
+    def test_keeps_only_the_latest_value_per_lake(self):
+        payload = [
+            {"Seename": "Wörther See", "Wassertemperatur": "20,0",
+             "Messdatum": "01.09.2026"},
+            {"Seename": "Wörther See", "Wassertemperatur": "24,3",
+             "Messdatum": "04.09.2026"},
+        ]
+        with mock.patch.object(ktn.requests, "get", return_value=response(payload)):
+            data = ktn.fetch({"name_to_lake_key": MAPPING})
+        self.assertEqual(len(data.frame), 1)
+        self.assertAlmostEqual(data.frame.iloc[0]["temp_c"], 24.3)
+
+    def test_unknown_schema_reports_what_it_found(self):
+        payload = [{"foo": "Wörther See", "bar": 24.3}]
+        with mock.patch.object(ktn.requests, "get", return_value=response(payload)):
+            with self.assertRaises(SystemExit) as caught:
+                ktn.fetch({"name_to_lake_key": MAPPING})
+        message = str(caught.exception)
+        self.assertIn("foo", message)      # nennt die vorhandenen Felder
+        self.assertIn("bar", message)
+        self.assertIn("Beispielsatz", message)
+
+    def test_configured_field_names_win(self):
+        payload = [{"x_name": "Wörther See", "x_temp": "24,3", "x_zeit": "04.09.2026"}]
+        with mock.patch.object(ktn.requests, "get", return_value=response(payload)):
+            data = ktn.fetch({
+                "name_to_lake_key": MAPPING,
+                "fields": {"name": "x_name", "temperature": "x_temp", "date": "x_zeit"},
+            })
+        self.assertAlmostEqual(data.frame.iloc[0]["temp_c"], 24.3)
+
+    def test_unreachable_service_names_both_protocols(self):
+        import requests as rq
+
+        with mock.patch.object(ktn.requests, "get",
+                               side_effect=rq.ConnectionError("boom")):
+            with self.assertRaises(SystemExit) as caught:
+                ktn.fetch({"name_to_lake_key": MAPPING})
+        message = str(caught.exception)
+        self.assertIn("https://info.ktn.gv.at", message)
+        self.assertIn("http://info.ktn.gv.at", message)  # Rückfall wurde versucht
+        self.assertIn("curl", message)                   # nennt einen Prüfbefehl
+
+    def test_no_mappable_lake_lists_the_names_in_the_service(self):
+        payload = [{"Seename": "Irgendein See", "Wassertemperatur": "20,0"}]
+        with mock.patch.object(ktn.requests, "get", return_value=response(payload)):
+            with self.assertRaises(SystemExit) as caught:
+                ktn.fetch({"name_to_lake_key": MAPPING})
+        self.assertIn("Irgendein See", str(caught.exception))
+
+
+class AttachNormalsTest(unittest.TestCase):
+    def test_lakes_without_a_long_series_keep_their_temperature(self):
+        from seetemp import climatology
+        from seetemp.cli import attach_normals
+
+        dates = pd.date_range("1991-01-01", "2020-12-31", freq="D")
+        reference = pd.DataFrame({"lake_key": "woerthersee", "date": dates, "temp_c": 12.0})
+        clim = climatology.build(reference)
+
+        live = pd.DataFrame({
+            "lake_key": ["woerthersee", "turnersee"],
+            "date": [pd.Timestamp("2026-07-01")] * 2,
+            "temp_c": [14.5, 25.0],
+        })
+        current = attach_normals(live, clim).set_index("lake_key")
+        self.assertAlmostEqual(current.loc["woerthersee", "anomaly"], 2.5)
+        self.assertAlmostEqual(current.loc["turnersee", "temp_c"], 25.0)
+        self.assertTrue(pd.isna(current.loc["turnersee", "anomaly"]))

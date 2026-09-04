@@ -19,14 +19,18 @@ from datetime import datetime
 from pathlib import Path
 
 # Reihenfolge und Beschriftung der Übersichtsgrafiken.
+# Der dritte Eintrag ist die Dateivorlage: {year} wird eingesetzt.
 OVERVIEW = [
-    ("01_uebersicht_abweichung", "Alle Seen im Vergleich",
+    ("00_aktuell", "Heute", "00_aktuell.png",
+     "Gemessener Wert je See gegenüber seinem Normalwert."),
+    ("01_uebersicht_abweichung", "Alle Seen im Vergleich", "01_uebersicht_abweichung_{year}.png",
      "Mittlere Abweichung der Badesaison vom langjährigen Normalwert."),
-    ("02_monatsmatrix", "Monat für Monat",
+    ("02_monatsmatrix", "Monat für Monat", "02_monatsmatrix_{year}.png",
      "Wo im Jahr die Abweichung entstanden ist -- je See und Monat."),
-    ("03_badetage", "Badetage",
+    ("03_badetage", "Badetage", "03_badetage_{year}.png",
      "Wie viele Tage warm genug waren, gemessen am langjährigen Mittel."),
     ("04_saisonabweichung_zeitreihe", "Jeder Sommer seit Reihenbeginn",
+     "04_saisonabweichung_zeitreihe.png",
      "Ein Balken je Jahr und See -- der lange Blick auf die Entwicklung."),
 ]
 
@@ -88,6 +92,13 @@ a { color: var(--accent); }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
 .hint { color: var(--ink-3); font-size: 0.85rem; margin: 14px 0 0; }
 ul.notes { margin: 6px 0 0; padding-left: 20px; color: var(--ink-3); font-size: 0.85rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; margin: 4px 0 8px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-3); font-weight: 600; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+.warm { color: #b3312f; } .cool { color: #1f5fa8; }
+@media (prefers-color-scheme: dark) { .warm { color: #ef8b8b; } .cool { color: #6aa6ef; } }
 """
 
 
@@ -115,9 +126,8 @@ def find(root: Path, relative: str) -> str | None:
 def collect(root: Path, run: dict) -> tuple[list, list]:
     year = run.get("year", "")
     overview = []
-    for prefix, title, caption in OVERVIEW:
-        stem = f"{prefix}_{year}.png" if prefix != "04_saisonabweichung_zeitreihe" \
-            else f"{prefix}.png"
+    for _prefix, title, template, caption in OVERVIEW:
+        stem = template.format(year=year)
         light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
         if light or dark:
             overview.append((title, caption, light, dark))
@@ -129,6 +139,34 @@ def collect(root: Path, run: dict) -> tuple[list, list]:
         if light or dark:
             lakes.append((lake["name"], light, dark))
     return overview, lakes
+
+
+def current_table(run: dict) -> str:
+    """Die aktuellen Werte auch als Tabelle -- Zahlen zum Nachlesen."""
+    rows = run.get("current") or []
+    if not rows:
+        return ""
+    esc = lambda v: html.escape(str(v))
+    body = []
+    for row in rows:
+        deviation = row.get("anomaly_k")
+        if deviation is None:
+            cell = '<td class="n">–</td>'
+        else:
+            css = "warm" if deviation >= 0 else "cool"
+            sign = f"{deviation:+.1f}".replace("-", "\u2212").replace(".", ",")
+            cell = f'<td class="n {css}">{sign} K</td>'
+        temp = f"{row['temp_c']:.1f}".replace(".", ",")
+        body.append(f"<tr><td>{esc(row['name'])}</td>"
+                    f'<td class="n">{temp} °C</td>{cell}</tr>')
+    quelle = run.get("current_source", "")
+    stamp = rows[0].get("date", "")
+    return (
+        "<table><thead><tr><th>See</th><th class=\"n\">gemessen</th>"
+        "<th class=\"n\">gegen Normalwert</th></tr></thead>"
+        f"<tbody>{''.join(body)}</tbody></table>"
+        f'<p class="caption">Stand {esc(stamp)} · {esc(quelle)}</p>'
+    )
 
 
 def render(root: Path, run: dict) -> str:
@@ -181,6 +219,8 @@ def render(root: Path, run: dict) -> str:
     for title, caption, light, dark in overview:
         parts += [f"<h2>{esc(title)}</h2>", f'<p class="caption">{esc(caption)}</p>',
                   picture(light, dark, title)]
+        if title == "Heute":
+            parts.append(current_table(run))
 
     if lakes:
         parts += ['<h2 class="lakes">Jahresgang je See</h2>',

@@ -37,6 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lakes", nargs="*", metavar="KEY",
                    help="Auswahl von Seen (Vorgabe: alle). Schlüssel siehe --list-lakes")
     p.add_argument("--list-lakes", action="store_true", help="Verfügbare Seen ausgeben")
+    p.add_argument("--current", choices=["none", "ktn"], default="none",
+                   help="Zusätzlich die aktuellen Werte des Hydrographischen "
+                        "Dienstes Kärnten holen und dem Normalwert gegenüberstellen")
     p.add_argument("--probe", action="store_true",
                    help="Nur nachsehen, was eHYD je Messstelle tatsächlich anbietet "
                         "(Diagnose, erzeugt keine Grafiken)")
@@ -76,6 +79,19 @@ def load_config(path: Path) -> dict:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def attach_normals(frame: pd.DataFrame, clim: climatology.Climatology) -> pd.DataFrame:
+    """Stellt Momentwerte ihrem Normalwert gegenüber.
+
+    Seen ohne lange Reihe bleiben enthalten, aber ohne Vergleichswert -- eine
+    Temperatur ohne Einordnung ist immer noch eine Temperatur.
+    """
+    data = climatology.add_daynumber(frame)
+    merged = data.merge(clim.table[["lake_key", clim.key, "mean"]],
+                        on=["lake_key", clim.key], how="left")
+    merged["anomaly"] = merged["temp_c"] - merged["mean"]
+    return merged
 
 
 def load_data(args, selected):
@@ -172,12 +188,30 @@ def run(argv: list[str] | None = None) -> int:
             )
         print(f"Vergleichsjahr:  {year}")
 
+    skipped: list[str] = []
+
+    # Aktuelle Werte sind eine Ergänzung: schlägt der Abruf fehl, bleibt die
+    # langjährige Auswertung gültig -- der Fehlschlag wird aber ausgewiesen.
+    current = pd.DataFrame()
+    current_source = ""
+    if args.current == "ktn":
+        from .sources import ktn
+
+        try:
+            live = ktn.fetch(load_config(args.config).get("ktn", {}))
+            current = attach_normals(live.frame, clim)
+            current_source = live.source
+            print(f"Aktuelle Werte:  {live.source} — {len(current)} Seen, "
+                  f"Stand {current['date'].max():%d.%m.%Y}")
+        except SystemExit as exc:
+            skipped.append(f"Aktuelle Werte: {exc}")
+            print(f"\nAktuelle Werte nicht verfügbar:\n{exc}\n", file=sys.stderr)
+
     summary = climatology.season_summary(annotated, year)
     matrix = climatology.monthly_anomaly(annotated, year)
     year_rows = annotated[annotated["year"] == year]
     last_day = year_rows["date"].max()
     partial = last_day < pd.Timestamp(year=year, month=12, day=31)
-    skipped: list[str] = []
     if resolution == "daily":
         through_doy = int(year_rows.loc[year_rows["date"].idxmax(), "doy"]) if partial else None
         days = climatology.swim_days(annotated, args.threshold, through_doy)
@@ -208,6 +242,14 @@ def run(argv: list[str] | None = None) -> int:
                                  out=target / "04_saisonabweichung_zeitreihe.png", **common),
         ] if p]
 
+        if not current.empty:
+            path = charts.current_status(
+                current, clim, out=target / "00_aktuell.png",
+                measured_source=current_source, **common,
+            )
+            if path:
+                written.append(path)
+
         for lake in selected:
             path = charts.lake_season(
                 annotated, clim, lake.key, year,
@@ -230,6 +272,18 @@ def run(argv: list[str] | None = None) -> int:
         "data_until": f"{span.max():%Y-%m-%d}",
         "values": int(len(frame)),
         "skipped": skipped,
+        "current": ([] if current.empty else [
+            {
+                "lake_key": row["lake_key"],
+                "name": lakes_mod.BY_KEY[row["lake_key"]].name,
+                "date": f"{row['date']:%Y-%m-%d}",
+                "temp_c": round(float(row["temp_c"]), 1),
+                "normal_c": None if pd.isna(row["mean"]) else round(float(row["mean"]), 1),
+                "anomaly_k": None if pd.isna(row["anomaly"]) else round(float(row["anomaly"]), 1),
+            }
+            for _, row in current.sort_values("temp_c", ascending=False).iterrows()
+        ]),
+        "current_source": current_source,
         "notes": dataset.notes,
         "files": sorted(str(p.relative_to(args.out)) for p in written),
     }

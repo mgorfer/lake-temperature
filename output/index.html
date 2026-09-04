@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kärntner Seen 2026 — Wassertemperatur</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fcfcfb; --card: #ffffff; --line: #e6e5e1;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8983;
+  --accent: #2a78d6; --warn-bg: #fdf3e7; --warn-line: #eda100; --warn-ink: #6b4a05;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a19; --card: #242422; --line: #333330;
+    --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e85;
+    --accent: #3987e5; --warn-bg: #2e2716; --warn-line: #c98500; --warn-ink: #f0d9a8;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 0 16px 64px;
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 900px; margin: 0 auto; }
+header { padding: 28px 0 8px; }
+h1 { margin: 0 0 6px; font-size: 1.55rem; line-height: 1.2; letter-spacing: -0.01em; }
+h2 { margin: 40px 0 2px; font-size: 1.1rem; letter-spacing: -0.005em; }
+h2:first-of-type { margin-top: 28px; }
+p { margin: 0 0 4px; }
+.lede { color: var(--ink-2); }
+.caption { color: var(--ink-3); font-size: 0.9rem; margin-bottom: 10px; }
+.meta {
+  margin: 16px 0 0; padding: 14px 16px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  font-size: 0.9rem;
+}
+.meta dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; }
+.meta dt { color: var(--ink-3); }
+.meta dd { margin: 0; color: var(--ink); }
+.warn {
+  margin: 18px 0 0; padding: 14px 16px;
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  border-left-width: 4px; border-radius: 10px; color: var(--warn-ink);
+}
+.warn strong { display: block; margin-bottom: 3px; }
+figure { margin: 0 0 8px; }
+figure a { display: block; }
+img {
+  width: 100%; height: auto; display: block;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+}
+.lakes { margin-top: 8px; }
+footer {
+  margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line);
+  color: var(--ink-3); font-size: 0.85rem;
+}
+a { color: var(--accent); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+.hint { color: var(--ink-3); font-size: 0.85rem; margin: 14px 0 0; }
+ul.notes { margin: 6px 0 0; padding-left: 20px; color: var(--ink-3); font-size: 0.85rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; margin: 4px 0 8px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-3); font-weight: 600; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+.warm { color: #b3312f; } .cool { color: #1f5fa8; }
+@media (prefers-color-scheme: dark) { .warm { color: #ef8b8b; } .cool { color: #6aa6ef; } }
+</style></head><body><main>
+<header>
+<h1>Kärntner Seen 2026</h1>
+<p class="lede">Wassertemperatur im Vergleich zum langjährigen Mittel 1991–2020.</p>
+</header>
+<div class="warn"><strong>Demodaten — keine Messwerte.</strong>Diese Auswertung beruht auf einem synthetischen Jahresgangmodell und sagt nichts über die tatsächlichen Seen aus. Für echte Werte den Lauf mit der Quelle <code>ehyd</code> starten.</div>
+<div class="meta"><dl>
+<dt>Quelle</dt><dd>Demo-Modell (synthetisch)</dd>
+<dt>Auflösung</dt><dd>Tageswerte</dd>
+<dt>Normalwert</dt><dd>gleitendes ±7-Tage-Fenster über 1991–2020</dd>
+<dt>Datenstand</dt><dd>2026-09-04 (156.372 Werte ab 1991-01-01)</dd>
+<dt>Erzeugt</dt><dd>04.09.2026, 21:20 UTC</dd>
+</dl><ul class="notes"><li>Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.</li><li>Enthaltener Trend: +0.35 K/Jahrzehnt ab 1991.</li></ul></div>
+<p class="hint">Antippen öffnet ein Bild in voller Auflösung.</p>
+<h2>Alle Seen im Vergleich</h2>
+<p class="caption">Mittlere Abweichung der Badesaison vom langjährigen Normalwert.</p>
+<figure><a href="light/01_uebersicht_abweichung_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/01_uebersicht_abweichung_2026.png"><img src="light/01_uebersicht_abweichung_2026.png" alt="Alle Seen im Vergleich" loading="lazy"></picture></a></figure>
+<h2>Monat für Monat</h2>
+<p class="caption">Wo im Jahr die Abweichung entstanden ist -- je See und Monat.</p>
+<figure><a href="light/02_monatsmatrix_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/02_monatsmatrix_2026.png"><img src="light/02_monatsmatrix_2026.png" alt="Monat für Monat" loading="lazy"></picture></a></figure>
+<h2>Badetage</h2>
+<p class="caption">Wie viele Tage warm genug waren, gemessen am langjährigen Mittel.</p>
+<figure><a href="light/03_badetage_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/03_badetage_2026.png"><img src="light/03_badetage_2026.png" alt="Badetage" loading="lazy"></picture></a></figure>
+<h2>Jeder Sommer seit Reihenbeginn</h2>
+<p class="caption">Ein Balken je Jahr und See -- der lange Blick auf die Entwicklung.</p>
+<figure><a href="light/04_saisonabweichung_zeitreihe.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/04_saisonabweichung_zeitreihe.png"><img src="light/04_saisonabweichung_zeitreihe.png" alt="Jeder Sommer seit Reihenbeginn" loading="lazy"></picture></a></figure>
+<h2 class="lakes">Jahresgang je See</h2>
+<p class="caption">Der Verlauf des Jahres gegen den Normalwert, das Band zeigt die Bandbreite des Bezugszeitraums.</p>
+<p class="caption" style="margin-top:14px">Wörthersee</p>
+<figure><a href="light/seen/woerthersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/woerthersee_2026.png"><img src="light/seen/woerthersee_2026.png" alt="Wörthersee" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Ossiacher See</p>
+<figure><a href="light/seen/ossiacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/ossiacher_see_2026.png"><img src="light/seen/ossiacher_see_2026.png" alt="Ossiacher See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Millstätter See</p>
+<figure><a href="light/seen/millstaetter_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/millstaetter_see_2026.png"><img src="light/seen/millstaetter_see_2026.png" alt="Millstätter See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Faaker See</p>
+<figure><a href="light/seen/faaker_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/faaker_see_2026.png"><img src="light/seen/faaker_see_2026.png" alt="Faaker See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Klopeiner See</p>
+<figure><a href="light/seen/klopeiner_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/klopeiner_see_2026.png"><img src="light/seen/klopeiner_see_2026.png" alt="Klopeiner See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Weißensee</p>
+<figure><a href="light/seen/weissensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/weissensee_2026.png"><img src="light/seen/weissensee_2026.png" alt="Weißensee" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Keutschacher See</p>
+<figure><a href="light/seen/keutschacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/keutschacher_see_2026.png"><img src="light/seen/keutschacher_see_2026.png" alt="Keutschacher See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Längsee</p>
+<figure><a href="light/seen/laengsee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/laengsee_2026.png"><img src="light/seen/laengsee_2026.png" alt="Längsee" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Turnersee</p>
+<figure><a href="light/seen/turnersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/turnersee_2026.png"><img src="light/seen/turnersee_2026.png" alt="Turnersee" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Pressegger See</p>
+<figure><a href="light/seen/pressegger_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/pressegger_see_2026.png"><img src="light/seen/pressegger_see_2026.png" alt="Pressegger See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Afritzer See</p>
+<figure><a href="light/seen/afritzer_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/afritzer_see_2026.png"><img src="light/seen/afritzer_see_2026.png" alt="Afritzer See" loading="lazy"></picture></a></figure>
+<p class="caption" style="margin-top:14px">Magdalensee</p>
+<figure><a href="light/seen/magdalensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/magdalensee_2026.png"><img src="light/seen/magdalensee_2026.png" alt="Magdalensee" loading="lazy"></picture></a></figure>
+<footer>
+Erzeugt mit <a href="https://github.com/mgorfer/lake-temperature">seetemp</a>. 
+Die Seite folgt der Hell/Dunkel-Einstellung des Geräts. 
+Rohdaten des Laufs: <a href="run.json">run.json</a>.
+</footer>
+</main></body></html>

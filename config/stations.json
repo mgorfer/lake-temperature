@@ -20,8 +20,7 @@
     "übersprungen.",
     "",
     "ktn: aktuelle Werte des Hydrographischen Dienstes Kärnten. Die URL des",
-    "JSON/GeoJSON-Dienstes ist einzutragen (siehe README); das alte Portal",
-    "info.ktn.gv.at wurde am 10.06.2021 abgeschaltet."
+    "JSON/GeoJSON-Dienstes ist einzutragen (siehe README); das alte Portal"
   ],
   "ehyd": {
     "url_template": "https://ehyd.gv.at/services/MessstellenExtraData/owf?id={hzb}&file={file}",
@@ -52,11 +51,19 @@
     }
   },
   "ktn": {
+    "_hinweis": [
+      "Adresse aus dem Katalog von data.gv.at, Datensatz",
+      "'Hydrographische Daten Kärnten' (bf851ec0-94cb-43ca-83cb-a9dc96ddea51).",
+      "Der Dienst antwortet Rechenzentrums-Adressen nicht -- aus einem",
+      "österreichischen Anschluss in der Regel schon. Leer lassen heisst:",
+      "die im Code hinterlegte Vorgabe verwenden.",
+      "Die Feldnamen werden erkannt; hier eingetragene Namen haben Vorrang."
+    ],
     "url": "",
     "fields": {
-      "name": "SEENAME",
-      "temperature": "WT",
-      "date": "MESSDATUM"
+      "name": "",
+      "temperature": "",
+      "date": ""
     },
     "name_to_lake_key": {
       "Wörther See": "woerthersee",
@@ -72,7 +79,9 @@
       "Turnersee": "turnersee",
       "Pressegger See": "pressegger_see",
       "Afritzer See": "afritzer_see",
-      "Magdalensee": "magdalensee"
+      "Magdalensee": "magdalensee",
+      "Brennsee": "afritzer_see",
+      "Feldsee": "afritzer_see"
     }
   }
 }

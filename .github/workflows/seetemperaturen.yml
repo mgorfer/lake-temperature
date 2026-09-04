@@ -23,6 +23,13 @@ on:
         description: Bezugszeitraum
         type: string
         default: "1991-2020"
+      aktuelle_werte:
+        description: >-
+          Aktuelle Werte des Landes Kärnten mitholen. Vorgabe nein, weil der
+          Dienst Rechenzentrums-Adressen nicht beantwortet -- lokal in
+          Österreich funktioniert es.
+        type: boolean
+        default: false
   # eHYD führt die Wassertemperatur als Monatsmittel -- öfter als wöchentlich
   # abzurufen brächte keine neuen Werte.
   schedule:
@@ -80,9 +87,11 @@ jobs:
           SEETEMP_SOURCE: ${{ inputs.source || 'ehyd' }}
           SEETEMP_YEAR: ${{ inputs.year }}
           SEETEMP_REF: ${{ inputs.reference || '1991-2020' }}
+          SEETEMP_CURRENT: ${{ inputs.aktuelle_werte && 'ktn' || 'none' }}
         run: |
           set -euo pipefail
           args="--source $SEETEMP_SOURCE --ref $SEETEMP_REF --out site"
+          args="$args --current $SEETEMP_CURRENT"
           if [ -n "${SEETEMP_YEAR}" ]; then
             args="$args --year $SEETEMP_YEAR"
           fi
