@@ -148,6 +148,25 @@ def find_temperature_file(hzb: str, session: requests.Session,
     return Discovery("no-temperature", files=found)
 
 
+def list_files(hzb: str, session: requests.Session,
+               url_template: str = DEFAULT_URL_TEMPLATE) -> list[tuple[int, str]]:
+    """Alle Dateien einer Messstelle, nicht nur die Temperaturreihe.
+
+    Die Dateisuche bricht beim ersten Treffer ab -- für die Frage, was eHYD
+    je Messstelle überhaupt hergibt, braucht es die vollständige Liste.
+    """
+    found = []
+    for number in range(1, MAX_FILES + 1):
+        response = session.head(
+            url_template.format(hzb=hzb, file=number), timeout=TIMEOUT, allow_redirects=True
+        )
+        name = _filename(response)
+        if name is None:
+            break
+        found.append((number, name))
+    return found
+
+
 def probe(stations: dict[str, str],
           templates: tuple[str, ...] = (DEFAULT_URL_TEMPLATE, LEGACY_URL_TEMPLATE)) -> str:
     """Fragt eHYD ab und berichtet, was tatsächlich zurückkommt.

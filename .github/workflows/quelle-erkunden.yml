@@ -10,7 +10,7 @@ on:
       quelle:
         description: Welche Quelle ansehen
         type: choice
-        options: [ktn, ehyd]
+        options: [ktn, ehyd, umwege]
         default: ktn
 
 permissions:
@@ -41,6 +41,8 @@ jobs:
             echo '```'
             if [ "$QUELLE" = "ehyd" ]; then
               python -u -m seetemp --source ehyd --probe 2>&1 || true
+            elif [ "$QUELLE" = "umwege" ]; then
+              python -u tools/probe_more.py 2>&1 || true
             else
               python -u tools/probe_ktn.py 2>&1 || true
             fi
