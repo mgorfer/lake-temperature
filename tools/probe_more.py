@@ -16,10 +16,14 @@ from __future__ import annotations
 import json
 import sys
 import time
+from pathlib import Path
 
 import requests
 
-from seetemp.sources import ehyd
+# Ein Skript in tools/ legt tools/ auf den Suchpfad, nicht das Projekt.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from seetemp.sources import ehyd  # noqa: E402
 
 TIMEOUT = (5, 12)
 BUDGET_S = 300
