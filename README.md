@@ -62,6 +62,7 @@ Wichtige Schalter:
 | `--resolution` | `auto` (aus der Quelle), `daily` oder `monthly` |
 | `--threshold` | Schwelle für die Badetage-Bilanz, Vorgabe 22 °C |
 | `--theme` | `light`, `dark` oder `both` |
+| `--probe` | nur nachsehen, was eHYD je Messstelle anbietet (keine Grafiken) |
 
 ## Automatisch auf GitHub Pages
 
@@ -144,7 +145,9 @@ Für Turnersee, Afritzer See und Magdalensee gibt es keine eigene
 eHYD-Oberflächenwassermessstelle; sie bleiben leer und werden übersprungen.
 
 Der Abruf läuft über
-`https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id=<HZB>&file=<n>`. Die
+`https://ehyd.gv.at/services/MessstellenExtraData/owf?id=<HZB>&file=<n>`.
+(Die in älteren Anleitungen genannte Form `/eHYD/…` liefert keinen
+Dateianhang mehr.) Die
 Dateinummer `n` ist je Messstelle verschieden — welche Dateien es gibt, hängt
 vom Messstellentyp ab. Sie wird deshalb **nicht geraten, sondern zur Laufzeit
 ermittelt**: eHYD nennt den Dateinamen im Header `Content-Disposition`, und
@@ -153,7 +156,15 @@ gesucht wird die Datei, deren Name auf die Wassertemperatur verweist
 
 ```bash
 python -m seetemp --source ehyd --year 2026
+python -m seetemp --source ehyd --probe    # nachsehen, was eHYD anbietet
 ```
+
+`--probe` fragt je Messstelle beide URL-Formen ab und berichtet, was
+zurückkommt. Das unterscheidet die drei Fälle, die im Ergebnis gleich
+aussehen, aber ganz verschiedene Reaktionen verlangen: veraltete URL-Vorlage,
+Messstelle ohne Dateien, Messstelle ohne Temperaturreihe. Scheitert der Abruf
+in der GitHub Action, läuft die Diagnose automatisch mit und steht in der
+Zusammenfassung des Laufs.
 
 **Konsequenz aus der Auflösung:** eHYD führt die Wassertemperatur als
 Monatsmittel. Die App erkennt das am Abstand der Zeitstempel, bildet den
@@ -233,10 +244,11 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-24 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+26 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
-Demomodells, eHYD-Parser und Dateierkennung sowie die Übersichtsseite
-(Hell/Dunkel-Umschaltung, fehlende Grafiken, Maskierung, Demo-Warnung).
+Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
+URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
+fehlende Grafiken, Maskierung, Demo-Warnung).
 
 ## Aufbau
 

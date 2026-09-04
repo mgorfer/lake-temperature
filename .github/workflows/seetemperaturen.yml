@@ -93,6 +93,20 @@ jobs:
           # als eine Seite von gestern.
           python -m seetemp $args
 
+      # Ein gescheiterter Abruf soll selbst sagen, woran es lag: veraltete
+      # URL-Vorlage, Messstelle ohne Dateien oder ohne Temperaturreihe sehen
+      # im Ergebnis gleich aus, verlangen aber verschiedene Reaktionen.
+      - name: eHYD-Diagnose bei Fehlschlag
+        if: failure()
+        run: |
+          {
+            echo "### eHYD antwortet so"
+            echo
+            echo '```'
+            python -m seetemp --source ehyd --probe 2>&1 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Übersichtsseite bauen
         run: python tools/build_gallery.py site
 

@@ -37,6 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lakes", nargs="*", metavar="KEY",
                    help="Auswahl von Seen (Vorgabe: alle). Schlüssel siehe --list-lakes")
     p.add_argument("--list-lakes", action="store_true", help="Verfügbare Seen ausgeben")
+    p.add_argument("--probe", action="store_true",
+                   help="Nur nachsehen, was eHYD je Messstelle tatsächlich anbietet "
+                        "(Diagnose, erzeugt keine Grafiken)")
     p.add_argument("--year", type=int, default=date.today().year,
                    help="Vergleichsjahr (Vorgabe: laufendes Jahr)")
     p.add_argument("--ref", default="1991-2020", metavar="VON-BIS",
@@ -106,6 +109,18 @@ def run(argv: list[str] | None = None) -> int:
         return 0
 
     selected = lakes_mod.resolve(args.lakes)
+
+    if args.probe:
+        from .sources import ehyd
+
+        config = load_config(args.config).get("ehyd", {})
+        stations = config.get("stations", {})
+        wanted = {lake.key: stations.get(lake.key, "") for lake in selected}
+        if not any(str(v).strip() for v in wanted.values()):
+            raise SystemExit("Keine HZB-Nummern in config/stations.json eingetragen.")
+        print(ehyd.probe(wanted))
+        return 0
+
     reference = parse_reference(args.ref)
 
     dataset = load_data(args, selected)

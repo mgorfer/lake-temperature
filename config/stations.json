@@ -8,6 +8,10 @@
     "wird zur Laufzeit über den Content-Disposition-Header ermittelt und ist",
     "deshalb hier nicht einzutragen.",
     "",
+    "Der Pfad lautet /services/... -- die in älteren Anleitungen genannte Form",
+    "/eHYD/... liefert keinen Dateianhang mehr. Was eHYD tatsächlich antwortet,",
+    "zeigt: python -m seetemp --source ehyd --probe",
+    "",
     "Für Turnersee, Afritzer See und Magdalensee gibt es keine eigene",
     "eHYD-Oberflächenwassermessstelle -- sie bleiben leer und werden",
     "übersprungen.",
@@ -17,7 +21,7 @@
     "info.ktn.gv.at wurde am 10.06.2021 abgeschaltet."
   ],
   "ehyd": {
-    "url_template": "https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id={hzb}&file={file}",
+    "url_template": "https://ehyd.gv.at/services/MessstellenExtraData/owf?id={hzb}&file={file}",
     "stations": {
       "woerthersee": "212985",
       "ossiacher_see": "213272",

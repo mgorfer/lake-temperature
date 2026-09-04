@@ -8,7 +8,7 @@ Monatsmittel der Wassertemperatur über die gesamte Beobachtungsdauer.
 
 Abruf::
 
-    https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id=<HZB>&file=<n>
+    https://ehyd.gv.at/services/MessstellenExtraData/owf?id=<HZB>&file=<n>
 
 Die Dateinummer ``n`` ist je Messstelle verschieden -- welche Dateien es gibt,
 hängt vom Messstellentyp ab (Wasserstand, Durchfluss, Feststoffe,
@@ -26,14 +26,17 @@ from __future__ import annotations
 
 import io
 import re
+from dataclasses import dataclass, field
 
 import pandas as pd
 import requests
 
 from .base import Dataset
 
-BASE_URL = "https://ehyd.gv.at/eHYD/MessstellenExtraData/owf"
-DEFAULT_URL_TEMPLATE = BASE_URL + "?id={hzb}&file={file}"
+#: Aktueller Pfad. Die ältere Form "/eHYD/MessstellenExtraData/..." findet
+#: sich noch in vielen Anleitungen, liefert aber keinen Dateianhang mehr.
+DEFAULT_URL_TEMPLATE = "https://ehyd.gv.at/services/MessstellenExtraData/owf?id={hzb}&file={file}"
+LEGACY_URL_TEMPLATE = "https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id={hzb}&file={file}"
 #: Dateinamen der Temperaturreihen beginnen bei eHYD mit "WT-".
 TEMPERATURE_FILE = re.compile(r"(^|[-_ ])WT[-_ ]|wassertemperatur", re.IGNORECASE)
 MAX_FILES = 9
@@ -68,24 +71,93 @@ def parse_export(text: str) -> pd.DataFrame:
     )
 
 
+@dataclass
+class Discovery:
+    """Was die Dateisuche an einer Messstelle vorgefunden hat.
+
+    Die Unterscheidung ist wichtig: „URL antwortet nicht", „Messstelle
+    liefert gar keine Dateien" und „Messstelle führt keine Temperatur" sehen
+    im Ergebnis gleich aus, verlangen aber ganz verschiedene Reaktionen.
+    """
+
+    reason: str  # ok | http | no-files | no-temperature
+    number: int | None = None
+    filename: str | None = None
+    files: list[str] = field(default_factory=list)
+    status: int | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.reason == "ok"
+
+    def explain(self) -> str:
+        if self.reason == "ok":
+            return f"{self.filename} (file={self.number})"
+        if self.reason == "http":
+            return f"HTTP {self.status} — URL-Vorlage prüfen"
+        if self.reason == "no-files":
+            return (f"HTTP {self.status}, aber ohne Dateianhang — vermutlich die "
+                    "falsche URL-Vorlage")
+        vorhanden = ", ".join(self.files) or "keine"
+        return f"keine Temperaturreihe (vorhanden: {vorhanden})"
+
+
+def _filename(response: requests.Response) -> str | None:
+    disposition = response.headers.get("content-disposition")
+    if not disposition or "filename=" not in disposition:
+        return None
+    return disposition.split("filename=")[-1].strip('"; ')
+
+
 def find_temperature_file(hzb: str, session: requests.Session,
-                          url_template: str = DEFAULT_URL_TEMPLATE) -> tuple[int, str] | None:
+                          url_template: str = DEFAULT_URL_TEMPLATE) -> Discovery:
     """Sucht die Dateinummer der Temperaturreihe einer Messstelle.
 
-    eHYD nummeriert die Dateien einer Messstelle lückenlos ab 1; fehlt der
-    Header ``Content-Disposition``, gibt es die Nummer nicht (mehr).
+    eHYD nummeriert die Dateien einer Messstelle lückenlos ab 1 und nennt den
+    Dateinamen im Header ``Content-Disposition``; fehlt der Header, gibt es
+    die Nummer nicht.
     """
+    found: list[str] = []
     for number in range(1, MAX_FILES + 1):
         response = session.head(
             url_template.format(hzb=hzb, file=number), timeout=TIMEOUT, allow_redirects=True
         )
-        disposition = response.headers.get("content-disposition")
-        if not disposition:
-            return None
-        filename = disposition.split("filename=")[-1].strip('"; ')
-        if TEMPERATURE_FILE.search(filename):
-            return number, filename
-    return None
+        status = getattr(response, "status_code", 200)
+        name = _filename(response)
+        if name is None:
+            if number == 1:
+                if status >= 400:
+                    return Discovery("http", status=status)
+                return Discovery("no-files", status=status)
+            break
+        found.append(name)
+        if TEMPERATURE_FILE.search(name):
+            return Discovery("ok", number=number, filename=name, files=found, status=status)
+    return Discovery("no-temperature", files=found)
+
+
+def probe(stations: dict[str, str],
+          templates: tuple[str, ...] = (DEFAULT_URL_TEMPLATE, LEGACY_URL_TEMPLATE)) -> str:
+    """Fragt eHYD ab und berichtet, was tatsächlich zurückkommt.
+
+    Gedacht für den Fall, dass der Abruf nichts liefert: das Ergebnis sagt,
+    ob die URL-Vorlage veraltet ist, ob die Messstelle keine Dateien führt
+    oder ob es schlicht keine Temperaturreihe gibt.
+    """
+    session = requests.Session()
+    lines = []
+    for template in templates:
+        lines.append(f"URL-Vorlage: {template}")
+        for lake_key, hzb in stations.items():
+            if not str(hzb).strip():
+                continue
+            try:
+                result = find_temperature_file(str(hzb).strip(), session, template)
+                lines.append(f"  {lake_key:<18} HZB {hzb}: {result.explain()}")
+            except requests.RequestException as exc:
+                lines.append(f"  {lake_key:<18} HZB {hzb}: {exc.__class__.__name__}: {exc}")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def infer_resolution(dates: pd.Series) -> str:
@@ -118,10 +190,10 @@ def fetch(stations: dict[str, str], url_template: str = DEFAULT_URL_TEMPLATE) ->
     for lake_key, hzb in usable.items():
         try:
             found = find_temperature_file(hzb, session, url_template)
-            if found is None:
-                notes.append(f"{lake_key}: HZB {hzb} führt keine Wassertemperaturreihe")
+            if not found.ok:
+                notes.append(f"{lake_key}: HZB {hzb}: {found.explain()}")
                 continue
-            number, filename = found
+            number, filename = found.number, found.filename
             response = session.get(
                 url_template.format(hzb=hzb, file=number), timeout=TIMEOUT
             )
@@ -147,7 +219,11 @@ def fetch(stations: dict[str, str], url_template: str = DEFAULT_URL_TEMPLATE) ->
         )
 
     if not parts:
-        raise SystemExit("eHYD lieferte für keinen See Daten:\n  " + "\n  ".join(notes))
+        raise SystemExit(
+            "eHYD lieferte für keinen See Daten:\n  " + "\n  ".join(notes)
+            + "\n\nWas eHYD tatsächlich antwortet, zeigt:\n"
+              "  python -m seetemp --source ehyd --probe"
+        )
 
     # Mischt eine Quelle Auflösungen, ist die gröbere die belastbare.
     resolution = "daily" if resolutions == {"daily"} else "monthly"

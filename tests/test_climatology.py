@@ -166,7 +166,9 @@ class EhydDiscoveryTest(unittest.TestCase):
                 headers["content-disposition"] = (
                     f'attachment; filename={self.filenames[number - 1]}'
                 )
-            return type("R", (), {"headers": headers})()
+            return type("R", (), {"headers": headers, "status_code": self.status})()
+
+        status = 200
 
     def test_picks_the_water_temperature_file(self):
         from seetemp.sources import ehyd
@@ -178,13 +180,38 @@ class EhydDiscoveryTest(unittest.TestCase):
             "WT-Monatsmittel-212985.csv",
         ])
         found = ehyd.find_temperature_file("212985", session)
-        self.assertEqual(found, (4, "WT-Monatsmittel-212985.csv"))
+        self.assertTrue(found.ok)
+        self.assertEqual((found.number, found.filename), (4, "WT-Monatsmittel-212985.csv"))
 
     def test_station_without_temperature_series(self):
         from seetemp.sources import ehyd
 
         session = self.FakeSession(["Stammdaten-212522.txt", "Q-Tagesmittel-212522.csv"])
-        self.assertIsNone(ehyd.find_temperature_file("212522", session))
+        found = ehyd.find_temperature_file("212522", session)
+        self.assertFalse(found.ok)
+        self.assertEqual(found.reason, "no-temperature")
+        self.assertIn("Q-Tagesmittel-212522.csv", found.explain())
+
+    def test_a_dead_url_is_not_reported_as_a_missing_series(self):
+        """Der Unterschied, der beim ersten CI-Lauf gefehlt hat."""
+        from seetemp.sources import ehyd
+
+        gone = self.FakeSession([])
+        gone.status = 404
+        found = ehyd.find_temperature_file("212985", gone)
+        self.assertEqual(found.reason, "http")
+        self.assertIn("URL-Vorlage", found.explain())
+
+        empty = self.FakeSession([])  # HTTP 200, aber ohne Dateianhang
+        found = ehyd.find_temperature_file("212985", empty)
+        self.assertEqual(found.reason, "no-files")
+        self.assertIn("URL-Vorlage", found.explain())
+
+    def test_default_url_uses_the_current_path(self):
+        from seetemp.sources import ehyd
+
+        self.assertIn("/services/MessstellenExtraData/owf", ehyd.DEFAULT_URL_TEMPLATE)
+        self.assertIn("/eHYD/MessstellenExtraData/owf", ehyd.LEGACY_URL_TEMPLATE)
 
     def test_resolution_is_inferred_from_the_spacing(self):
         from seetemp.sources import ehyd
