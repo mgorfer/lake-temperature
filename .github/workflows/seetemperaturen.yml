@@ -1,0 +1,115 @@
+# Rechnet die Auswertung und veröffentlicht sie als Seite auf GitHub Pages.
+#
+# Einmalige Einrichtung: Settings -> Pages -> "Source: GitHub Actions".
+# Danach liegt das Ergebnis unter
+# https://mgorfer.github.io/lake-temperature/ -- im Handy-Browser als
+# Lesezeichen ablegen, mehr braucht es nicht.
+name: Seetemperaturen
+
+on:
+  # Von Hand, mit Wahl der Quelle.
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Datenquelle
+        type: choice
+        options: [ehyd, demo]
+        default: ehyd
+      year:
+        description: Vergleichsjahr (leer = laufendes Jahr)
+        type: string
+        default: ""
+      reference:
+        description: Bezugszeitraum
+        type: string
+        default: "1991-2020"
+  # eHYD führt die Wassertemperatur als Monatsmittel -- öfter als wöchentlich
+  # abzurufen brächte keine neuen Werte.
+  schedule:
+    - cron: "17 4 * * 1"
+  # Codeänderungen sollen die Seite erneuern; Änderungen an den fertigen
+  # PNGs im Repo dagegen nicht.
+  push:
+    branches: [claude/kaerntner-seen-temperatur-app-6pgtdh]
+    paths:
+      - "seetemp/**"
+      - "tools/**"
+      - "config/**"
+      - "requirements.txt"
+      - ".github/workflows/seetemperaturen.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Veröffentlichungen gleichzeitig; laufende nicht abbrechen.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Auswertungslogik prüfen
+        run: python -m unittest discover -s tests -v
+
+  build:
+    name: Grafiken erzeugen
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Auswertung rechnen
+        env:
+          # Bei Zeitplan und Push gibt es keine Eingaben -- dann amtliche Daten.
+          SEETEMP_SOURCE: ${{ inputs.source || 'ehyd' }}
+          SEETEMP_YEAR: ${{ inputs.year }}
+          SEETEMP_REF: ${{ inputs.reference || '1991-2020' }}
+        run: |
+          set -euo pipefail
+          args="--source $SEETEMP_SOURCE --ref $SEETEMP_REF --out site"
+          if [ -n "${SEETEMP_YEAR}" ]; then
+            args="$args --year $SEETEMP_YEAR"
+          fi
+          echo "python -m seetemp $args"
+          # Kein stiller Rückfall auf Demodaten: ist eHYD nicht erreichbar,
+          # schlägt der Lauf fehl und die zuletzt veröffentlichte Seite
+          # bleibt stehen. Eine Seite mit erfundenen Zahlen wäre schlechter
+          # als eine Seite von gestern.
+          python -m seetemp $args
+
+      - name: Übersichtsseite bauen
+        run: python tools/build_gallery.py site
+
+      - name: Zusammenfassung
+        run: python tools/summary.py site >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Veröffentlichen
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -37,7 +37,8 @@ pip install -r requirements.txt
 ```
 
 Am Android-Handy geht das auch — siehe [docs/ANDROID.md](docs/ANDROID.md);
-`./phone.sh` legt die Bilder dort direkt in die Galerie.
+`./phone.sh` legt die Bilder dort direkt in die Galerie. Wer gar nichts
+installieren will, nimmt die [automatisch veröffentlichte Seite](#automatisch-auf-github-pages).
 
 ## Verwendung
 
@@ -61,6 +62,40 @@ Wichtige Schalter:
 | `--resolution` | `auto` (aus der Quelle), `daily` oder `monthly` |
 | `--threshold` | Schwelle für die Badetage-Bilanz, Vorgabe 22 °C |
 | `--theme` | `light`, `dark` oder `both` |
+
+## Automatisch auf GitHub Pages
+
+Der Workflow [`.github/workflows/seetemperaturen.yml`](.github/workflows/seetemperaturen.yml)
+rechnet die Auswertung und veröffentlicht sie als Seite:
+
+**<https://mgorfer.github.io/lake-temperature/>**
+
+Eine Seite in einer Spalte, Bilder in voller Breite, Antippen öffnet die
+Originalauflösung — gedacht als Lesezeichen am Handy. Liegen beide
+Farbschemata vor, wählt der Browser über `prefers-color-scheme` selbst; die
+Seite folgt also der Systemeinstellung, ohne Schalter und ohne JavaScript.
+
+Einmalige Einrichtung: **Settings → Pages → Source: „GitHub Actions"**.
+
+| Auslöser | Wann | Quelle |
+|---|---|---|
+| `workflow_dispatch` | von Hand, mit Auswahl von Quelle, Jahr, Bezugszeitraum | frei wählbar |
+| `schedule` | montags früh | `ehyd` |
+| `push` | bei Änderungen an Code oder Konfiguration | `ehyd` |
+
+Wöchentlich reicht, weil eHYD die Wassertemperatur als Monatsmittel führt —
+häufiger abzurufen brächte keine neuen Werte.
+
+**Kein stiller Rückfall auf Demodaten.** Ist eHYD nicht erreichbar, schlägt der
+Lauf fehl und die zuletzt veröffentlichte Seite bleibt stehen. Eine Seite mit
+erfundenen Zahlen wäre schlechter als eine Seite von gestern. Wer Demodaten
+sehen will, startet den Workflow von Hand mit `source: demo` — die Seite trägt
+dann einen unübersehbaren Warnhinweis.
+
+Jeder Lauf schreibt neben den PNGs eine `run.json` mit Quelle, Auflösung,
+Bezugszeitraum, Datenstand und Dateiliste; daraus bauen
+`tools/build_gallery.py` die Seite und `tools/summary.py` die Zusammenfassung
+im Actions-Protokoll.
 
 ## Datenquellen
 
@@ -198,9 +233,10 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-16 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+24 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
-Demomodells, eHYD-Parser und die Erkennung der Temperaturdatei.
+Demomodells, eHYD-Parser und Dateierkennung sowie die Übersichtsseite
+(Hell/Dunkel-Umschaltung, fehlende Grafiken, Maskierung, Demo-Warnung).
 
 ## Aufbau
 
@@ -220,4 +256,7 @@ seetemp/
 config/stations.json  Stationszuordnung für die Online-Quellen
 phone.sh              Ein-Befehl-Start für Termux (Android)
 docs/ANDROID.md       Einrichtung am Handy
+tools/build_gallery.py  Übersichtsseite aus einem Ausgabeverzeichnis
+tools/summary.py        Lauf-Zusammenfassung für GitHub Actions
+.github/workflows/      Rechnen und Veröffentlichen auf GitHub Pages
 ```

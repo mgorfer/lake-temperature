@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-09-04T20:31:46+00:00",
+  "source": "Demo-Modell (synthetisch)",
+  "is_demo": true,
+  "resolution": "daily",
+  "year": 2026,
+  "reference": "1991–2020",
+  "method": "gleitendes ±7-Tage-Fenster",
+  "threshold_c": 22.0,
+  "lakes": [
+    {
+      "key": "woerthersee",
+      "name": "Wörthersee"
+    },
+    {
+      "key": "ossiacher_see",
+      "name": "Ossiacher See"
+    },
+    {
+      "key": "millstaetter_see",
+      "name": "Millstätter See"
+    },
+    {
+      "key": "faaker_see",
+      "name": "Faaker See"
+    },
+    {
+      "key": "klopeiner_see",
+      "name": "Klopeiner See"
+    },
+    {
+      "key": "weissensee",
+      "name": "Weißensee"
+    },
+    {
+      "key": "keutschacher_see",
+      "name": "Keutschacher See"
+    },
+    {
+      "key": "laengsee",
+      "name": "Längsee"
+    },
+    {
+      "key": "turnersee",
+      "name": "Turnersee"
+    },
+    {
+      "key": "pressegger_see",
+      "name": "Pressegger See"
+    },
+    {
+      "key": "afritzer_see",
+      "name": "Afritzer See"
+    },
+    {
+      "key": "magdalensee",
+      "name": "Magdalensee"
+    }
+  ],
+  "data_from": "1991-01-01",
+  "data_until": "2026-09-04",
+  "values": 156372,
+  "skipped": [],
+  "notes": [
+    "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",
+    "Enthaltener Trend: +0.35 K/Jahrzehnt ab 1991."
+  ],
+  "files": [
+    "dark/01_uebersicht_abweichung_2026.png",
+    "dark/02_monatsmatrix_2026.png",
+    "dark/03_badetage_2026.png",
+    "dark/04_saisonabweichung_zeitreihe.png",
+    "dark/seen/afritzer_see_2026.png",
+    "dark/seen/faaker_see_2026.png",
+    "dark/seen/keutschacher_see_2026.png",
+    "dark/seen/klopeiner_see_2026.png",
+    "dark/seen/laengsee_2026.png",
+    "dark/seen/magdalensee_2026.png",
+    "dark/seen/millstaetter_see_2026.png",
+    "dark/seen/ossiacher_see_2026.png",
+    "dark/seen/pressegger_see_2026.png",
+    "dark/seen/turnersee_2026.png",
+    "dark/seen/weissensee_2026.png",
+    "dark/seen/woerthersee_2026.png",
+    "light/01_uebersicht_abweichung_2026.png",
+    "light/02_monatsmatrix_2026.png",
+    "light/03_badetage_2026.png",
+    "light/04_saisonabweichung_zeitreihe.png",
+    "light/seen/afritzer_see_2026.png",
+    "light/seen/faaker_see_2026.png",
+    "light/seen/keutschacher_see_2026.png",
+    "light/seen/klopeiner_see_2026.png",
+    "light/seen/laengsee_2026.png",
+    "light/seen/magdalensee_2026.png",
+    "light/seen/millstaetter_see_2026.png",
+    "light/seen/ossiacher_see_2026.png",
+    "light/seen/pressegger_see_2026.png",
+    "light/seen/turnersee_2026.png",
+    "light/seen/weissensee_2026.png",
+    "light/seen/woerthersee_2026.png"
+  ]
+}

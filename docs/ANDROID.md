@@ -1,5 +1,9 @@
 # Auf dem Handy laufen lassen
 
+**Willst du die Bilder nur ansehen?** Dann brauchst du gar nichts zu
+installieren — [Weg C](#weg-c-gar-nicht-lokal-rechnen--der-bequemste-weg) ist
+ein Lesezeichen im Browser.
+
 Kurz: **ja.** Es ist eine reine Kommandozeilen-App ohne Fenster — sie zeichnet
 über das Backend `Agg` direkt in Dateien. Das läuft auf Android genauso wie
 auf einem Rechner, es fehlt nur eine Kommandozeile. Dafür gibt es zwei Wege.
@@ -101,13 +105,22 @@ Gerätespeicher erweitert worden.
 
 ---
 
-## Weg C: gar nicht lokal rechnen
+## Weg C: gar nicht lokal rechnen — der bequemste Weg
 
 Wenn es nur darum geht, die Bilder **am Handy zu sehen**, ist das Rechnen auf
-dem Gerät der Umweg. Eine GitHub Action kann die PNGs bauen und als Artefakt
-ablegen; am Handy reicht dann der Browser. Kein Termux, keine Pakete, immer
-aktuell. Sag Bescheid, wenn du das willst — der Workflow ist schnell
-geschrieben.
+dem Gerät der Umweg. Der Workflow
+[`seetemperaturen.yml`](../.github/workflows/seetemperaturen.yml) rechnet auf
+GitHub und veröffentlicht das Ergebnis als Seite:
+
+**<https://mgorfer.github.io/lake-temperature/>**
+
+Im Handy-Browser öffnen, „Zum Startbildschirm hinzufügen" — fertig. Kein
+Termux, keine Pakete, keine Updates. Die Seite folgt der Hell/Dunkel-Einstellung
+des Geräts, Antippen öffnet ein Bild in voller Auflösung.
+
+Einmalig einzurichten: **Settings → Pages → Source: „GitHub Actions"**.
+Danach läuft der Workflow montags früh, bei jeder Codeänderung und auf Zuruf
+über *Actions → Seetemperaturen → Run workflow*.
 
 ---
 

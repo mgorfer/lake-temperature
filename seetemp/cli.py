@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -179,6 +179,27 @@ def run(argv: list[str] | None = None) -> int:
             )
             if path:
                 written.append(path)
+
+    manifest = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": dataset.source,
+        "is_demo": dataset.is_demo,
+        "resolution": resolution,
+        "year": args.year,
+        "reference": clim.label,
+        "method": clim.method,
+        "threshold_c": args.threshold,
+        "lakes": [{"key": l.key, "name": l.name} for l in selected],
+        "data_from": f"{span.min():%Y-%m-%d}",
+        "data_until": f"{span.max():%Y-%m-%d}",
+        "values": int(len(frame)),
+        "skipped": skipped,
+        "notes": dataset.notes,
+        "files": sorted(str(p.relative_to(args.out)) for p in written),
+    }
+    (args.out / "run.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     print(f"\n{len(written)} PNG-Dateien geschrieben nach {args.out}/")
     for path in written[:6]:
