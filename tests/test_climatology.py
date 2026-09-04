@@ -120,3 +120,76 @@ class EhydParserTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MonthlyClimatologyTest(unittest.TestCase):
+    def monthly_series(self, offset=0.0, start=1991, end=2020) -> pd.DataFrame:
+        dates = pd.date_range(f"{start}-01-01", f"{end}-12-01", freq="MS")
+        month = pd.DatetimeIndex(dates).month
+        return pd.DataFrame({
+            "lake_key": "woerthersee",
+            "date": dates,
+            "temp_c": 12.0 + 8.0 * np.cos((month - 8) / 12 * 2 * np.pi) + offset,
+        })
+
+    def test_twelve_support_points_per_lake(self):
+        clim = climatology.build(self.monthly_series(), resolution="monthly")
+        self.assertEqual(clim.key, "month")
+        self.assertEqual(len(clim.table), 12)
+        self.assertEqual(clim.table["month"].tolist(), list(range(1, 13)))
+        self.assertEqual(clim.method, "Monatsmittel")
+
+    def test_anomaly_against_monthly_normal(self):
+        clim = climatology.build(self.monthly_series(), resolution="monthly")
+        later = self.monthly_series(offset=2.0, start=2024, end=2024)
+        annotated = climatology.with_anomaly(later, clim)
+        np.testing.assert_allclose(annotated["anomaly"].to_numpy(), 2.0, atol=1e-9)
+
+    def test_rejects_unknown_resolution(self):
+        with self.assertRaises(ValueError):
+            climatology.build(self.monthly_series(), resolution="hourly")
+
+
+class EhydDiscoveryTest(unittest.TestCase):
+    """Die Dateinummer der Temperaturreihe wird ermittelt, nicht geraten."""
+
+    class FakeSession:
+        def __init__(self, filenames):
+            self.filenames = filenames
+            self.calls = 0
+
+        def head(self, url, **kwargs):
+            self.calls += 1
+            number = int(url.split("file=")[1])
+            headers = {}
+            if number <= len(self.filenames):
+                headers["content-disposition"] = (
+                    f'attachment; filename={self.filenames[number - 1]}'
+                )
+            return type("R", (), {"headers": headers})()
+
+    def test_picks_the_water_temperature_file(self):
+        from seetemp.sources import ehyd
+
+        session = self.FakeSession([
+            "Stammdaten-212985.txt",
+            "W-Tagesmittel-212985.csv",
+            "W-Monatsmaxima-212985.csv",
+            "WT-Monatsmittel-212985.csv",
+        ])
+        found = ehyd.find_temperature_file("212985", session)
+        self.assertEqual(found, (4, "WT-Monatsmittel-212985.csv"))
+
+    def test_station_without_temperature_series(self):
+        from seetemp.sources import ehyd
+
+        session = self.FakeSession(["Stammdaten-212522.txt", "Q-Tagesmittel-212522.csv"])
+        self.assertIsNone(ehyd.find_temperature_file("212522", session))
+
+    def test_resolution_is_inferred_from_the_spacing(self):
+        from seetemp.sources import ehyd
+
+        daily = pd.Series(pd.date_range("2020-01-01", periods=40, freq="D"))
+        monthly = pd.Series(pd.date_range("2020-01-01", periods=40, freq="MS"))
+        self.assertEqual(ehyd.infer_resolution(daily), "daily")
+        self.assertEqual(ehyd.infer_resolution(monthly), "monthly")

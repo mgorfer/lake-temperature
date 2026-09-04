@@ -26,9 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
         epilog="Beispiele:\n"
                "  python -m seetemp --source demo --year 2026\n"
                "  python -m seetemp --source ehyd --ref 1991-2020 --lakes woerthersee faaker_see\n"
+               "  python -m seetemp --source ktn\n"
                "  python -m seetemp --source csv --csv meine_messungen.csv\n",
     )
-    p.add_argument("--source", choices=["demo", "ehyd", "kagis", "csv"], default="demo",
+    p.add_argument("--source", choices=["demo", "ehyd", "ktn", "csv"], default="demo",
                    help="Datenquelle (Vorgabe: demo -- synthetische Werte, netzunabhängig)")
     p.add_argument("--csv", type=Path, help="Pfad zur CSV-Datei bei --source csv")
     p.add_argument("--config", type=Path, default=DEFAULT_CONFIG,
@@ -42,8 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Bezugszeitraum für das langjährige Mittel (Vorgabe: 1991-2020)")
     p.add_argument("--window", type=int, default=climatology.DEFAULT_WINDOW,
                    help="Halbe Breite des gleitenden Fensters in Tagen (Vorgabe: 7)")
-    p.add_argument("--min-samples", type=int, default=climatology.MIN_SAMPLES,
-                   help="Mindestzahl Werte je Kalendertag-Fenster (Vorgabe: 20)")
+    p.add_argument("--min-samples", type=int, default=None,
+                   help="Mindestzahl Werte je Stützstelle (Vorgabe: 20 bei Tages-, "
+                        "10 bei Monatswerten)")
+    p.add_argument("--resolution", choices=["auto", "daily", "monthly"], default="auto",
+                   help="Zeitliche Auflösung der Auswertung (Vorgabe: aus der Quelle)")
     p.add_argument("--threshold", type=float, default=22.0,
                    help="Schwelle für die Badetage-Bilanz in °C (Vorgabe: 22)")
     p.add_argument("--theme", choices=["light", "dark", "both"], default="both",
@@ -89,9 +93,9 @@ def load_data(args, selected):
         wanted = {lake.key: stations.get(lake.key, "") for lake in selected}
         return ehyd.fetch(wanted, template)
 
-    from .sources import kagis
+    from .sources import ktn
 
-    return kagis.fetch(config.get("kagis", {}))
+    return ktn.fetch(config.get("ktn", {}))
 
 
 def run(argv: list[str] | None = None) -> int:
@@ -114,15 +118,18 @@ def run(argv: list[str] | None = None) -> int:
         raise SystemExit("Die Quelle lieferte für die gewählten Seen keine Werte.")
 
     span = pd.DatetimeIndex(frame["date"])
+    resolution = dataset.resolution if args.resolution == "auto" else args.resolution
+    aufloesung = "Tageswerte" if resolution == "daily" else "Monatsmittel"
     print(f"Quelle:          {dataset.source}"
           + ("   [SYNTHETISCHE DEMODATEN]" if dataset.is_demo else ""))
+    print(f"Auflösung:       {aufloesung}")
     count = f"{len(frame):,}".replace(",", ".")
     print(f"Zeitraum:        {span.min():%d.%m.%Y} – {span.max():%d.%m.%Y}"
-          f"  ({count} Tageswerte, {frame['lake_key'].nunique()} Seen)")
+          f"  ({count} Werte, {frame['lake_key'].nunique()} Seen)")
 
-    clim = climatology.build(frame, reference, args.window, args.min_samples)
+    clim = climatology.build(frame, reference, args.window, args.min_samples, resolution)
     annotated = climatology.with_anomaly(frame, clim)
-    print(f"Bezugszeitraum:  {clim.label} (gleitendes ±{clim.window}-Tage-Fenster)")
+    print(f"Bezugszeitraum:  {clim.label} ({clim.method})")
 
     if not (annotated["year"] == args.year).any():
         available = sorted(annotated["year"].unique())
@@ -134,8 +141,14 @@ def run(argv: list[str] | None = None) -> int:
     year_rows = annotated[annotated["year"] == args.year]
     last_day = year_rows["date"].max()
     partial = last_day < pd.Timestamp(year=args.year, month=12, day=31)
-    through_doy = int(year_rows.loc[year_rows["date"].idxmax(), "doy"]) if partial else None
-    days = climatology.swim_days(annotated, args.threshold, through_doy)
+    skipped: list[str] = []
+    if resolution == "daily":
+        through_doy = int(year_rows.loc[year_rows["date"].idxmax(), "doy"]) if partial else None
+        days = climatology.swim_days(annotated, args.threshold, through_doy)
+    else:
+        # Aus Monatsmitteln lassen sich keine einzelnen Badetage zählen.
+        days = pd.DataFrame()
+        skipped.append("Badetage-Bilanz (braucht Tageswerte, Quelle liefert Monatsmittel)")
 
     themes = ["light", "dark"] if args.theme == "both" else [args.theme]
     written: list[Path] = []
@@ -153,7 +166,8 @@ def run(argv: list[str] | None = None) -> int:
                                    out=target / f"02_monatsmatrix_{args.year}.png", **common),
             charts.swim_days(days, clim, args.year, args.threshold,
                              out=target / f"03_badetage_{args.year}.png",
-                             through=last_day if partial else None, **common),
+                             through=last_day if partial else None, **common)
+            if not days.empty else None,
             charts.anomaly_trend(annotated, clim,
                                  out=target / "04_saisonabweichung_zeitreihe.png", **common),
         ] if p]
@@ -174,8 +188,14 @@ def run(argv: list[str] | None = None) -> int:
     if dataset.is_demo:
         print("\nACHTUNG: Demomodus. Die Grafiken beruhen auf synthetischen Werten "
               "und sind nur zur Veranschaulichung.")
-    for note in dataset.notes[:8]:
-        print(f"  · {note}")
+    for note in skipped:
+        print(f"\nÜbersprungen: {note}")
+    if dataset.notes:
+        print("\nHinweise der Quelle:")
+        for note in dataset.notes[:15]:
+            print(f"  · {note}")
+        if len(dataset.notes) > 15:
+            print(f"  … und {len(dataset.notes) - 15} weitere")
     return 0
 
 

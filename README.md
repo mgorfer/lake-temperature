@@ -41,7 +41,7 @@ pip install -r requirements.txt
 ```bash
 python -m seetemp --list-lakes                    # verfügbare Seen
 python -m seetemp --source demo --year 2026       # alles, beide Farbschemata
-python -m seetemp --source ehyd --ref 1991-2020   # echte Messreihen (Konfiguration nötig)
+python -m seetemp --source ehyd --ref 1991-2020   # amtliche Messreihen (HZB-Nummern sind hinterlegt)
 python -m seetemp --source csv --csv messwerte.csv --lakes woerthersee faaker_see
 python -m seetemp --theme light --threshold 20 --out ./grafiken
 ```
@@ -50,15 +50,107 @@ Wichtige Schalter:
 
 | Schalter | Bedeutung |
 |---|---|
-| `--source` | `demo`, `ehyd`, `kagis` oder `csv` |
+| `--source` | `demo`, `ehyd`, `ktn` oder `csv` |
 | `--year` | Vergleichsjahr, Vorgabe: laufendes Jahr |
 | `--ref VON-BIS` | Bezugszeitraum, Vorgabe `1991-2020` (WMO-Normalperiode) |
 | `--window` | Halbe Breite des gleitenden Fensters in Tagen, Vorgabe 7 |
-| `--min-samples` | Mindestzahl Werte je Kalendertag-Fenster, Vorgabe 20 |
+| `--min-samples` | Mindestzahl Werte je Stützstelle, Vorgabe 20 (Tages-) bzw. 10 (Monatswerte) |
+| `--resolution` | `auto` (aus der Quelle), `daily` oder `monthly` |
 | `--threshold` | Schwelle für die Badetage-Bilanz, Vorgabe 22 °C |
 | `--theme` | `light`, `dark` oder `both` |
 
 ## Datenquellen
+
+### Empfehlung: eHYD für die lange Reihe, Kärnten für die Aktualität
+
+Für „Wassertemperatur gegen langjähriges Mittel" braucht es zwei Dinge, die
+keine einzelne Quelle gleich gut liefert: **Jahrzehnte** für den Normalwert und
+**Aktualität** für den Vergleichswert.
+
+| | [eHYD](https://ehyd.gv.at/) | [Hydrographischer Dienst Kärnten](https://hydrographie.ktn.gv.at/gewasser/seen-wassertemperatur) |
+|---|---|---|
+| Betreiber | BMLUK, Hydrographie Österreich | Amt der Kärntner Landesregierung, Abt. 12 |
+| Reichweite | gesamte Beobachtungsdauer der Messstelle | aktuelles Messfenster |
+| Auflösung | **WT-Monatsmittel** | 30-Minuten-Werte |
+| Format | CSV (ISO-8859-1, Dezimalkomma) | JSON/GeoJSON |
+| Rolle hier | Normalwert **und** Vergleich | Tagesaktualität |
+
+Beide sind amtlich, dauerhaft betrieben und über
+[data.gv.at](https://www.data.gv.at/datasets/bf851ec0-94cb-43ca-83cb-a9dc96ddea51?locale=de)
+unter CC-BY 4.0 veröffentlicht. Als Zweitmeinung zu einzelnen Jahren gibt es
+das [Hydrographische Jahrbuch](https://wasser.umweltbundesamt.at/hydjb/)
+(ab 2014; [Archiv 1893–2013](https://wasser.gv.at/hydjb/historic/historic.xhtml))
+und für Kärnten die Auswertung
+[„Wasser in Kärnten 1991–2020"](https://hydrographie.ktn.gv.at/informationen?nid=10) —
+genau die Normalperiode, die diese App als Vorgabe verwendet.
+
+### `ehyd` — eingerichtet und einsatzbereit
+
+Seemessstellen liegen im Bereich Oberflächenwasser (Feld `owf`). Die
+HZB-Nummern der Kärntner Seen sind in `config/stations.json` bereits
+eingetragen:
+
+| See | HZB | Messstelle |
+|---|---|---|
+| Wörther See | 212985 | Pörtschach am Wörther See |
+| Ossiacher See | 213272 | St. Andrä-OWF |
+| Millstätter See | 212514 | Millstatt (See) |
+| Faaker See | 212795 | Faak (Bundessportheim) |
+| Klopeiner See | 213348 | Unterburg |
+| Weißensee | 212563 | Techendorf |
+| Keutschacher See | 213488 | Keutschach (See) |
+| Längsee | 213801 | St. Georgen |
+| Pressegger See | 212746 | Presseggen |
+
+Für Turnersee, Afritzer See und Magdalensee gibt es keine eigene
+eHYD-Oberflächenwassermessstelle; sie bleiben leer und werden übersprungen.
+
+Der Abruf läuft über
+`https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id=<HZB>&file=<n>`. Die
+Dateinummer `n` ist je Messstelle verschieden — welche Dateien es gibt, hängt
+vom Messstellentyp ab. Sie wird deshalb **nicht geraten, sondern zur Laufzeit
+ermittelt**: eHYD nennt den Dateinamen im Header `Content-Disposition`, und
+gesucht wird die Datei, deren Name auf die Wassertemperatur verweist
+(`WT-Monatsmittel-<HZB>.csv`).
+
+```bash
+python -m seetemp --source ehyd --year 2026
+```
+
+**Konsequenz aus der Auflösung:** eHYD führt die Wassertemperatur als
+Monatsmittel. Die App erkennt das am Abstand der Zeitstempel, bildet den
+Normalwert dann je Monat statt je Kalendertag und lässt die Badetage-Bilanz
+aus — einzelne Badetage lassen sich aus einem Monatsmittel nicht zählen. Wer
+tägliche Werte braucht, bekommt sie beim Hydrographischen Dienst Kärnten oder
+auf Anfrage bei `abt12.post@ktn.gv.at`.
+
+### `ktn` — aktuelle Werte des Landes Kärnten
+
+Rund 250 Messstellen, 30-Minuten-Takt, ausgegeben als JSON/GeoJSON. Der
+Adapter liest GeoJSON (`features[].properties`), ArcGIS-JSON
+(`features[].attributes`) und schlichte Objektlisten.
+
+Die Dienst-URL ist in `config/stations.json` unter `ktn.url` einzutragen —
+sie steht bewusst nicht fest verdrahtet im Code, weil sie serverseitig
+geändert werden kann. Zu finden ist sie über den Datensatz
+[„Hydrographische Daten Kärnten"](https://www.data.gv.at/datasets/bf851ec0-94cb-43ca-83cb-a9dc96ddea51?locale=de)
+auf data.gv.at. Das alte Portal `info.ktn.gv.at` wurde am 10.06.2021
+abgeschaltet; Verweise darauf sind veraltet.
+
+```bash
+python -m seetemp --source ktn
+```
+
+### `csv` — eigene Messreihen
+
+```csv
+lake_key,date,temp_c
+woerthersee,2024-07-01,24.8
+woerthersee,2024-07-02,25.1
+```
+
+Deutsche Spaltennamen (`see`, `datum`, `temperatur`) werden ebenfalls erkannt.
+Bei Monatsmitteln `--resolution monthly` mitgeben.
 
 ### `demo` (Vorgabe) — synthetisch, netzunabhängig
 
@@ -71,44 +163,17 @@ Hinweis `DEMO-DATEN`, und die Quellenzeile weist sie als synthetisch aus. Der
 Modus ist dazu da, die Auswertung ohne Netzzugang vorführen und testen zu
 können — nicht dazu, Aussagen über echte Seen zu treffen.
 
-### `ehyd` — Hydrographischer Dienst Österreich
-
-Der Weg zu echten langen Reihen. eHYD (`ehyd.gv.at`) exportiert Tageswerte
-hydrographischer Messstellen als CSV; die App liest dieses Format
-(ISO-8859-1, Dezimalkomma, `Lücke` als Fehlkennung).
-
-Vor dem ersten Lauf muss in `config/stations.json` unter `ehyd.stations` je
-See die HZB-Nummer der zugehörigen Seemessstelle eingetragen werden. Die
-ausgelieferte Datei enthält bewusst **leere** Felder: eine geratene Nummer
-würde stillschweigend die falsche Messstelle auswerten, deshalb bricht die
-App bei leerer Konfiguration mit einem Hinweis ab statt zu raten. Auch die
-URL-Vorlage ist konfigurierbar, falls sich das Exportschema ändert.
-
-### `kagis` — aktuelle Seetemperaturen des Landes Kärnten
-
-Liest einen ArcGIS-Feature-Dienst mit den tagesaktuellen
-Oberflächentemperaturen. Dienst-URL, Feldnamen und die Zuordnung
-Seename → Schlüssel stehen ebenfalls in `config/stations.json`. Diese Quelle
-liefert nur den jüngsten Wert je See — sie ergänzt eHYD, ersetzt es nicht,
-denn für ein langjähriges Mittel braucht es die lange Reihe.
-
-### `csv` — eigene Messreihen
-
-```csv
-lake_key,date,temp_c
-woerthersee,2024-07-01,24.8
-woerthersee,2024-07-02,25.1
-```
-
-Deutsche Spaltennamen (`see`, `datum`, `temperatur`) werden ebenfalls erkannt.
-
 ## Methodik
 
-* **Normalwert.** Für jeden Kalendertag wird das Mittel aller Werte gebildet,
+* **Normalwert (Tageswerte).** Für jeden Kalendertag wird das Mittel aller Werte gebildet,
   die im Bezugszeitraum in ein Fenster von ±7 Tagen um diesen Kalendertag
   fallen. Das Fenster ist zyklisch, der 1. Jänner greift also auch auf den
   Dezember zurück. So verschwindet die Tag-zu-Tag-Zufälligkeit einer einzelnen
   Reihe, ohne den Jahresgang zu verschleifen.
+* **Normalwert (Monatsmittel).** Liefert die Quelle nur Monatswerte — wie
+  eHYD —, ist der Monat selbst die Stützstelle; ein gleitendes Fenster wäre
+  dort sinnlos. Die App erkennt die Auflösung am Abstand der Zeitstempel,
+  `--resolution` überschreibt sie.
 * **Bandbreite.** Neben dem Mittel werden Standardabweichung, 10./90.
   Perzentil und die Extremwerte des Bezugszeitraums geführt. Erst dadurch wird
   eine einzelne Abweichung einordenbar: +1 K im März heisst etwas anderes als
@@ -130,9 +195,9 @@ Deutsche Spaltennamen (`see`, `datum`, `temperatur`) werden ebenfalls erkannt.
 python -m unittest discover -s tests
 ```
 
-Geprüft werden die Schaltjahr-Ausrichtung, das zyklische Fenster, die
-Abweichungsrechnung, die Beschneidung des angebrochenen Jahres, die
-Reproduzierbarkeit des Demomodells und der eHYD-Parser.
+16 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
+Demomodells, eHYD-Parser und die Erkennung der Temperaturdatei.
 
 ## Aufbau
 
@@ -145,8 +210,8 @@ seetemp/
   cli.py            Kommandozeile
   sources/
     base.py         gemeinsamer Datenvertrag
-    ehyd.py         Hydrographischer Dienst Österreich
-    kagis.py        Land Kärnten, aktuelle Werte
+    ehyd.py         eHYD -- amtliche lange Reihen (Monatsmittel)
+    ktn.py          Hydrographischer Dienst Kärnten, aktuelle Werte
     csvfile.py      eigene CSV-Dateien
     synthetic.py    Demomodell (synthetisch)
 config/stations.json  Stationszuordnung für die Online-Quellen

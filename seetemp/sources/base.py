@@ -27,9 +27,13 @@ class Dataset:
     frame: pd.DataFrame
     source: str
     is_demo: bool = False
+    #: "daily" oder "monthly" -- steuert, wie der Normalwert gebildet wird.
+    resolution: str = "daily"
     notes: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        if self.resolution not in ("daily", "monthly"):
+            raise ValueError(f"Unbekannte Auflösung: {self.resolution!r}")
         missing = [c for c in COLUMNS if c not in self.frame.columns]
         if missing:
             raise ValueError(f"Quelle {self.source!r}: Spalten fehlen: {missing}")

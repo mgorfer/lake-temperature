@@ -26,47 +26,90 @@ DEFAULT_REFERENCE = (1991, 2020)
 DEFAULT_WINDOW = 7
 #: Mindestzahl an Werten je Kalendertag-Fenster, damit ein Normalwert gilt.
 MIN_SAMPLES = 20
+#: Bei Monatsmitteln ist ein Wert ein ganzer Monat -- entsprechend weniger.
+MIN_SAMPLES_MONTHLY = 10
 
 
 def add_daynumber(frame: pd.DataFrame) -> pd.DataFrame:
-    """Ergänzt ``year`` und ``doy`` (1..365, schaltjahrbereinigt)."""
+    """Ergänzt ``year``, ``month`` und ``doy`` (1..365, schaltjahrbereinigt)."""
     dates = pd.DatetimeIndex(frame["date"])
     doy = np.asarray(dates.dayofyear)
     leap = np.asarray(dates.is_leap_year)
     return frame.assign(
         year=np.asarray(dates.year),
+        month=np.asarray(dates.month),
         doy=doy - (leap & (doy >= 60)).astype(int),
     )
 
 
 @dataclass
 class Climatology:
-    """Langjähriges Tagesmittel je See."""
+    """Langjähriger Normalwert je See -- je Kalendertag oder je Monat."""
 
-    table: pd.DataFrame  # lake_key, doy, mean, sd, p10, p90, min, max, n
+    table: pd.DataFrame  # lake_key, <key>, mean, sd, p10, p90, min, max, n
     ref_start: int
     ref_end: int
     window: int
+    resolution: str = "daily"
+
+    @property
+    def key(self) -> str:
+        """Spalte, über die Messwert und Normalwert zusammenfinden."""
+        return "doy" if self.resolution == "daily" else "month"
 
     @property
     def label(self) -> str:
         return f"{self.ref_start}–{self.ref_end}"
 
+    @property
+    def method(self) -> str:
+        if self.resolution == "daily":
+            return f"gleitendes ±{self.window}-Tage-Fenster"
+        return "Monatsmittel"
+
     def coverage(self) -> pd.DataFrame:
-        """Je See: Anzahl belegter Kalendertage und Jahre im Bezugszeitraum."""
+        """Je See: Anzahl belegter Stützstellen und Werte je Stützstelle."""
         return (
             self.table.groupby("lake_key")
-            .agg(tage=("doy", "size"), werte_min=("n", "min"), werte_median=("n", "median"))
+            .agg(stuetzstellen=(self.key, "size"), werte_min=("n", "min"),
+                 werte_median=("n", "median"))
             .reset_index()
         )
+
+
+def _summarise(pool: np.ndarray, lake_key: str, key: str, value: int) -> dict:
+    return {
+        "lake_key": lake_key,
+        key: value,
+        "mean": pool.mean(),
+        "sd": pool.std(ddof=1) if pool.size > 1 else 0.0,
+        "p10": np.percentile(pool, 10),
+        "p90": np.percentile(pool, 90),
+        "min": pool.min(),
+        "max": pool.max(),
+        "n": pool.size,
+    }
 
 
 def build(
     frame: pd.DataFrame,
     reference: tuple[int, int] = DEFAULT_REFERENCE,
     window: int = DEFAULT_WINDOW,
-    min_samples: int = MIN_SAMPLES,
+    min_samples: int | None = None,
+    resolution: str = "daily",
 ) -> Climatology:
+    """Normalwerte für den Bezugszeitraum.
+
+    ``resolution="daily"`` bildet je Kalendertag ein gleitendes Fenster über
+    alle Bezugsjahre. ``resolution="monthly"`` ist der Weg für Quellen, die
+    nur Monatsmittel liefern (etwa eHYD): dort ist der Monat selbst die
+    Stützstelle, ein Fenster wäre sinnlos.
+    """
+    if resolution not in ("daily", "monthly"):
+        raise ValueError(f"Unbekannte Auflösung: {resolution!r}")
+    if min_samples is None:
+        min_samples = MIN_SAMPLES if resolution == "daily" else MIN_SAMPLES_MONTHLY
+
     ref_start, ref_end = reference
     data = add_daynumber(frame)
     ref = data[(data["year"] >= ref_start) & (data["year"] <= ref_end)]
@@ -78,39 +121,35 @@ def build(
 
     rows = []
     for lake_key, group in ref.groupby("lake_key", sort=True):
-        by_doy = {d: g.to_numpy() for d, g in group.groupby("doy")["temp_c"]}
-        for doy in range(1, 366):
-            offsets = ((np.arange(doy - window, doy + window + 1) - 1) % 365) + 1
-            pool = np.concatenate([by_doy[o] for o in offsets if o in by_doy] or [np.array([])])
-            if pool.size < min_samples:
-                continue
-            rows.append(
-                {
-                    "lake_key": lake_key,
-                    "doy": doy,
-                    "mean": pool.mean(),
-                    "sd": pool.std(ddof=1) if pool.size > 1 else 0.0,
-                    "p10": np.percentile(pool, 10),
-                    "p90": np.percentile(pool, 90),
-                    "min": pool.min(),
-                    "max": pool.max(),
-                    "n": pool.size,
-                }
-            )
+        if resolution == "daily":
+            by_doy = {d: g.to_numpy() for d, g in group.groupby("doy")["temp_c"]}
+            for doy in range(1, 366):
+                offsets = ((np.arange(doy - window, doy + window + 1) - 1) % 365) + 1
+                pool = np.concatenate(
+                    [by_doy[o] for o in offsets if o in by_doy] or [np.array([])]
+                )
+                if pool.size >= min_samples:
+                    rows.append(_summarise(pool, lake_key, "doy", doy))
+        else:
+            for month, values in group.groupby("month")["temp_c"]:
+                pool = values.to_numpy()
+                if pool.size >= min_samples:
+                    rows.append(_summarise(pool, lake_key, "month", int(month)))
 
     if not rows:
+        stelle = "Kalendertag" if resolution == "daily" else "Monat"
         raise SystemExit(
-            f"Im Bezugszeitraum {ref_start}–{ref_end} gibt es an keinem Kalendertag "
+            f"Im Bezugszeitraum {ref_start}–{ref_end} gibt es an keinem {stelle} "
             f"mindestens {min_samples} Werte. Bezugszeitraum verlängern oder "
             "--min-samples senken."
         )
-    return Climatology(pd.DataFrame(rows), ref_start, ref_end, window)
+    return Climatology(pd.DataFrame(rows), ref_start, ref_end, window, resolution)
 
 
 def with_anomaly(frame: pd.DataFrame, clim: Climatology) -> pd.DataFrame:
     """Verknüpft Messwerte mit dem Normalwert und rechnet die Abweichung aus."""
     data = add_daynumber(frame)
-    merged = data.merge(clim.table, on=["lake_key", "doy"], how="left")
+    merged = data.merge(clim.table, on=["lake_key", clim.key], how="left")
     merged["anomaly"] = merged["temp_c"] - merged["mean"]
     with np.errstate(divide="ignore", invalid="ignore"):
         merged["z"] = merged["anomaly"] / merged["sd"].replace(0.0, np.nan)
@@ -121,7 +160,7 @@ def season_summary(
     annotated: pd.DataFrame, year: int, months: tuple[int, int] = (5, 9)
 ) -> pd.DataFrame:
     """Mittlere Abweichung je See in der Badesaison eines Jahres."""
-    month = pd.DatetimeIndex(annotated["date"]).month
+    month = annotated["month"]
     mask = (
         (annotated["year"] == year)
         & (month >= months[0])
@@ -149,7 +188,6 @@ def monthly_anomaly(annotated: pd.DataFrame, year: int) -> pd.DataFrame:
     subset = annotated[(annotated["year"] == year) & annotated["anomaly"].notna()].copy()
     if subset.empty:
         return pd.DataFrame()
-    subset["month"] = pd.DatetimeIndex(subset["date"]).month
     return subset.pivot_table(index="lake_key", columns="month", values="anomaly", aggfunc="mean")
 
 

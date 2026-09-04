@@ -74,11 +74,18 @@ def _watermark(fig, th, active: bool) -> None:
     )
 
 
-def _month_axis(ax, th) -> None:
-    ax.set_xlim(1, 365)
-    ax.set_xticks([s + 14 for s in MONTH_STARTS])
-    ax.set_xticklabels(MONTH_LABELS)
-    ax.set_xticks(MONTH_STARTS, minor=True)
+def _month_axis(ax, th, resolution: str = "daily") -> None:
+    """Jahresachse -- entweder 365 Tage oder 12 Monatsstützstellen."""
+    if resolution == "daily":
+        ax.set_xlim(1, 365)
+        ax.set_xticks([s + 14 for s in MONTH_STARTS])
+        ax.set_xticklabels(MONTH_LABELS)
+        ax.set_xticks(MONTH_STARTS, minor=True)
+    else:
+        ax.set_xlim(0.6, 12.4)
+        ax.set_xticks(range(1, 13))
+        ax.set_xticklabels(MONTH_LABELS)
+        ax.set_xticks(np.arange(0.5, 13, 1), minor=True)
     ax.grid(False, which="major", axis="x")
     ax.grid(True, which="minor", axis="x", color=th.grid, linewidth=0.7)
 
@@ -118,10 +125,11 @@ def lake_season(
     out: Path,
 ) -> Path | None:
     lake = BY_KEY[lake_key]
-    norm = clim.table[clim.table["lake_key"] == lake_key].sort_values("doy")
+    key = clim.key
+    norm = clim.table[clim.table["lake_key"] == lake_key].sort_values(key)
     current = annotated[
         (annotated["lake_key"] == lake_key) & (annotated["year"] == year)
-    ].sort_values("doy")
+    ].sort_values(key)
     if norm.empty or current.empty:
         return None
 
@@ -129,7 +137,7 @@ def lake_season(
     ax = fig.add_axes([0.068, 0.105, 0.90, 0.655])
     _despine(ax, th)
 
-    d, m = norm["doy"].to_numpy(), norm["mean"].to_numpy()
+    d, m = norm[key].to_numpy(), norm["mean"].to_numpy()
     ax.fill_between(d, norm["min"], norm["max"], color=th.band, alpha=th.band_outer, linewidth=0,
                     zorder=1)
     ax.fill_between(d, norm["p10"], norm["p90"], color=th.band, alpha=th.band_inner, linewidth=0,
@@ -137,8 +145,8 @@ def lake_season(
     ax.plot(d, m, color=th.text_secondary, linewidth=1.6, linestyle=(0, (4.5, 2.4)), zorder=4)
 
     # Aktuelle Reihe auf das Normalwertraster legen, damit die Flächen passen.
-    joined = current[["doy", "temp_c"]].merge(norm[["doy", "mean"]], on="doy", how="inner")
-    cd = joined["doy"].to_numpy()
+    joined = current[[key, "temp_c"]].merge(norm[[key, "mean"]], on=key, how="inner")
+    cd = joined[key].to_numpy()
     ct = joined["temp_c"].to_numpy()
     cm = joined["mean"].to_numpy()
     ax.fill_between(cd, cm, ct, where=ct >= cm, color=th.warm, alpha=th.fill_alpha, linewidth=0,
@@ -151,7 +159,8 @@ def lake_season(
     if len(cd):
         ax.scatter([cd[-1]], [ct[-1]], s=42, color=th.ink, zorder=6,
                    edgecolor=th.surface, linewidth=2)
-        right_edge = cd[-1] > 322  # Beschriftung sonst am Rand abgeschnitten
+        # Beschriftung sonst am rechten Rand abgeschnitten
+        right_edge = cd[-1] > (322 if key == "doy" else 10.6)
         ax.annotate(
             f"{num(ct[-1])} °C",
             (cd[-1], ct[-1]), textcoords="offset points",
@@ -162,7 +171,7 @@ def lake_season(
     ax.set_ylabel("Wassertemperatur (°C)")
     ax.set_ylim(bottom=0)
     de_axis(ax, "y", digits=0)
-    _month_axis(ax, th)
+    _month_axis(ax, th, clim.resolution)
 
     handles = [
         Line2D([], [], color=th.ink, linewidth=2, label=f"Jahresgang {year}"),
@@ -177,19 +186,24 @@ def lake_season(
                labelcolor=th.text_secondary, handlelength=2.4, columnspacing=1.6,
                borderpad=0.0, handletextpad=0.7, labelspacing=0.55)
 
-    season = current[current["date"].dt.month.between(5, 9)]
+    season = current[current["month"].between(5, 9)]
     dev = season["anomaly"].mean() if not season.empty else float("nan")
     last = current.iloc[-1]
+    if clim.resolution == "daily":
+        stand, normal = f"Letzter Wert {long_date(last['date'])}", "Tagesnormalwert"
+    else:
+        stand = f"Letzter Monat {MONTH_NAMES[last['month'] - 1]} {last['date'].year}"
+        normal = "Monatsnormalwert"
     subtitle = (
         f"{lake.altitude_m} m Seehöhe · {num(lake.area_km2, 2)} km² · "
         f"max. {lake.max_depth_m} m tief\n"
-        f"Letzter Wert {long_date(last['date'])}: {num(last['temp_c'])} °C "
-        f"({num(last['anomaly'], signed=True)} K gegenüber dem Tagesnormalwert)"
+        f"{stand}: {num(last['temp_c'])} °C "
+        f"({num(last['anomaly'], signed=True)} K gegenüber dem {normal})"
         + (f" · Saisonmittel Mai–September: {num(dev, signed=True)} K"
            if not math.isnan(dev) else "")
     )
     _titleblock(fig, th, f"{lake.name} — {year} im Vergleich zum Mittel {clim.label}", subtitle)
-    _footer(fig, th, f"Quelle: {source} · Normalwert: gleitendes ±{clim.window}-Tage-Fenster "
+    _footer(fig, th, f"Quelle: {source} · Normalwert: {clim.method} "
                      f"über {clim.ref_start}–{clim.ref_end}")
     _watermark(fig, th, is_demo)
     return _save(fig, out)
@@ -351,8 +365,7 @@ def swim_days(days: pd.DataFrame, clim, year: int, threshold: float, th, source,
 
 def anomaly_trend(annotated: pd.DataFrame, clim, th, source, is_demo, out: Path,
                   months: tuple[int, int] = (5, 9)):
-    month = pd.DatetimeIndex(annotated["date"]).month
-    subset = annotated[month.isin(range(months[0], months[1] + 1))
+    subset = annotated[annotated["month"].between(months[0], months[1])
                        & annotated["anomaly"].notna()]
     if subset.empty:
         return None
@@ -361,7 +374,9 @@ def anomaly_trend(annotated: pd.DataFrame, clim, th, source, is_demo, out: Path,
         .agg(anomaly=("anomaly", "mean"), tage=("anomaly", "size"))
         .reset_index()
     )
-    series = series[series["tage"] >= 120]
+    # Eine Saison gilt als belegt, wenn genug Stützstellen darin liegen.
+    minimum = 120 if clim.resolution == "daily" else 4
+    series = series[series["tage"] >= minimum]
     keys = sorted(series["lake_key"].unique(), key=lambda k: BY_KEY[k].name)
     if not keys:
         return None

@@ -1,44 +1,64 @@
 {
   "_hinweis": [
     "Zuordnung See -> Messstelle für die Online-Quellen.",
-    "Die HZB-Nummern sind BEWUSST leer: sie müssen einmalig im eHYD-",
-    "Messstellenverzeichnis (ehyd.gv.at) für die jeweilige Seemessstelle",
-    "nachgeschlagen und hier eingetragen werden. Erfundene Nummern würden",
-    "stillschweigend falsche Reihen liefern, deshalb bricht die App bei",
-    "leerer Konfiguration mit einem Hinweis ab.",
-    "Ebenso ist die ArcGIS-Dienst-URL des Landes Kärnten einzutragen und",
-    "die Feldnamen sind an den tatsächlichen Dienst anzupassen."
+    "",
+    "ehyd: HZB-Nummern der Seemessstellen aus dem amtlichen eHYD-Verzeichnis",
+    "der Oberflächenwassermessstellen (Feld owf). Zu jeder Messstelle mit",
+    "Temperaturaufzeichnung gehört die Datei WT-Monatsmittel; die Dateinummer",
+    "wird zur Laufzeit über den Content-Disposition-Header ermittelt und ist",
+    "deshalb hier nicht einzutragen.",
+    "",
+    "Für Turnersee, Afritzer See und Magdalensee gibt es keine eigene",
+    "eHYD-Oberflächenwassermessstelle -- sie bleiben leer und werden",
+    "übersprungen.",
+    "",
+    "ktn: aktuelle Werte des Hydrographischen Dienstes Kärnten. Die URL des",
+    "JSON/GeoJSON-Dienstes ist einzutragen (siehe README); das alte Portal",
+    "info.ktn.gv.at wurde am 10.06.2021 abgeschaltet."
   ],
   "ehyd": {
-    "url_template": "https://ehyd.gv.at/eHYD/MessstellenExtraData/wt?id={hzb}&file=2",
+    "url_template": "https://ehyd.gv.at/eHYD/MessstellenExtraData/owf?id={hzb}&file={file}",
     "stations": {
-      "woerthersee": "",
-      "ossiacher_see": "",
-      "millstaetter_see": "",
-      "faaker_see": "",
-      "klopeiner_see": "",
-      "weissensee": "",
-      "keutschacher_see": "",
-      "laengsee": "",
+      "woerthersee": "212985",
+      "ossiacher_see": "213272",
+      "millstaetter_see": "212514",
+      "faaker_see": "212795",
+      "klopeiner_see": "213348",
+      "weissensee": "212563",
+      "keutschacher_see": "213488",
+      "laengsee": "213801",
+      "pressegger_see": "212746",
       "turnersee": "",
-      "pressegger_see": "",
       "afritzer_see": "",
       "magdalensee": ""
+    },
+    "station_names": {
+      "woerthersee": "Pörtschach am Wörther See",
+      "ossiacher_see": "St. Andrä-OWF",
+      "millstaetter_see": "Millstatt (See)",
+      "faaker_see": "Faak (Bundessportheim)",
+      "klopeiner_see": "Unterburg",
+      "weissensee": "Techendorf",
+      "keutschacher_see": "Keutschach (See)",
+      "laengsee": "St. Georgen",
+      "pressegger_see": "Presseggen"
     }
   },
-  "kagis": {
+  "ktn": {
     "url": "",
     "fields": {
       "name": "SEENAME",
-      "temperature": "TEMPERATUR",
+      "temperature": "WT",
       "date": "MESSDATUM"
     },
     "name_to_lake_key": {
+      "Wörther See": "woerthersee",
       "Wörthersee": "woerthersee",
       "Ossiacher See": "ossiacher_see",
       "Millstätter See": "millstaetter_see",
       "Faaker See": "faaker_see",
       "Klopeiner See": "klopeiner_see",
+      "Weißensee": "weissensee",
       "Weissensee": "weissensee",
       "Keutschacher See": "keutschacher_see",
       "Längsee": "laengsee",

@@ -36,7 +36,7 @@ LAKES: tuple[Lake, ...] = (
     Lake("millstaetter_see", "Millstätter See", 588, 13.28, 141, 46.797, 13.573),
     Lake("faaker_see", "Faaker See", 554, 2.20, 30, 46.573, 13.913),
     Lake("klopeiner_see", "Klopeiner See", 446, 1.10, 48, 46.617, 14.573),
-    Lake("weissensee", "Weissensee", 929, 6.50, 99, 46.716, 13.294),
+    Lake("weissensee", "Weißensee", 929, 6.50, 99, 46.716, 13.294),
     Lake("keutschacher_see", "Keutschacher See", 506, 1.32, 16, 46.583, 14.201),
     Lake("laengsee", "Längsee", 548, 0.75, 21, 46.774, 14.443),
     Lake("turnersee", "Turnersee", 465, 0.44, 13, 46.590, 14.531),
