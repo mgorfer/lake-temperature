@@ -1,0 +1,51 @@
+{
+  "_hinweis": [
+    "Zuordnung See -> Messstelle für die Online-Quellen.",
+    "Die HZB-Nummern sind BEWUSST leer: sie müssen einmalig im eHYD-",
+    "Messstellenverzeichnis (ehyd.gv.at) für die jeweilige Seemessstelle",
+    "nachgeschlagen und hier eingetragen werden. Erfundene Nummern würden",
+    "stillschweigend falsche Reihen liefern, deshalb bricht die App bei",
+    "leerer Konfiguration mit einem Hinweis ab.",
+    "Ebenso ist die ArcGIS-Dienst-URL des Landes Kärnten einzutragen und",
+    "die Feldnamen sind an den tatsächlichen Dienst anzupassen."
+  ],
+  "ehyd": {
+    "url_template": "https://ehyd.gv.at/eHYD/MessstellenExtraData/wt?id={hzb}&file=2",
+    "stations": {
+      "woerthersee": "",
+      "ossiacher_see": "",
+      "millstaetter_see": "",
+      "faaker_see": "",
+      "klopeiner_see": "",
+      "weissensee": "",
+      "keutschacher_see": "",
+      "laengsee": "",
+      "turnersee": "",
+      "pressegger_see": "",
+      "afritzer_see": "",
+      "magdalensee": ""
+    }
+  },
+  "kagis": {
+    "url": "",
+    "fields": {
+      "name": "SEENAME",
+      "temperature": "TEMPERATUR",
+      "date": "MESSDATUM"
+    },
+    "name_to_lake_key": {
+      "Wörthersee": "woerthersee",
+      "Ossiacher See": "ossiacher_see",
+      "Millstätter See": "millstaetter_see",
+      "Faaker See": "faaker_see",
+      "Klopeiner See": "klopeiner_see",
+      "Weissensee": "weissensee",
+      "Keutschacher See": "keutschacher_see",
+      "Längsee": "laengsee",
+      "Turnersee": "turnersee",
+      "Pressegger See": "pressegger_see",
+      "Afritzer See": "afritzer_see",
+      "Magdalensee": "magdalensee"
+    }
+  }
+}
