@@ -26,6 +26,19 @@ import time
 
 import requests
 
+#: Aus dem Katalog von data.gv.at gewonnen (Lauf vom 04.09.2026). Beide
+#: Protokolle, weil ein Zeitablauf auf 443 auch heissen kann, dass der Dienst
+#: nur auf 80 hört.
+KNOWN_SERVICES = [
+    "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json",
+    "http://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json",
+    "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see_lite.json",
+    "http://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see_lite.json",
+    "https://wasser.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json",
+    "http://hydrographie.ktn.gv.at/",
+    "https://www.ktn.gv.at/",
+]
+
 DATASET = "bf851ec0-94cb-43ca-83cb-a9dc96ddea51"  # Hydrographische Daten Kärnten
 BERICHTE = "8ce097dd-a094-4a89-ad04-83a8c93f5ec8"  # Hydrographie öffentliche Berichte
 
@@ -167,7 +180,21 @@ def read_pdf(url: str) -> None:
 def main() -> int:
     candidates: list[str] = []
 
-    out("### API-Formen")
+    # Zuerst die bereits bekannten Adressen -- das ist die eigentliche Frage.
+    out("### Bekannte Dienstadressen")
+    for url in (sys.argv[1:] or KNOWN_SERVICES):
+        out(f"\n{url}")
+        response = get(url)
+        if response is not None and response.status_code == 200:
+            out("  ERREICHBAR")
+            if "json" in response.headers.get("content-type", "").lower():
+                candidates.append(url)
+    if sys.argv[1:]:
+        for url in candidates:
+            inspect_json(url)
+        return 0
+
+    out("\n\n### API-Formen")
     for template in API_CANDIDATES:
         url = template.format(id=DATASET)
         out(f"\n{url}")
