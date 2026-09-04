@@ -22,6 +22,7 @@ import io
 import json
 import re
 import sys
+import time
 
 import requests
 
@@ -39,7 +40,21 @@ PAGE_CANDIDATES = [
     "https://www.data.gv.at/datasets/{id}?locale=de",
     "https://www.data.gv.at/katalog/dataset/{id}",
 ]
-TIMEOUT = 45
+#: (Verbindung, Antwort). Knapp gehalten: eine Sonde, die hängt, ist wertlos --
+#: sie soll berichten, was erreichbar ist, nicht auf Unerreichbares warten.
+TIMEOUT = (5, 12)
+#: Gesamtbudget. Danach bricht die Sonde ab und gibt aus, was sie hat.
+BUDGET_S = 240
+_START = time.monotonic()
+
+
+def budget_left() -> float:
+    return BUDGET_S - (time.monotonic() - _START)
+
+
+def out(text: str = "") -> None:
+    """Sofort ausgeben -- sonst steht bei einem Abbruch nichts im Protokoll."""
+    print(text, flush=True)
 URL_PATTERN = re.compile(r"https?://[^\s\"'<>\\)]+")
 #: Adressen, die als Datenschnittstelle in Frage kommen.
 INTERESTING = re.compile(r"(ktn\.gv\.at|\.json|\.geojson|\.pdf|arcgis|wfs|ows)", re.I)
@@ -48,13 +63,16 @@ BORING = re.compile(r"(w3\.org|schema\.org|creativecommons|data\.gv\.at/(css|js|
 
 
 def get(url: str) -> requests.Response | None:
+    if budget_left() <= 0:
+        out("  (Zeitbudget aufgebraucht, übersprungen)")
+        return None
     try:
         response = requests.get(url, timeout=TIMEOUT)
     except requests.RequestException as exc:
-        print(f"  {exc.__class__.__name__}: {exc}")
+        out(f"  {exc.__class__.__name__}: {exc}")
         return None
     kind = response.headers.get("content-type", "?").split(";")[0]
-    print(f"  HTTP {response.status_code}  {kind}  {len(response.content)} Bytes")
+    out(f"  HTTP {response.status_code}  {kind}  {len(response.content)} Bytes")
     return response
 
 
@@ -85,16 +103,19 @@ def describe(value, depth: int = 0) -> str:
 
 
 def inspect_json(url: str) -> bool:
-    print(f"\n--- {url}")
+    out(f"\n--- {url}")
     response = get(url)
     if response is None or response.status_code != 200:
+        return False
+    if "json" not in response.headers.get("content-type", "").lower():
+        out("  kein JSON-Inhaltstyp, übersprungen")
         return False
     try:
         data = response.json()
     except ValueError:
-        print(f"  kein JSON, Anfang: {response.text[:150]!r}")
+        out(f"  kein JSON, Anfang: {response.text[:150]!r}")
         return False
-    print("  " + describe(data).replace("\n", "\n  "))
+    out("  " + describe(data).replace("\n", "\n  "))
     sample = data
     for _ in range(3):
         if isinstance(sample, dict):
@@ -109,9 +130,9 @@ def inspect_json(url: str) -> bool:
         else:
             break
     if sample is not data:
-        print("  Beispielsatz:")
+        out("  Beispielsatz:")
         text = json.dumps(sample, ensure_ascii=False, indent=1)
-        print("    " + text[:1200].replace("\n", "\n    "))
+        out("    " + text[:1200].replace("\n", "\n    "))
     return True
 
 
@@ -120,7 +141,7 @@ def read_pdf(url: str) -> None:
     try:
         from pypdf import PdfReader
     except ImportError:
-        print("  (pypdf nicht installiert, PDF wird nicht gelesen)")
+        out("  (pypdf nicht installiert, PDF wird nicht gelesen)")
         return
     response = get(url)
     if response is None or response.status_code != 200:
@@ -129,41 +150,41 @@ def read_pdf(url: str) -> None:
         reader = PdfReader(io.BytesIO(response.content))
         text = "\n".join((page.extract_text() or "") for page in reader.pages[:12])
     except Exception as exc:
-        print(f"  PDF nicht lesbar: {exc}")
+        out(f"  PDF nicht lesbar: {exc}")
         return
-    print(f"  {len(reader.pages)} Seiten, {len(text)} Zeichen Text")
+    out(f"  {len(reader.pages)} Seiten, {len(text)} Zeichen Text")
     urls = harvest(text)
     if urls:
-        print("  Adressen in der Dokumentation:")
+        out("  Adressen in der Dokumentation:")
         for u in urls[:25]:
-            print(f"    {u}")
+            out(f"    {u}")
     # Der Fliesstext nennt oft Feldnamen und Beispielaufrufe.
-    print("  Auszug:")
+    out("  Auszug:")
     condensed = re.sub(r"\n{2,}", "\n", text).strip()
-    print("    " + condensed[:2500].replace("\n", "\n    "))
+    out("    " + condensed[:2500].replace("\n", "\n    "))
 
 
 def main() -> int:
     candidates: list[str] = []
 
-    print("### API-Formen")
+    out("### API-Formen")
     for template in API_CANDIDATES:
         url = template.format(id=DATASET)
-        print(f"\n{url}")
+        out(f"\n{url}")
         response = get(url)
         if response is not None and response.status_code == 200:
             candidates += harvest(response.text)
 
-    print("\n\n### Katalogseiten")
+    out("\n\n### Katalogseiten")
     for dataset in (DATASET, BERICHTE):
         for template in PAGE_CANDIDATES:
             url = template.format(id=dataset)
-            print(f"\n{url}")
+            out(f"\n{url}")
             response = get(url)
             if response is not None and response.status_code == 200:
                 found = harvest(response.text)
-                for item in found[:40]:
-                    print(f"    {item}")
+                for item in found[:30]:
+                    out(f"    {item}")
                 candidates += found
 
     unique = []
@@ -174,16 +195,27 @@ def main() -> int:
     pdfs = [u for u in unique if u.lower().endswith(".pdf")]
     jsons = [u for u in unique if not u.lower().endswith((".pdf", ".csv", ".zip"))]
 
-    print("\n\n### Dokumentation")
-    for url in pdfs[:3]:
-        print(f"\n{url}")
+    out("\n\n### Dokumentation")
+    for url in pdfs[:2]:
+        out(f"\n{url}")
         read_pdf(url)
 
-    print("\n\n### Dienste ansehen")
+    out("\n\n### Dienste ansehen")
+    # Zuerst, was nach einem Dienst des Landes aussieht.
+    def rank(url: str) -> tuple[int, int]:
+        u = url.lower()
+        return (0 if "ktn.gv.at" in u else 1,
+                0 if any(k in u for k in ("json", "see", "wasser", "hydro")) else 1)
+
+    jsons.sort(key=rank)
     if not jsons:
-        print("Keine Kandidaten gefunden.")
-    for url in jsons[:12]:
+        out("Keine Kandidaten gefunden.")
+    for url in jsons[:8]:
+        if budget_left() <= 0:
+            out("(Zeitbudget aufgebraucht)")
+            break
         inspect_json(url)
+    out(f"\nRestbudget: {budget_left():.0f}s")
     return 0
 
 

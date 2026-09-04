@@ -20,6 +20,8 @@ jobs:
   erkunden:
     name: Schnittstelle ansehen
     runs-on: ubuntu-latest
+    # Eine Sonde, die hängt, ist wertlos -- lieber unvollständig als endlos.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -38,9 +40,9 @@ jobs:
             echo
             echo '```'
             if [ "$QUELLE" = "ehyd" ]; then
-              python -m seetemp --source ehyd --probe 2>&1 || true
+              python -u -m seetemp --source ehyd --probe 2>&1 || true
             else
-              python tools/probe_ktn.py 2>&1 || true
+              python -u tools/probe_ktn.py 2>&1 || true
             fi
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
