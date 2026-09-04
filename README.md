@@ -36,6 +36,9 @@ divergierende Blau/Rot-Skala mit neutraler Mitte.
 pip install -r requirements.txt
 ```
 
+Am Android-Handy geht das auch — siehe [docs/ANDROID.md](docs/ANDROID.md);
+`./phone.sh` legt die Bilder dort direkt in die Galerie.
+
 ## Verwendung
 
 ```bash
@@ -215,4 +218,6 @@ seetemp/
     csvfile.py      eigene CSV-Dateien
     synthetic.py    Demomodell (synthetisch)
 config/stations.json  Stationszuordnung für die Online-Quellen
+phone.sh              Ein-Befehl-Start für Termux (Android)
+docs/ANDROID.md       Einrichtung am Handy
 ```
