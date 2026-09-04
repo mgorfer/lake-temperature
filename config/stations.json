@@ -34,12 +34,12 @@
       "keutschacher_see": "213488",
       "laengsee": "213801",
       "pressegger_see": "212746",
-      "turnersee": "217331",
-      "afritzer_see": "217257",
+      "turnersee": "",
+      "afritzer_see": "",
       "magdalensee": "",
-      "brennsee": "217273",
-      "goesselsdorfer_see": "213579",
-      "maltschacher_see": "217265",
+      "brennsee": "",
+      "goesselsdorfer_see": "",
+      "maltschacher_see": "",
       "rauschele_see": ""
     },
     "station_names": {
@@ -59,10 +59,17 @@
       "maltschacher_see": "Maltschacher See (Briefelsdorf)"
     },
     "_hinweis": [
-      "Fünf dieser Nummern stammen aus dem Seendienst des Landes Kärnten, der",
-      "die HZB-Nummer je Messstelle mitführt -- im eHYD-Verzeichnis von 2017",
-      "standen sie noch nicht. Ob eHYD dazu auch eine Temperaturreihe hat,",
-      "zeigt: python -m seetemp --source ehyd --probe"
+      "Neun Messstellen führen bei eHYD eine Temperaturreihe (WT-Monatsmittel).",
+      "Am laufenden Dienst geprüft, Lauf vom 04.09.2026.",
+      "",
+      "Ohne Eintrag, weil bei eHYD keine Temperatur abrufbar:",
+      "  Gösselsdorfer See (213579) -- nur Wasserstand",
+      "  Turnersee (217331), Afritzer See (217257), Feldsee/Brennsee (217273),",
+      "  Maltschacher See (217265) -- stellen über eHYD keine Dateien bereit",
+      "  Rauschele See, Magdalensee -- keine HZB-Nummer bekannt",
+      "Aktuelle Werte liefert der Kärntner Dienst für all diese Seen trotzdem.",
+      "",
+      "Nachprüfen: python -m seetemp --source ehyd --probe"
     ]
   },
   "ktn": {

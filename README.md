@@ -133,6 +133,9 @@ Seemessstellen liegen im Bereich Oberflächenwasser (Feld `owf`). Die
 HZB-Nummern der Kärntner Seen sind in `config/stations.json` bereits
 eingetragen:
 
+Neun Seen führen bei eHYD eine Temperaturreihe — am laufenden Dienst
+geprüft, nicht angenommen:
+
 | See | HZB | Messstelle |
 |---|---|---|
 | Wörther See | 212985 | Pörtschach am Wörther See |
@@ -145,8 +148,22 @@ eingetragen:
 | Längsee | 213801 | St. Georgen |
 | Pressegger See | 212746 | Presseggen |
 
-Für Turnersee, Afritzer See und Magdalensee gibt es keine eigene
-eHYD-Oberflächenwassermessstelle; sie bleiben leer und werden übersprungen.
+Sieben weitere Kärntner Seen bleiben ohne langjähriges Mittel, jeder aus
+einem anderen Grund:
+
+| See | HZB | Warum nicht |
+|---|---|---|
+| Gösselsdorfer See | 213579 | eHYD führt nur den Wasserstand |
+| Turnersee | 217331 | stellt über eHYD keine Dateien bereit |
+| Afritzer See | 217257 | dito |
+| Feldsee (Brennsee) | 217273 | dito |
+| Maltschacher See | 217265 | dito |
+| Rauschele See | — | keine HZB-Nummer |
+| Magdalensee | — | keine amtliche Messstelle bekannt |
+
+**Aktuelle Werte liefert der Kärntner Dienst für all diese Seen trotzdem** —
+sie erscheinen in `00_aktuell.png` mit ihrer Temperatur, nur ohne
+Vergleichswert.
 
 Der Abruf läuft über
 `https://ehyd.gv.at/services/MessstellenExtraData/owf?id=<HZB>&file=<n>`.
@@ -164,9 +181,11 @@ python -m seetemp --source ehyd --probe    # nachsehen, was eHYD anbietet
 ```
 
 `--probe` fragt je Messstelle beide URL-Formen ab und berichtet, was
-zurückkommt. Das unterscheidet die drei Fälle, die im Ergebnis gleich
-aussehen, aber ganz verschiedene Reaktionen verlangen: veraltete URL-Vorlage,
-Messstelle ohne Dateien, Messstelle ohne Temperaturreihe. Scheitert der Abruf
+zurückkommt. Das unterscheidet die Fälle, die im Ergebnis gleich aussehen,
+aber ganz verschiedene Reaktionen verlangen: veraltete URL-Vorlage,
+Messstelle ohne Dateien, Messstelle ohne Temperaturreihe. Die Deutung
+berücksichtigt dabei, ob dieselbe Vorlage anderswo funktioniert hat — sonst
+hiesse „keine Dateien" fälschlich „falsche URL". Scheitert der Abruf
 in der GitHub Action, läuft die Diagnose automatisch mit und steht in der
 Zusammenfassung des Laufs.
 
@@ -309,7 +328,7 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-50 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+51 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,

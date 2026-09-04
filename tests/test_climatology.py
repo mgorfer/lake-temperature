@@ -207,6 +207,24 @@ class EhydDiscoveryTest(unittest.TestCase):
         self.assertEqual(found.reason, "no-files")
         self.assertIn("URL-Vorlage", found.explain())
 
+    def test_diagnosis_depends_on_whether_the_template_worked_elsewhere(self):
+        """Sonst schickt die Meldung auf die falsche Fährte.
+
+        Vier Kärntner Messstellen antworten mit HTTP 200 ohne Dateien,
+        während dieselbe Vorlage neun andere einwandfrei bedient. "Falsche
+        URL-Vorlage" wäre dann schlicht verkehrt.
+        """
+        from seetemp.sources.ehyd import Discovery
+
+        leer = Discovery("no-files", status=200)
+        self.assertIn("URL-Vorlage", leer.explain(others_worked=False))
+        self.assertNotIn("URL-Vorlage", leer.explain(others_worked=True))
+        self.assertIn("Messstelle", leer.explain(others_worked=True))
+
+        fehlt = Discovery("http", status=404)
+        self.assertIn("URL-Vorlage", fehlt.explain(others_worked=False))
+        self.assertIn("nicht vorhanden", fehlt.explain(others_worked=True))
+
     def test_default_url_uses_the_current_path(self):
         from seetemp.sources import ehyd
 

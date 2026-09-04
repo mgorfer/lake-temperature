@@ -90,12 +90,24 @@ class Discovery:
     def ok(self) -> bool:
         return self.reason == "ok"
 
-    def explain(self) -> str:
+    def explain(self, others_worked: bool | None = None) -> str:
+        """Warum es nicht geklappt hat.
+
+        ``others_worked`` entscheidet die Deutung von "keine Dateien": hat
+        dieselbe URL-Vorlage anderswo funktioniert, liegt es nicht an ihr,
+        sondern an der Messstelle. Ohne diese Unterscheidung schickt die
+        Meldung auf die falsche Fährte.
+        """
         if self.reason == "ok":
             return f"{self.filename} (file={self.number})"
         if self.reason == "http":
-            return f"HTTP {self.status} — URL-Vorlage prüfen"
+            hint = ("Messstelle in eHYD nicht vorhanden" if others_worked
+                    else "URL-Vorlage prüfen")
+            return f"HTTP {self.status} — {hint}"
         if self.reason == "no-files":
+            if others_worked:
+                return (f"HTTP {self.status}, aber keine Dateien — die Messstelle "
+                        "stellt über eHYD nichts zum Abruf bereit")
             return (f"HTTP {self.status}, aber ohne Dateianhang — vermutlich die "
                     "falsche URL-Vorlage")
         vorhanden = ", ".join(self.files) or "keine"
@@ -148,14 +160,24 @@ def probe(stations: dict[str, str],
     lines = []
     for template in templates:
         lines.append(f"URL-Vorlage: {template}")
+        # Erst alles erheben, dann deuten: ob die Vorlage taugt, zeigt sich
+        # erst im Vergleich aller Messstellen.
+        results: list[tuple[str, str, Discovery | str]] = []
         for lake_key, hzb in stations.items():
             if not str(hzb).strip():
                 continue
             try:
-                result = find_temperature_file(str(hzb).strip(), session, template)
-                lines.append(f"  {lake_key:<18} HZB {hzb}: {result.explain()}")
+                results.append((lake_key, str(hzb),
+                                find_temperature_file(str(hzb).strip(), session, template)))
             except requests.RequestException as exc:
-                lines.append(f"  {lake_key:<18} HZB {hzb}: {exc.__class__.__name__}: {exc}")
+                results.append((lake_key, str(hzb), f"{exc.__class__.__name__}: {exc}"))
+        worked = any(isinstance(r, Discovery) and r.ok for _, _, r in results)
+        for lake_key, hzb, result in results:
+            text = result.explain(worked) if isinstance(result, Discovery) else result
+            lines.append(f"  {lake_key:<18} HZB {hzb}: {text}")
+        if worked:
+            geeignet = sum(1 for _, _, r in results if isinstance(r, Discovery) and r.ok)
+            lines.append(f"  -> {geeignet} von {len(results)} mit Temperaturreihe")
         lines.append("")
     return "\n".join(lines)
 
@@ -184,6 +206,7 @@ def fetch(stations: dict[str, str], url_template: str = DEFAULT_URL_TEMPLATE) ->
 
     parts: list[pd.DataFrame] = []
     notes: list[str] = []
+    failures: list[tuple[str, str, Discovery]] = []
     resolutions: set[str] = set()
     session = requests.Session()
 
@@ -191,7 +214,7 @@ def fetch(stations: dict[str, str], url_template: str = DEFAULT_URL_TEMPLATE) ->
         try:
             found = find_temperature_file(hzb, session, url_template)
             if not found.ok:
-                notes.append(f"{lake_key}: HZB {hzb}: {found.explain()}")
+                failures.append((lake_key, hzb, found))
                 continue
             number, filename = found.number, found.filename
             response = session.get(
@@ -217,6 +240,11 @@ def fetch(stations: dict[str, str], url_template: str = DEFAULT_URL_TEMPLATE) ->
             f"{lake_key}: HZB {hzb}, {filename}, {len(series)} Werte "
             f"({series['date'].min():%m/%Y}–{series['date'].max():%m/%Y})"
         )
+
+    # Deutung erst, wenn feststeht, ob die Vorlage überhaupt trägt.
+    worked = bool(parts)
+    notes += [f"{key}: HZB {hzb}: {found.explain(worked)}"
+              for key, hzb, found in failures]
 
     if not parts:
         raise SystemExit(
