@@ -194,6 +194,7 @@ def run(argv: list[str] | None = None) -> int:
     # langjährige Auswertung gültig -- der Fehlschlag wird aber ausgewiesen.
     current = pd.DataFrame()
     current_source = ""
+    current_caveat = ""
     if args.current == "ktn":
         from .sources import ktn
 
@@ -201,8 +202,13 @@ def run(argv: list[str] | None = None) -> int:
             live = ktn.fetch(load_config(args.config).get("ktn", {}))
             current = attach_normals(live.frame, clim)
             current_source = live.source
+            # Der Dienst weist seine Werte als ungeprüft aus -- das gehört
+            # auf die Grafik, nicht in eine Fussnote im Quelltext.
+            current_caveat = next(
+                (n for n in live.notes if "rohdaten" in n.lower()), "")
             print(f"Aktuelle Werte:  {live.source} — {len(current)} Seen, "
-                  f"Stand {current['date'].max():%d.%m.%Y}")
+                  f"Stand {current['date'].max():%d.%m.%Y}"
+                  + (f"  [{current_caveat}]" if current_caveat else ""))
         except SystemExit as exc:
             skipped.append(f"Aktuelle Werte: {exc}")
             print(f"\nAktuelle Werte nicht verfügbar:\n{exc}\n", file=sys.stderr)
@@ -245,7 +251,7 @@ def run(argv: list[str] | None = None) -> int:
         if not current.empty:
             path = charts.current_status(
                 current, clim, out=target / "00_aktuell.png",
-                measured_source=current_source, **common,
+                measured_source=current_source, caveat=current_caveat, **common,
             )
             if path:
                 written.append(path)
@@ -278,12 +284,17 @@ def run(argv: list[str] | None = None) -> int:
                 "name": lakes_mod.BY_KEY[row["lake_key"]].name,
                 "date": f"{row['date']:%Y-%m-%d}",
                 "temp_c": round(float(row["temp_c"]), 1),
+                "temp_latest": (None if pd.isna(row.get("temp_latest"))
+                                else round(float(row["temp_latest"]), 1)),
+                "latest_at": (None if pd.isna(row.get("latest_at"))
+                              else f"{row['latest_at']:%Y-%m-%d %H:%M}"),
                 "normal_c": None if pd.isna(row["mean"]) else round(float(row["mean"]), 1),
                 "anomaly_k": None if pd.isna(row["anomaly"]) else round(float(row["anomaly"]), 1),
             }
             for _, row in current.sort_values("temp_c", ascending=False).iterrows()
         ]),
         "current_source": current_source,
+        "current_caveat": current_caveat,
         "notes": dataset.notes,
         "files": sorted(str(p.relative_to(args.out)) for p in written),
     }

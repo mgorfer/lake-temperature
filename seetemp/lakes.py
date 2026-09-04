@@ -1,7 +1,8 @@
 """Stammdaten der betrachteten Kärntner Seen.
 
-Die morphometrischen Angaben (Seehöhe, Fläche, maximale Tiefe) sind gerundete,
-öffentlich dokumentierte Näherungswerte. Sie dienen zwei Zwecken:
+Seehöhe und Lage stammen aus dem Seendienst des Hydrographischen Dienstes
+Kärnten (Pegelnullpunkt und Koordinaten der Messstelle). Fläche und maximale
+Tiefe sind gerundete, öffentlich dokumentierte Näherungswerte. Sie dienen zwei Zwecken:
 
 * Beschriftung der Grafiken,
 * Parametrisierung des Offline-Demomodells in ``sources/synthetic.py``.
@@ -31,17 +32,21 @@ class Lake:
 
 
 LAKES: tuple[Lake, ...] = (
-    Lake("woerthersee", "Wörthersee", 439, 19.39, 85, 46.622, 14.152),
-    Lake("ossiacher_see", "Ossiacher See", 501, 10.50, 52, 46.669, 13.983),
-    Lake("millstaetter_see", "Millstätter See", 588, 13.28, 141, 46.797, 13.573),
-    Lake("faaker_see", "Faaker See", 554, 2.20, 30, 46.573, 13.913),
-    Lake("klopeiner_see", "Klopeiner See", 446, 1.10, 48, 46.617, 14.573),
-    Lake("weissensee", "Weißensee", 929, 6.50, 99, 46.716, 13.294),
-    Lake("keutschacher_see", "Keutschacher See", 506, 1.32, 16, 46.583, 14.201),
-    Lake("laengsee", "Längsee", 548, 0.75, 21, 46.774, 14.443),
-    Lake("turnersee", "Turnersee", 465, 0.44, 13, 46.590, 14.531),
-    Lake("pressegger_see", "Pressegger See", 558, 0.55, 14, 46.630, 13.400),
-    Lake("afritzer_see", "Afritzer See", 750, 0.55, 20, 46.727, 13.803),
+    Lake("woerthersee", "Wörthersee", 439, 19.39, 85, 46.6342, 14.1380),
+    Lake("ossiacher_see", "Ossiacher See", 500, 10.50, 52, 46.6519, 13.9029),
+    Lake("millstaetter_see", "Millstätter See", 587, 13.28, 141, 46.8015, 13.5713),
+    Lake("faaker_see", "Faaker See", 554, 2.20, 30, 46.5775, 13.9142),
+    Lake("klopeiner_see", "Klopeiner See", 445, 1.10, 48, 46.6046, 14.5955),
+    Lake("weissensee", "Weißensee", 928, 6.50, 99, 46.7156, 13.2945),
+    Lake("keutschacher_see", "Keutschacher See", 505, 1.32, 16, 46.5884, 14.1681),
+    Lake("laengsee", "Längsee", 549, 0.75, 21, 46.7856, 14.4197),
+    Lake("turnersee", "Turnersee", 479, 0.44, 13, 46.5877, 14.5728),
+    Lake("pressegger_see", "Pressegger See", 559, 0.55, 14, 46.6284, 13.4383),
+    Lake("afritzer_see", "Afritzer See", 747, 0.55, 20, 46.7389, 13.7733),
+    Lake("brennsee", "Feldsee (Brennsee)", 746, 0.66, 26, 46.7726, 13.7476),
+    Lake("goesselsdorfer_see", "Gösselsdorfer See", 467, 0.42, 4, 46.5658, 14.6197),
+    Lake("maltschacher_see", "Maltschacher See", 591, 0.14, 11, 46.7043, 14.1449),
+    Lake("rauschele_see", "Rauschele See", 513, 0.09, 11, 46.5861, 14.2200),
     Lake("magdalensee", "Magdalensee", 505, 0.15, 11, 46.640, 13.930),
 )
 

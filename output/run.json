@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-04T21:20:38+00:00",
+  "generated_at": "2026-09-04T21:34:13+00:00",
   "source": "Demo-Modell (synthetisch)",
   "is_demo": true,
   "resolution": "daily",
@@ -53,16 +53,33 @@
       "name": "Afritzer See"
     },
     {
+      "key": "brennsee",
+      "name": "Feldsee (Brennsee)"
+    },
+    {
+      "key": "goesselsdorfer_see",
+      "name": "Gösselsdorfer See"
+    },
+    {
+      "key": "maltschacher_see",
+      "name": "Maltschacher See"
+    },
+    {
+      "key": "rauschele_see",
+      "name": "Rauschele See"
+    },
+    {
       "key": "magdalensee",
       "name": "Magdalensee"
     }
   ],
   "data_from": "1991-01-01",
   "data_until": "2026-09-04",
-  "values": 156372,
+  "values": 208496,
   "skipped": [],
   "current": [],
   "current_source": "",
+  "current_caveat": "",
   "notes": [
     "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",
     "Enthaltener Trend: +0.35 K/Jahrzehnt ab 1991."
@@ -73,14 +90,18 @@
     "dark/03_badetage_2026.png",
     "dark/04_saisonabweichung_zeitreihe.png",
     "dark/seen/afritzer_see_2026.png",
+    "dark/seen/brennsee_2026.png",
     "dark/seen/faaker_see_2026.png",
+    "dark/seen/goesselsdorfer_see_2026.png",
     "dark/seen/keutschacher_see_2026.png",
     "dark/seen/klopeiner_see_2026.png",
     "dark/seen/laengsee_2026.png",
     "dark/seen/magdalensee_2026.png",
+    "dark/seen/maltschacher_see_2026.png",
     "dark/seen/millstaetter_see_2026.png",
     "dark/seen/ossiacher_see_2026.png",
     "dark/seen/pressegger_see_2026.png",
+    "dark/seen/rauschele_see_2026.png",
     "dark/seen/turnersee_2026.png",
     "dark/seen/weissensee_2026.png",
     "dark/seen/woerthersee_2026.png",
@@ -89,14 +110,18 @@
     "light/03_badetage_2026.png",
     "light/04_saisonabweichung_zeitreihe.png",
     "light/seen/afritzer_see_2026.png",
+    "light/seen/brennsee_2026.png",
     "light/seen/faaker_see_2026.png",
+    "light/seen/goesselsdorfer_see_2026.png",
     "light/seen/keutschacher_see_2026.png",
     "light/seen/klopeiner_see_2026.png",
     "light/seen/laengsee_2026.png",
     "light/seen/magdalensee_2026.png",
+    "light/seen/maltschacher_see_2026.png",
     "light/seen/millstaetter_see_2026.png",
     "light/seen/ossiacher_see_2026.png",
     "light/seen/pressegger_see_2026.png",
+    "light/seen/rauschele_see_2026.png",
     "light/seen/turnersee_2026.png",
     "light/seen/weissensee_2026.png",
     "light/seen/woerthersee_2026.png"

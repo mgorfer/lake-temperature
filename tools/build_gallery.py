@@ -147,6 +147,7 @@ def current_table(run: dict) -> str:
     if not rows:
         return ""
     esc = lambda v: html.escape(str(v))
+    komma = lambda v: f"{v:.1f}".replace(".", ",")
     body = []
     for row in rows:
         deviation = row.get("anomaly_k")
@@ -156,16 +157,20 @@ def current_table(run: dict) -> str:
             css = "warm" if deviation >= 0 else "cool"
             sign = f"{deviation:+.1f}".replace("-", "\u2212").replace(".", ",")
             cell = f'<td class="n {css}">{sign} K</td>'
-        temp = f"{row['temp_c']:.1f}".replace(".", ",")
-        body.append(f"<tr><td>{esc(row['name'])}</td>"
-                    f'<td class="n">{temp} °C</td>{cell}</tr>')
+        latest = row.get("temp_latest")
+        jetzt = f'<td class="n">{komma(latest)} °C</td>' if latest is not None \
+            else '<td class="n">–</td>'
+        body.append(f"<tr><td>{esc(row['name'])}</td>{jetzt}"
+                    f'<td class="n">{komma(row["temp_c"])} °C</td>{cell}</tr>')
     quelle = run.get("current_source", "")
-    stamp = rows[0].get("date", "")
+    caveat = run.get("current_caveat", "")
+    stamp = rows[0].get("latest_at") or rows[0].get("date", "")
+    hinweis = f" · {esc(caveat)}" if caveat else ""
     return (
-        "<table><thead><tr><th>See</th><th class=\"n\">gemessen</th>"
-        "<th class=\"n\">gegen Normalwert</th></tr></thead>"
+        '<table><thead><tr><th>See</th><th class="n">jetzt</th>'
+        '<th class="n">Ø 24 h</th><th class="n">gegen Normalwert</th></tr></thead>'
         f"<tbody>{''.join(body)}</tbody></table>"
-        f'<p class="caption">Stand {esc(stamp)} · {esc(quelle)}</p>'
+        f'<p class="caption">Stand {esc(stamp)} · {esc(quelle)}{hinweis}</p>'
     )
 
 

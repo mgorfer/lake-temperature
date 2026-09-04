@@ -37,8 +37,10 @@ class Dataset:
         missing = [c for c in COLUMNS if c not in self.frame.columns]
         if missing:
             raise ValueError(f"Quelle {self.source!r}: Spalten fehlen: {missing}")
+        # Zusatzspalten (etwa der letzte Momentwert) bleiben erhalten.
+        extras = [c for c in self.frame.columns if c not in COLUMNS]
         self.frame = (
-            self.frame.loc[:, COLUMNS]
+            self.frame.loc[:, COLUMNS + extras]
             .assign(date=lambda d: pd.to_datetime(d["date"]))
             .dropna(subset=["temp_c"])
             .sort_values(["lake_key", "date"])

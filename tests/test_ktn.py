@@ -9,11 +9,82 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import pandas as pd
 
 from seetemp.sources import ktn
+
+FIXTURE = Path(__file__).parent / "fixtures" / "hdkaernten_see.json"
+#: Zuordnung wie in config/stations.json -- über die HZB-Nummer.
+CONFIG = {
+    "hzb_to_lake_key": {"woerthersee": "212985", "turnersee": "217331"},
+    "name_to_lake_key": {"Rauschele See": "rauschele_see"},
+}
+
+
+def real_payload() -> dict:
+    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+
+class RealServiceTest(unittest.TestCase):
+    """Gegen einen Auszug der tatsächlichen Antwort des Dienstes."""
+
+    def setUp(self):
+        self.data = ktn.load(real_payload(), CONFIG)
+        self.frame = self.data.frame.set_index("lake_key")
+
+    def test_reads_the_geojson_schema(self):
+        self.assertEqual(set(self.frame.index),
+                         {"woerthersee", "turnersee", "rauschele_see"})
+        self.assertIn("gewaesser", self.data.notes[0])
+        self.assertIn("letzter_wert_wt", self.data.notes[0])
+
+    def test_maps_by_hzb_number_and_falls_back_to_the_name(self):
+        # Wörthersee und Turnersee tragen eine HZB-Nummer, Rauschele See nicht.
+        self.assertAlmostEqual(self.frame.loc["woerthersee", "temp_latest"], 25.4)
+        self.assertAlmostEqual(self.frame.loc["turnersee", "temp_latest"], 25.6)
+        self.assertAlmostEqual(self.frame.loc["rauschele_see", "temp_latest"], 25.0)
+
+    def test_iso_timestamp_is_not_read_day_first(self):
+        """"2026-09-04T21:00:00+01:00" ist der 4. September, nicht der 9. April."""
+        self.assertEqual(self.frame.loc["woerthersee", "date"], pd.Timestamp("2026-09-04"))
+        self.assertEqual(self.frame.loc["woerthersee", "latest_at"],
+                         pd.Timestamp("2026-09-04 22:15"))
+
+    def test_daily_mean_comes_from_the_series_not_the_single_value(self):
+        row = self.frame.loc["woerthersee"]
+        self.assertGreater(row["readings"], 1)
+        self.assertNotAlmostEqual(row["temp_c"], row["temp_latest"], places=3)
+
+    def test_passes_on_the_services_own_warning_and_licence(self):
+        joined = " | ".join(self.data.notes)
+        self.assertIn("ungeprüfte Rohdaten", joined)
+        self.assertIn("CC-BY-4.0", joined)
+
+
+class DailyMeanTest(unittest.TestCase):
+    def test_averages_only_the_last_window(self):
+        series = [
+            {"date": "2026-09-03T08:00:00+01:00", "value": 10.0},   # zu alt
+            {"date": "2026-09-04T08:00:00+01:00", "value": 20.0},
+            {"date": "2026-09-04T20:00:00+01:00", "value": 24.0},
+        ]
+        mean, count = ktn.daily_mean(series, hours=24)
+        self.assertAlmostEqual(mean, 22.0)
+        self.assertEqual(count, 2)
+
+    def test_empty_or_broken_series(self):
+        self.assertEqual(ktn.daily_mean([]), (None, 0))
+        self.assertEqual(ktn.daily_mean([{"date": "unsinn", "value": "x"}]), (None, 0))
+
+
+class LocalTimeTest(unittest.TestCase):
+    def test_midnight_reading_keeps_its_local_date(self):
+        """Eine Umrechnung nach UTC schöbe den Wert auf den Vortag."""
+        self.assertEqual(ktn._stamp("2026-09-05T00:30:00+01:00"),
+                         pd.Timestamp("2026-09-05 00:30"))
 
 MAPPING = {
     "Wörther See": "woerthersee",
@@ -74,7 +145,9 @@ class RecordShapeTest(unittest.TestCase):
         self.assertEqual([r["_schluessel"] for r in keyed], ["2001", "2002"])
 
 
-class FetchTest(unittest.TestCase):
+class SchemaRobustnessTest(unittest.TestCase):
+    """Erfundene Schemata -- der Adapter darf nicht auf eines festgelegt sein."""
+
     PAYLOAD = [
         # Absichtlich in der Umschrift -- der Dienst schreibt nicht garantiert Umlaute.
         {"Seename": "Woerther See", "Wassertemperatur": "24,3", "Messdatum": "04.09.2026"},

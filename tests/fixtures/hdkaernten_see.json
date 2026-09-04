@@ -1,0 +1,257 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.219993,
+     46.586104
+    ]
+   },
+   "properties": {
+    "typ": "Seestation",
+    "name": "Rauschele See (Bad)",
+    "id": 2002213,
+    "hzbnr": null,
+    "betreiber": "HD-Kärnten",
+    "flussgebiet": "Gurk",
+    "gewaesser": "Rauschele See",
+    "pnp": 513.11,
+    "bmn_m31_epsg": "MGI / Austria GK M31 | EPSG:31258",
+    "bmn_m31_x": 518007,
+    "bmn_m31_y": 161136,
+    "grafik_url": "https://info.ktn.gv.at/asp/hydro/daten/svg/2002213sw.svg",
+    "letzter_wert_w": 110,
+    "letzter_wert_w_date": "2026-09-04T21:00:00+01:00",
+    "letzter_wert_wt": 25,
+    "letzter_wert_wt_date": "2026-09-04T21:00:00+01:00",
+    "lizenzzitat": "CC-BY-4.0: Land Kärnten - data.gv.at",
+    "hinweis": "Achtung - ungeprüfte Rohdaten!",
+    "last_updated": "2026-09-04T22:20:15+01:00",
+    "kennwerte": {
+     "nnw": 94,
+     "mjnw": 105,
+     "mw": 120,
+     "hw1": 134,
+     "hw5": 160,
+     "hw10": 170,
+     "hw30": 185,
+     "hw100": 200,
+     "rhhw": 230
+    },
+    "einheiten": {
+     "wasserstand": "cm",
+     "wassertemperatur": "°C"
+    },
+    "werte": {
+     "wasserstand": [
+      {
+       "date": "2026-09-04T18:30:00+01:00",
+       "value": 111
+      },
+      {
+       "date": "2026-09-04T18:45:00+01:00",
+       "value": 111
+      },
+      {
+       "date": "2026-09-04T19:00:00+01:00",
+       "value": 110
+      },
+      {
+       "date": "2026-09-04T21:00:00+01:00",
+       "value": 110
+      }
+     ],
+     "wassertemperatur": [
+      {
+       "date": "2026-09-04T19:30:00+01:00",
+       "value": 25.1
+      },
+      {
+       "date": "2026-09-04T20:30:00+01:00",
+       "value": 25.1
+      },
+      {
+       "date": "2026-09-04T20:45:00+01:00",
+       "value": 25.0
+      },
+      {
+       "date": "2026-09-04T21:00:00+01:00",
+       "value": 25.0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.572778,
+     46.587692
+    ]
+   },
+   "properties": {
+    "typ": "Seestation",
+    "name": "Turnersee (Obersammelsdorf)",
+    "id": 2900222,
+    "hzbnr": 217331,
+    "betreiber": "HD-Kärnten",
+    "flussgebiet": "Untere Drau",
+    "gewaesser": "Turnersee",
+    "pnp": 479.27,
+    "bmn_m31_epsg": "MGI / Austria GK M31 | EPSG:31258",
+    "bmn_m31_x": 545042,
+    "bmn_m31_y": 161676,
+    "grafik_url": "https://info.ktn.gv.at/asp/hydro/daten/svg/2900222sw.svg",
+    "letzter_wert_w": 105,
+    "letzter_wert_w_date": "2026-09-04T21:00:00+01:00",
+    "letzter_wert_wt": 25.6,
+    "letzter_wert_wt_date": "2026-09-04T21:00:00+01:00",
+    "lizenzzitat": "CC-BY-4.0: Land Kärnten - data.gv.at",
+    "hinweis": "Achtung - ungeprüfte Rohdaten!",
+    "last_updated": "2026-09-04T22:20:15+01:00",
+    "kennwerte": {
+     "nnw": 80,
+     "mjnw": 100,
+     "mw": 120,
+     "hw1": 130,
+     "hw5": 155,
+     "hw10": 165,
+     "hw30": 182,
+     "hw100": 190,
+     "rhhw": 200
+    },
+    "einheiten": {
+     "wasserstand": "cm",
+     "wassertemperatur": "°C"
+    },
+    "werte": {
+     "wasserstand": [
+      {
+       "date": "2026-09-04T20:15:00+01:00",
+       "value": 105
+      },
+      {
+       "date": "2026-09-04T20:30:00+01:00",
+       "value": 105
+      },
+      {
+       "date": "2026-09-04T20:45:00+01:00",
+       "value": 105
+      },
+      {
+       "date": "2026-09-04T21:00:00+01:00",
+       "value": 105
+      }
+     ],
+     "wassertemperatur": [
+      {
+       "date": "2026-09-04T20:15:00+01:00",
+       "value": 25.9
+      },
+      {
+       "date": "2026-09-04T20:30:00+01:00",
+       "value": 25.8
+      },
+      {
+       "date": "2026-09-04T20:45:00+01:00",
+       "value": 25.7
+      },
+      {
+       "date": "2026-09-04T21:00:00+01:00",
+       "value": 25.6
+      }
+     ]
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.138018,
+     46.6342
+    ]
+   },
+   "properties": {
+    "typ": "Seestation",
+    "name": "Wörthersee (Pörtschach am Wörthersee)",
+    "id": 2001056,
+    "hzbnr": 212985,
+    "betreiber": "HD-Kärnten",
+    "flussgebiet": "Gurk",
+    "gewaesser": "Wörthersee",
+    "pnp": 438.89,
+    "bmn_m31_epsg": "MGI / Austria GK M31 | EPSG:31258",
+    "bmn_m31_x": 511670,
+    "bmn_m31_y": 166415,
+    "grafik_url": "https://info.ktn.gv.at/asp/hydro/daten/svg/2001056sw.svg",
+    "letzter_wert_w": 108,
+    "letzter_wert_w_date": "2026-09-04T22:15:00+01:00",
+    "letzter_wert_wt": 25.4,
+    "letzter_wert_wt_date": "2026-09-04T22:15:00+01:00",
+    "lizenzzitat": "CC-BY-4.0: Land Kärnten - data.gv.at",
+    "hinweis": "Achtung - ungeprüfte Rohdaten!",
+    "last_updated": "2026-09-04T22:20:15+01:00",
+    "kennwerte": {
+     "nnw": 72,
+     "mjnw": 108,
+     "mw": 125,
+     "hw1": 142,
+     "hw5": 159,
+     "hw10": 167,
+     "hw30": 183,
+     "hw100": 200,
+     "rhhw": 250
+    },
+    "einheiten": {
+     "wasserstand": "cm",
+     "wassertemperatur": "°C"
+    },
+    "werte": {
+     "wasserstand": [
+      {
+       "date": "2026-09-04T14:30:00+01:00",
+       "value": 107
+      },
+      {
+       "date": "2026-09-04T14:45:00+01:00",
+       "value": 107
+      },
+      {
+       "date": "2026-09-04T15:00:00+01:00",
+       "value": 108
+      },
+      {
+       "date": "2026-09-04T22:15:00+01:00",
+       "value": 108
+      }
+     ],
+     "wassertemperatur": [
+      {
+       "date": "2026-09-04T21:15:00+01:00",
+       "value": 25.5
+      },
+      {
+       "date": "2026-09-04T21:30:00+01:00",
+       "value": 25.5
+      },
+      {
+       "date": "2026-09-04T21:45:00+01:00",
+       "value": 25.4
+      },
+      {
+       "date": "2026-09-04T22:15:00+01:00",
+       "value": 25.4
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

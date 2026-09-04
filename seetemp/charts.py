@@ -419,13 +419,15 @@ def anomaly_trend(annotated: pd.DataFrame, clim, th, source, is_demo, out: Path,
 # ------------------------------------------------ 6: Aktuelle Werte (heute)
 
 def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
-                   measured_source: str = ""):
-    """Heutiger Wert je See gegen seinen Normalwert -- auf einer Achse.
+                   measured_source: str = "", caveat: str = ""):
+    """Aktuelle Werte je See gegen ihren Normalwert -- alles auf einer Achse.
 
-    Der massive Balken ist immer der gemessene Wert. Liegt er über dem
-    Normalwert, ist der Überschuss warm eingefärbt; liegt er darunter, zeigt
-    eine blasse Fläche, was zum Normalwert fehlt. Die Marke sitzt auf dem
-    Normalwert. Zwei Maßstäbe braucht es dafür nicht.
+    Der massive Balken ist das Tagesmittel der letzten 24 Stunden: nur das
+    lässt sich mit einem Normalwert vergleichen, der selbst ein Mittel ist.
+    Liegt es über dem Normalwert, ist der Überschuss warm eingefärbt; liegt
+    es darunter, zeigt eine blasse Fläche, was fehlt. Die Marke sitzt auf dem
+    Normalwert, der Punkt auf dem jüngsten Einzelwert -- er beantwortet, wie
+    warm es gerade ist. Drei Grössen, eine Achse, alle in Grad Celsius.
     """
     if current.empty:
         return None
@@ -434,11 +436,9 @@ def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
     pos = np.arange(len(data), dtype=float)
     height = 0.42
 
-    fig = plt.figure(figsize=(9.6, 0.46 * len(data) + 2.5))
-    ax = _axes(fig, 0.20, 0.955, header_in=1.60, footer_in=0.88)
+    fig = plt.figure(figsize=(9.6, 0.46 * len(data) + 2.9))
+    ax = _axes(fig, 0.20, 0.955, header_in=2.00, footer_in=0.88)
     _despine(ax, th)
-
-    has_normal = data["mean"].notna()
     for i, row in data.iterrows():
         temp, mean = float(row["temp_c"]), row["mean"]
         if pd.isna(mean):
@@ -456,6 +456,14 @@ def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
         ax.vlines(mean, i - height / 2, i + height / 2, color=th.ink, linewidth=2,
                   zorder=5)
 
+    # Jüngster Einzelwert, wo die Reihe einen hergibt.
+    if "temp_latest" in data:
+        latest = data["temp_latest"]
+        shown = latest.notna() & (latest - data["temp_c"]).abs().gt(0.05)
+        if shown.any():
+            ax.scatter(latest[shown], np.asarray(pos)[shown.to_numpy()], s=40,
+                       color=th.surface, edgecolor=th.ink, linewidth=1.8, zorder=6)
+
     ax.set_yticks(pos)
     ax.set_yticklabels(names, fontsize=10)
     for label in ax.get_yticklabels():
@@ -467,32 +475,42 @@ def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
     span = float(max(data["temp_c"].max(), data["mean"].max(skipna=True) or 0))
     ax.set_xlim(0, span * 1.30)
     for i, row in data.iterrows():
-        end = max(float(row["temp_c"]), float(row["mean"]) if pd.notna(row["mean"]) else 0)
+        # Auch der Punkt für den jüngsten Wert darf die Beschriftung nicht berühren.
+        end = max(float(row["temp_c"]),
+                  float(row["mean"]) if pd.notna(row["mean"]) else 0.0,
+                  float(row["temp_latest"]) if pd.notna(row.get("temp_latest")) else 0.0)
         if pd.isna(row["mean"]):
             text = f"{num(row['temp_c'])} °C   (kein Normalwert)"
         else:
             text = f"{num(row['temp_c'])} °C   {num(row['anomaly'], signed=True)} K"
-        ax.annotate(text, (end, i), xytext=(8, 0), textcoords="offset points",
+        ax.annotate(text, (end, i), xytext=(13, 0), textcoords="offset points",
                     va="center", color=th.text, fontsize=9.5)
 
     handles = [
-        Patch(facecolor=th.series_1, label="gemessener Wert"),
+        Patch(facecolor=th.series_1, label="Mittel der letzten 24 h"),
         Line2D([], [], color=th.ink, linewidth=2, label=f"Normalwert {clim.label}"),
-        Patch(facecolor=th.warm, label="über dem Normalwert"),
+        Patch(facecolor=th.warm, label="darüber"),
         Patch(facecolor=th.cool, alpha=0.28, label="fehlt zum Normalwert"),
+        Line2D([], [], marker="o", linestyle="none", markersize=7,
+               markerfacecolor=th.surface, markeredgecolor=th.ink, markeredgewidth=1.8,
+               label="jüngster Einzelwert"),
     ]
     fig.legend(handles=handles, loc="lower left",
-               bbox_to_anchor=(0.012, 1 - 1.22 / fig.get_size_inches()[1]), ncol=4,
+               bbox_to_anchor=(0.012, 1 - 1.52 / fig.get_size_inches()[1]), ncol=3,
                labelcolor=th.text_secondary, handlelength=1.5, columnspacing=1.6,
                borderpad=0.0, handletextpad=0.6)
 
-    stamp = pd.Timestamp(data["date"].max())
+    if "latest_at" in data and data["latest_at"].notna().any():
+        newest = pd.Timestamp(data["latest_at"].max())
+        stand = f"{long_date(newest)}, {newest:%H:%M}"
+    else:
+        stand = long_date(pd.Timestamp(data["date"].max()))
     einheit = "Tagesnormalwert" if clim.resolution == "daily" else "Monatsnormalwert"
     _titleblock(
-        fig, th, f"Aktuelle Wassertemperatur — Stand {long_date(stamp)}",
-        f"Gemessener Wert je See gegenüber dem {einheit} aus {clim.label}. "
-        f"Sortiert nach Temperatur.\nMesswerte: {measured_source or source}",
+        fig, th, f"Aktuelle Wassertemperatur — Stand {stand}",
+        f"Mittel der letzten 24 Stunden gegenüber dem {einheit} aus {clim.label}; "
+        f"sortiert nach Temperatur.\nMesswerte: {measured_source or source}",
     )
-    _footer(fig, th, f"Normalwert: {source}")
+    _footer(fig, th, ((caveat + " · ") if caveat else "") + f"Normalwert: {source}")
     _watermark(fig, th, is_demo)
     return _save(fig, out)

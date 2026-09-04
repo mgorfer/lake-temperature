@@ -20,7 +20,7 @@ Je Farbschema (`output/light/`, `output/dark/`):
 
 | Datei | Inhalt |
 |---|---|
-| `00_aktuell.png` | Heutiger Wert je See gegen seinen Normalwert (nur mit `--current ktn`) |
+| `00_aktuell.png` | Aktuelle Werte je See gegen ihren Normalwert (nur mit `--current ktn`) |
 | `01_uebersicht_abweichung_<Jahr>.png` | Alle Seen, mittlere Abweichung der Badesaison vom Normalwert |
 | `02_monatsmatrix_<Jahr>.png` | Matrix See × Monat der Abweichungen |
 | `03_badetage_<Jahr>.png` | Tage ≥ Schwelle, aktuelles Jahr gegen das langjährige Mittel |
@@ -205,12 +205,28 @@ python -m seetemp --source ehyd --current ktn   # das ist der interessante Fall
 python -m seetemp --source ktn                  # nur die aktuellen Werte
 ```
 
-Daraus entsteht `00_aktuell.png`: je See ein Balken mit dem gemessenen Wert,
-eine Marke auf dem Normalwert, und der Unterschied farbig — warm, wenn es
+Der Dienst liefert GeoJSON mit 15 Seestationen. Je Station stehen darin der
+jüngste Messwert, eine **Messreihe der letzten rund 24 Stunden** im Viertel-
+bis Halbstundentakt — und die **HZB-Nummer**. Letztere ist dieselbe Kennung
+wie bei eHYD und damit die verlässlichste Zuordnung: sie überlebt jede
+Umbenennung. Der Seename dient nur als Rückfall.
+
+Aus der Messreihe bildet die App ein **Tagesmittel der letzten 24 Stunden**.
+Nur das lässt sich mit einem Normalwert vergleichen, der selbst ein Mittel
+über einen Tag ist; ein einzelner Momentwert trüge den Tagesgang mit hinein.
+Der jüngste Einzelwert bleibt erhalten — er beantwortet die andere Frage,
+nämlich wie warm es *gerade* ist.
+
+Daraus entsteht `00_aktuell.png` mit drei Grössen auf **einer** Achse: der
+Balken ist das 24-Stunden-Mittel, die Marke sitzt auf dem Normalwert, der
+Punkt auf dem jüngsten Einzelwert. Der Unterschied ist farbig — warm, wenn es
 wärmer ist als üblich, blass blau für das, was zum Normalwert fehlt. Seen
-ohne lange Reihe (Turnersee, Afritzer See, Magdalensee) erscheinen mit ihrer
-Temperatur, aber ohne Vergleichswert; eine Temperatur ohne Einordnung ist
-immer noch eine Temperatur.
+ohne lange Reihe erscheinen mit ihrer Temperatur, aber ohne Vergleichswert;
+eine Temperatur ohne Einordnung ist immer noch eine Temperatur.
+
+Der Dienst kennzeichnet seine Werte als **ungeprüfte Rohdaten**. Dieser
+Hinweis wird nicht verschluckt: er steht in der Ausgabe, in `run.json`, unter
+der Grafik und auf der Seite.
 
 **Der Dienst antwortet Rechenzentrums-Adressen nicht.** Aus GitHub Actions
 heraus laufen alle `ktn.gv.at`-Adressen in einen TCP-Zeitablauf, auch die
@@ -225,8 +241,9 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json
 ```
 
-Das Feldschema ist nicht dokumentiert und liess sich beim Bau nicht abrufen.
-Der Adapter **rät deshalb nicht**: er erkennt die Felder an ihren Namen
+Das Feldschema ist nirgends dokumentiert; die Tests laufen deshalb gegen
+einen Auszug der echten Antwort in `tests/fixtures/`. Der Adapter legt sich
+trotzdem nicht darauf fest: er erkennt die Felder an ihren Namen
 (deutsche Schreibweisen und Umschriften fallen zusammen, „Wörthersee" und
 „Woerthersee" also auch), und findet er sie nicht, nennt er die tatsächlich
 vorhandenen Felder samt Beispielsatz. Feste Namen lassen sich in
@@ -292,14 +309,16 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-42 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+50 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
 fehlende Grafiken, Maskierung, Demo-Warnung), die Wahl des
-Vergleichsjahres sowie die Kärntner Quelle (Felderkennung, Umlaut-Umschrift,
-GeoJSON/ArcGIS/Objektliste, Meldung bei unbekanntem Schema, Seen ohne lange
-Reihe).
+Vergleichsjahres sowie die Kärntner Quelle: das echte GeoJSON-Schema
+(gegen einen Auszug der tatsächlichen Antwort), Zuordnung über die
+HZB-Nummer mit Namensrückfall, das 24-Stunden-Mittel, ISO-Zeitstempel ohne
+Tag-zuerst-Verdrehung, Mitternachtswerte ohne Datumssprung, Felderkennung,
+Umlaut-Umschrift, Meldung bei unbekanntem Schema und Seen ohne lange Reihe.
 
 ## Aufbau
 

@@ -34,9 +34,13 @@
       "keutschacher_see": "213488",
       "laengsee": "213801",
       "pressegger_see": "212746",
-      "turnersee": "",
-      "afritzer_see": "",
-      "magdalensee": ""
+      "turnersee": "217331",
+      "afritzer_see": "217257",
+      "magdalensee": "",
+      "brennsee": "217273",
+      "goesselsdorfer_see": "213579",
+      "maltschacher_see": "217265",
+      "rauschele_see": ""
     },
     "station_names": {
       "woerthersee": "Pörtschach am Wörther See",
@@ -47,17 +51,28 @@
       "weissensee": "Techendorf",
       "keutschacher_see": "Keutschach (See)",
       "laengsee": "St. Georgen",
-      "pressegger_see": "Presseggen"
-    }
+      "pressegger_see": "Presseggen",
+      "turnersee": "Turnersee (Obersammelsdorf)",
+      "afritzer_see": "Afritzer See (Afritz)",
+      "brennsee": "Feldsee / Brennsee (Feld am See)",
+      "goesselsdorfer_see": "Gösselsdorfer See (Gösselsdorf)",
+      "maltschacher_see": "Maltschacher See (Briefelsdorf)"
+    },
+    "_hinweis": [
+      "Fünf dieser Nummern stammen aus dem Seendienst des Landes Kärnten, der",
+      "die HZB-Nummer je Messstelle mitführt -- im eHYD-Verzeichnis von 2017",
+      "standen sie noch nicht. Ob eHYD dazu auch eine Temperaturreihe hat,",
+      "zeigt: python -m seetemp --source ehyd --probe"
+    ]
   },
   "ktn": {
     "_hinweis": [
-      "Adresse aus dem Katalog von data.gv.at, Datensatz",
-      "'Hydrographische Daten Kärnten' (bf851ec0-94cb-43ca-83cb-a9dc96ddea51).",
-      "Der Dienst antwortet Rechenzentrums-Adressen nicht -- aus einem",
-      "österreichischen Anschluss in der Regel schon. Leer lassen heisst:",
-      "die im Code hinterlegte Vorgabe verwenden.",
-      "Die Feldnamen werden erkannt; hier eingetragene Namen haben Vorrang."
+      "Adresse aus dem Katalog von data.gv.at, Datensatz 'Hydrographische",
+      "Daten Kärnten'. Der Dienst antwortet Rechenzentrums-Adressen nicht --",
+      "aus einem österreichischen Anschluss in der Regel schon.",
+      "Zugeordnet wird über die HZB-Nummer, die der Dienst je Station",
+      "mitführt; der Name dient nur als Rückfall. Feldnamen werden erkannt,",
+      "hier eingetragene Namen haben Vorrang. Leere URL heisst: Vorgabe."
     ],
     "url": "",
     "fields": {
@@ -65,23 +80,42 @@
       "temperature": "",
       "date": ""
     },
+    "hzb_to_lake_key": {
+      "woerthersee": "212985",
+      "ossiacher_see": "213272",
+      "millstaetter_see": "212514",
+      "faaker_see": "212795",
+      "klopeiner_see": "213348",
+      "weissensee": "212563",
+      "keutschacher_see": "213488",
+      "laengsee": "213801",
+      "pressegger_see": "212746",
+      "turnersee": "217331",
+      "afritzer_see": "217257",
+      "brennsee": "217273",
+      "goesselsdorfer_see": "213579",
+      "maltschacher_see": "217265"
+    },
     "name_to_lake_key": {
-      "Wörther See": "woerthersee",
       "Wörthersee": "woerthersee",
+      "Wörther See": "woerthersee",
       "Ossiacher See": "ossiacher_see",
       "Millstätter See": "millstaetter_see",
       "Faaker See": "faaker_see",
       "Klopeiner See": "klopeiner_see",
       "Weißensee": "weissensee",
-      "Weissensee": "weissensee",
       "Keutschacher See": "keutschacher_see",
       "Längsee": "laengsee",
       "Turnersee": "turnersee",
       "Pressegger See": "pressegger_see",
       "Afritzer See": "afritzer_see",
-      "Magdalensee": "magdalensee",
-      "Brennsee": "afritzer_see",
-      "Feldsee": "afritzer_see"
+      "Feldsee(Brennsee)": "brennsee",
+      "Feldsee": "brennsee",
+      "Brennsee": "brennsee",
+      "Gösselsdorfer See": "goesselsdorfer_see",
+      "Maltschacher See": "maltschacher_see",
+      "Rauschele See": "rauschele_see",
+      "Magdalensee": "magdalensee"
     }
   }
 }
