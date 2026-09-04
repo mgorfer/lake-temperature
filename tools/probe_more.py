@@ -26,6 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from seetemp.sources import ehyd  # noqa: E402
 
 TIMEOUT = (5, 12)
+#: Archiv-Abfragen brauchen länger als ein gewöhnlicher Abruf.
+SLOW = (5, 45)
 BUDGET_S = 300
 _START = time.monotonic()
 
@@ -42,12 +44,12 @@ def out(text: str = "") -> None:
     print(text, flush=True)
 
 
-def get(url: str, **kw):
+def get(url: str, timeout=TIMEOUT, **kw):
     if left() <= 0:
         out("  (Budget aufgebraucht)")
         return None
     try:
-        r = requests.get(url, timeout=TIMEOUT, **kw)
+        r = requests.get(url, timeout=timeout, **kw)
     except requests.RequestException as exc:
         out(f"  {exc.__class__.__name__}: {str(exc)[:160]}")
         return None
@@ -90,17 +92,32 @@ def wayback() -> None:
         else:
             out("  keine Aufnahme verzeichnet")
 
-    out("\nAlle Aufnahmen (CDX):")
-    r = get("https://web.archive.org/cdx/search/cdx",
-            params={"url": KTN_JSON, "output": "json", "limit": "40", "fl": "timestamp,statuscode"})
+    out("\nAlle Aufnahmen (CDX) -- wie dicht ist das Archiv?")
+    r = get("https://web.archive.org/cdx/search/cdx", timeout=SLOW,
+            params={"url": KTN_JSON, "output": "json", "fl": "timestamp,statuscode",
+                    "collapse": "timestamp:8", "limit": "400"})
     if r is not None and r.status_code == 200 and r.text.strip():
         try:
-            rows = r.json()
-            out(f"  {max(0, len(rows)-1)} Aufnahmen")
-            for row in rows[1:8]:
-                out(f"    {row}")
+            rows = r.json()[1:]
+            out(f"  {len(rows)} Aufnahmen (je Tag höchstens eine)")
+            if rows:
+                jahre = {}
+                for stamp, *_ in rows:
+                    jahre[stamp[:4]] = jahre.get(stamp[:4], 0) + 1
+                out(f"  je Jahr: {jahre}")
+                out(f"  erste {rows[0][0]}, letzte {rows[-1][0]}")
         except ValueError:
             out(f"  unerwartete Antwort: {r.text[:200]!r}")
+
+    out("\nFrische Aufnahme anstossen (Save Page Now):")
+    r = get("https://web.archive.org/save/" + KTN_JSON, timeout=SLOW,
+            allow_redirects=True)
+    if r is not None:
+        body = r.text[:200] if r.status_code != 200 else ""
+        if r.status_code == 200 and ("gewaesser" in r.text or "features" in r.text):
+            out("  ERFOLG: das Archiv holt die Seite frisch und gibt sie zurück")
+        elif body:
+            out(f"  Antwort: {body!r}")
 
     if newest:
         out("\nInhalt der jüngsten Aufnahme:")
@@ -151,7 +168,7 @@ def weitere() -> None:
         ("Kärnten über r.jina.ai", "https://r.jina.ai/" + KTN_JSON),
     ]:
         out(f"\n{label}: {url}")
-        r = get(url)
+        r = get(url, timeout=SLOW if "jina" in url else TIMEOUT)
         if r is not None and r.status_code == 200 and "jina" in url:
             body = r.text.strip()
             out(f"  Anfang: {body[:200]!r}")
