@@ -1,0 +1,45 @@
+# Erkundet eine Datenquelle vom Runner aus und schreibt das Ergebnis in die
+# Zusammenfassung. Gedacht für den Fall, dass eine Schnittstelle sich
+# geändert hat oder eine neue angebunden werden soll -- Endpunkte und
+# Feldnamen sollen belegt werden, nicht geraten.
+name: Quelle erkunden
+
+on:
+  workflow_dispatch:
+    inputs:
+      quelle:
+        description: Welche Quelle ansehen
+        type: choice
+        options: [ktn, ehyd]
+        default: ktn
+
+permissions:
+  contents: read
+
+jobs:
+  erkunden:
+    name: Schnittstelle ansehen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Nachsehen
+        env:
+          QUELLE: ${{ inputs.quelle }}
+        run: |
+          {
+            echo "### Quelle: $QUELLE"
+            echo
+            echo '```'
+            if [ "$QUELLE" = "ehyd" ]; then
+              python -m seetemp --source ehyd --probe 2>&1 || true
+            else
+              python tools/probe_ktn.py 2>&1 || true
+            fi
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
