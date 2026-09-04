@@ -198,8 +198,19 @@ def run(argv: list[str] | None = None) -> int:
     if args.current == "ktn":
         from .sources import ktn
 
+        ktn_config = load_config(args.config).get("ktn", {})
         try:
-            live = ktn.fetch(load_config(args.config).get("ktn", {}))
+            try:
+                live = ktn.fetch(ktn_config)
+            except SystemExit as exc:
+                # Nicht erreichbar? Dann der jüngste abgelegte Abruf -- mit
+                # seinem Alter im Quellennamen, damit niemand ihn für
+                # tagesaktuell hält.
+                snapshot = ktn.newest_snapshot()
+                if snapshot is None:
+                    raise
+                print(f"\nDienst nicht erreichbar, nehme {snapshot}", file=sys.stderr)
+                live = ktn.load_snapshot(snapshot, ktn_config)
             current = attach_normals(live.frame, clim)
             current_source = live.source
             # Der Dienst weist seine Werte als ungeprüft aus -- das gehört

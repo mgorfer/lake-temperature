@@ -250,10 +250,25 @@ der Grafik und auf der Seite.
 **Der Dienst antwortet Rechenzentrums-Adressen nicht.** Aus GitHub Actions
 heraus laufen alle `ktn.gv.at`-Adressen in einen TCP-Zeitablauf, auch die
 Startseite — aus einem österreichischen Anschluss funktioniert es in der
-Regel. Deshalb holt `./phone.sh` die aktuellen Werte von sich aus, während
-der Workflow sie nur auf ausdrücklichen Wunsch versucht. Schlägt der Abruf
-fehl, bleibt die langjährige Auswertung gültig; der Fehlschlag steht in der
-Ausgabe und in `run.json`. Selbst prüfen:
+Regel.
+
+Vier Umwege wurden geprüft und sind Sackgassen (Internet-Archiv, GeoSphere,
+Textspiegel, eHYD als Tagesquelle) — nachzulesen samt Messergebnissen in
+[docs/DATENWEGE.md](docs/DATENWEGE.md). Was trägt, ist der unspektakuläre
+Weg: **das Gerät, das den Dienst erreicht, legt eine Kopie im Projekt ab.**
+
+```bash
+python tools/snapshot_ktn.py     # holt und legt unter data/aktuell ab
+git add data/aktuell && git commit -m "Messwerte vom ..." && git push
+```
+
+`./phone.sh` erledigt das bei jedem Lauf von selbst. Die Auswertung auf
+GitHub nimmt dann den jüngsten abgelegten Abruf und schreibt dessen Alter
+in den Quellennamen und auf die Grafik — „abgelegter Abruf (2 h alt)" statt
+„aktuell". Ein alter Wert erscheint als alter Wert.
+
+Schlägt beides fehl, bleibt die langjährige Auswertung gültig; der
+Fehlschlag steht in der Ausgabe und in `run.json`. Selbst prüfen:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' \
@@ -328,7 +343,7 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-51 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+55 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
@@ -337,7 +352,8 @@ Vergleichsjahres sowie die Kärntner Quelle: das echte GeoJSON-Schema
 (gegen einen Auszug der tatsächlichen Antwort), Zuordnung über die
 HZB-Nummer mit Namensrückfall, das 24-Stunden-Mittel, ISO-Zeitstempel ohne
 Tag-zuerst-Verdrehung, Mitternachtswerte ohne Datumssprung, Felderkennung,
-Umlaut-Umschrift, Meldung bei unbekanntem Schema und Seen ohne lange Reihe.
+Umlaut-Umschrift, Meldung bei unbekanntem Schema, Seen ohne lange Reihe sowie die abgelegten
+Abrufe samt ehrlicher Altersangabe.
 
 ## Aufbau
 
@@ -358,6 +374,10 @@ config/stations.json  Stationszuordnung für die Online-Quellen
 phone.sh              Ein-Befehl-Start für Termux (Android)
 docs/ANDROID.md       Einrichtung am Handy
 tools/probe_ktn.py      Katalog und Dienst des Landes Kärnten erkunden
+tools/probe_more.py     Umwege zu den Daten abklopfen
+tools/snapshot_ktn.py   aktuelle Werte holen und im Projekt ablegen
+data/aktuell/           abgelegte Abrufe (siehe LIESMICH.md dort)
+docs/DATENWEGE.md       welche Wege geprüft wurden und warum sie scheitern
 tools/build_gallery.py  Übersichtsseite aus einem Ausgabeverzeichnis
 tools/summary.py        Lauf-Zusammenfassung für GitHub Actions
 .github/workflows/      Rechnen und Veröffentlichen auf GitHub Pages

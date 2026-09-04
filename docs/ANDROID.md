@@ -60,6 +60,13 @@ Rechenzentren nicht, einem österreichischen Anschluss aber schon — auf dem
 Telefon geht also etwas, was auf GitHub nicht geht. Mit `--current none`
 abschaltbar.
 
+Bei jedem Lauf legt es die geholten Werte zusätzlich unter `data/aktuell`
+ab. Wer sie eincheckt, gibt sie damit auch der Auswertung auf GitHub:
+
+```bash
+git add data/aktuell && git commit -m "Messwerte vom $(date +%d.%m.)" && git push
+```
+
 Alle Schalter werden durchgereicht:
 
 ```bash

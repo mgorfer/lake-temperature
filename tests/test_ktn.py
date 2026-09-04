@@ -236,3 +236,46 @@ class AttachNormalsTest(unittest.TestCase):
         self.assertAlmostEqual(current.loc["woerthersee", "anomaly"], 2.5)
         self.assertAlmostEqual(current.loc["turnersee", "temp_c"], 25.0)
         self.assertTrue(pd.isna(current.loc["turnersee", "anomaly"]))
+
+
+class SnapshotTest(unittest.TestCase):
+    """Abgelegte Abrufe überbrücken, dass der Dienst Rechenzentren schweigt."""
+
+    def setUp(self):
+        import tempfile
+
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def write(self, name: str, stamp: str) -> Path:
+        payload = real_payload()
+        for feature in payload["features"]:
+            q = feature["properties"]
+            q["letzter_wert_wt_date"] = stamp
+            q["werte"]["wassertemperatur"] = [{"date": stamp, "value": 21.0}]
+        path = self.tmp / name
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        return path
+
+    def test_newest_snapshot_wins(self):
+        self.write("hdkaernten_see-20260901T1200.json", "2026-09-01T12:00:00+01:00")
+        neu = self.write("hdkaernten_see-20260904T2215.json", "2026-09-04T22:15:00+01:00")
+        self.assertEqual(ktn.newest_snapshot(self.tmp), neu)
+
+    def test_no_directory_no_snapshot(self):
+        self.assertIsNone(ktn.newest_snapshot(self.tmp / "gibtsnicht"))
+
+    def test_age_is_named_in_the_source(self):
+        """Ein alter Wert als "aktuell" wäre eine Lüge."""
+        now = ktn.local_now()
+        frisch = self.write("hdkaernten_see-a.json",
+                            f"{now - pd.Timedelta(minutes=20):%Y-%m-%dT%H:%M:00}+01:00")
+        self.assertIn("frisch", ktn.load_snapshot(frisch, CONFIG).source)
+
+        alt = self.write("hdkaernten_see-b.json",
+                         f"{now - pd.Timedelta(days=6):%Y-%m-%dT%H:%M:00}+01:00")
+        self.assertIn("6 Tage alt", ktn.load_snapshot(alt, CONFIG).source)
+
+    def test_local_now_is_austrian_wall_clock(self):
+        """Sonst ist ein eben abgerufener Wert im Rechenzentrum "in der Zukunft"."""
+        versatz = ktn.local_now() - pd.Timestamp.now()
+        self.assertGreaterEqual(versatz.total_seconds(), -60)

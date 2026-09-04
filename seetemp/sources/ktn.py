@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -43,6 +44,13 @@ import requests
 from .base import Dataset
 
 DEFAULT_URL = "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json"
+#: Abgelegte Abrufe. Wer den Dienst erreicht (österreichischer Anschluss),
+#: kann hier eine Kopie hinterlegen; wer ihn nicht erreicht (Rechenzentrum),
+#: rechnet damit weiter.
+SNAPSHOT_DIR = "data/aktuell"
+#: Die Zeitstempel des Dienstes sind Kärntner Wanduhrzeit. Wer sie gegen die
+#: Uhr des Rechners hält (im Rechenzentrum UTC), bekommt negative Alter.
+ZEITZONE = "Europe/Vienna"
 TIMEOUT = (10, 30)
 #: Fenster für das Tagesmittel.
 WINDOW_H = 24
@@ -263,3 +271,57 @@ def fetch(config: dict | None = None) -> Dataset:
           "aus einem österreichischen Anschluss in der Regel schon. Zum Prüfen:\n"
           f"  curl -sS -o /dev/null -w '%{{http_code}}\\n' {attempts[0]}"
     )
+
+
+# ------------------------------------------------------------- Abgelegte Abrufe
+
+def local_now() -> pd.Timestamp:
+    """Jetzt, als Kärntner Wanduhrzeit ohne Zeitzone.
+
+    Dieselbe Bezugsgrösse wie die Zeitstempel des Dienstes -- sonst wäre ein
+    eben abgerufener Wert im Rechenzentrum zwei Stunden "in der Zukunft".
+    """
+    try:
+        return pd.Timestamp.now(tz=ZEITZONE).tz_localize(None)
+    except Exception:          # ohne Zeitzonendaten bleibt die Systemuhr
+        return pd.Timestamp.now()
+
+
+def snapshot_name(when: pd.Timestamp | None = None) -> str:
+    when = when or local_now()
+    return f"hdkaernten_see-{when:%Y%m%dT%H%M}.json"
+
+
+def newest_snapshot(directory: str | Path = SNAPSHOT_DIR) -> Path | None:
+    """Jüngster abgelegter Abruf, oder ``None``."""
+    folder = Path(directory)
+    if not folder.is_dir():
+        return None
+    files = sorted(folder.glob("hdkaernten_see-*.json"))
+    return files[-1] if files else None
+
+
+def load_snapshot(path: str | Path, config: dict | None = None) -> Dataset:
+    """Wertet einen abgelegten Abruf aus.
+
+    Das Ergebnis trägt sein Alter im Quellennamen -- ein drei Tage alter
+    Wert als "aktuell" auszugeben wäre eine Lüge, ihn wegzuwerfen aber
+    Verschwendung.
+    """
+    path = Path(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    data = load(payload, config)
+    newest = data.frame["latest_at"].max() if "latest_at" in data.frame else pd.NaT
+    if pd.isna(newest):
+        newest = pd.Timestamp(data.frame["date"].max())
+    alter = local_now() - pd.Timestamp(newest)
+    stunden = alter.total_seconds() / 3600
+    if stunden < 1.5:
+        wie_alt = "frisch"
+    elif stunden < 36:
+        wie_alt = f"{stunden:.0f} h alt"
+    else:
+        wie_alt = f"{alter.days} Tage alt"
+    data.source = f"Hydrographischer Dienst Kärnten — abgelegter Abruf ({wie_alt})"
+    data.notes.insert(0, f"Aus {path}, Messwerte {wie_alt}.")
+    return data

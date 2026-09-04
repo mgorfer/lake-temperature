@@ -49,6 +49,14 @@ case " $* " in
     *" --current "*) CURRENT="" ;;
 esac
 
+# Am österreichischen Anschluss ist der Dienst erreichbar -- also gleich
+# eine Kopie ablegen, damit auch die Auswertung auf GitHub damit rechnen
+# kann. Schlägt es fehl, läuft der Rest trotzdem.
+if [ -n "$CURRENT" ]; then
+    "$PYTHON" tools/snapshot_ktn.py || echo "(kein neuer Abruf abgelegt)"
+    echo
+fi
+
 mkdir -p "$OUT"
 # shellcheck disable=SC2086
 "$PYTHON" -m seetemp --out "$OUT" $CURRENT "$@"
