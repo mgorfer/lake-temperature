@@ -247,7 +247,9 @@ def run(argv: list[str] | None = None) -> int:
     if args.current == "ktn":
         from .sources import ktn
 
-        daily_now = ktn.daily_series(config=load_config(args.config).get("ktn", {}))
+        # Die fortgeschriebene Reihe plus alles, was in den Rohabrufen
+        # noch dazukommt -- geschrieben wird hier nichts.
+        daily_now = ktn.daily_table(config=load_config(args.config).get("ktn", {}))
         if not daily_now.empty:
             daily_now = daily_now[daily_now["lake_key"].isin({l.key for l in selected})]
     if daily_now.empty:

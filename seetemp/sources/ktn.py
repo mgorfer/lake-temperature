@@ -48,6 +48,26 @@ DEFAULT_URL = "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json"
 #: kann hier eine Kopie hinterlegen; wer ihn nicht erreicht (Rechenzentrum),
 #: rechnet damit weiter.
 SNAPSHOT_DIR = "data/aktuell"
+
+#: Neben der Sammeldatei ("Jetzt -24h") gibt der Dienst eine Datei je
+#: Messstelle ab. Der Katalog des Landes weist sie so aus:
+#:
+#:     URL-Vorlage: .../daten/json/station/<id>.json
+#:     <id> ... Element "id" aus geoJSON-Services
+#:     Zeitraum: Jetzt -72h
+#:
+#: Drei Tage statt einem. Das ist kein Archiv -- die Vergangenheit bleibt
+#: unerreichbar -- macht die Reihe aber lückenfest: ein Abruf alle zwei
+#: Tage genügt, statt täglich einer.
+STATION_URL = "https://info.ktn.gv.at/asp/hydro/daten/json/station/{id}.json"
+STATION_DIR = "data/aktuell/station"
+STATION_WINDOW_H = 72
+
+#: Die fortgeschriebene Tagesreihe. Rohabrufe werden nach einer Weile
+#: entfernt -- sonst wüchse das Projekt um Megabyte je Woche. Die Tage
+#: dürfen deshalb nicht davon abhängen, welche Dateien gerade herumliegen:
+#: was einmal gemessen wurde, steht hier und bleibt.
+DAILY_CSV = "data/aktuell/tagesreihe.csv"
 #: Die Zeitstempel des Dienstes sind Kärntner Wanduhrzeit. Wer sie gegen die
 #: Uhr des Rechners hält (im Rechenzentrum UTC), bekommt negative Alter.
 ZEITZONE = "Europe/Vienna"
@@ -287,6 +307,64 @@ def local_now() -> pd.Timestamp:
         return pd.Timestamp.now()
 
 
+def read_daily(path: str | Path = DAILY_CSV) -> pd.DataFrame:
+    """Die fortgeschriebene Tagesreihe, sofern es sie schon gibt."""
+    leer = pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])
+    path = Path(path)
+    if not path.is_file():
+        return leer
+    try:
+        frame = pd.read_csv(path)
+    except (OSError, ValueError):
+        return leer
+    if frame.empty or "date" not in frame:
+        return leer
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    return frame.dropna(subset=["date"])
+
+
+def merge_daily(alt: pd.DataFrame, neu: pd.DataFrame) -> pd.DataFrame:
+    """Zwei Tagesreihen zusammenführen.
+
+    Ein Tag kann zweimal auftauchen: einmal aus einem Abruf, der ihn nur
+    halb erwischt hat, einmal aus einem späteren, der ihn ganz sah. Es
+    gewinnt der Tag mit den meisten Einzelmessungen -- nicht der jüngere
+    Eintrag, denn "später abgerufen" heisst nicht "besser belegt".
+    """
+    beide = pd.concat([alt, neu], ignore_index=True)
+    if beide.empty:
+        return beide
+    beide["messungen"] = pd.to_numeric(beide["messungen"], errors="coerce").fillna(0)
+    return (
+        beide.sort_values("messungen")
+        .groupby(["lake_key", "date"], as_index=False)
+        .last()
+        .sort_values(["lake_key", "date"])
+        .reset_index(drop=True)
+    )
+
+
+def write_daily(frame: pd.DataFrame, path: str | Path = DAILY_CSV) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    hinaus = frame.copy()
+    hinaus["date"] = pd.DatetimeIndex(hinaus["date"]).strftime("%Y-%m-%d")
+    hinaus["temp_c"] = hinaus["temp_c"].round(2)
+    hinaus["messungen"] = hinaus["messungen"].astype(int)
+    hinaus.to_csv(path, index=False)
+    return path
+
+
+def daily_table(directory: str | Path = SNAPSHOT_DIR, config: dict | None = None,
+                path: str | Path = DAILY_CSV) -> pd.DataFrame:
+    """Alles, was wir über Tage wissen: Fortschreibung plus frische Abrufe.
+
+    Schreibt nichts -- das tut allein das Abrufwerkzeug. Wer nur rechnet,
+    soll keine Dateien verändern.
+    """
+    return merge_daily(read_daily(path), daily_series(directory, config))
+
+
 def snapshot_name(when: pd.Timestamp | None = None) -> str:
     when = when or local_now()
     return f"hdkaernten_see-{when:%Y%m%dT%H%M}.json"
@@ -327,15 +405,66 @@ def load_snapshot(path: str | Path, config: dict | None = None) -> Dataset:
     return data
 
 
+#: Nach diesem Schlüssel wird die Temperaturreihe gesucht. Bewusst eng:
+#: eine Stationsdatei führt auch den Wasserstand, und den mit der
+#: Temperatur zu verwechseln wäre schlimmer, als nichts zu finden.
+_TEMP_KEY = re.compile(r"wasser.?temp|temperatur|(^|[^a-z])wt([^a-z]|$)", re.I)
+
+
+def temperature_series(payload: Any) -> list[dict]:
+    """Sucht die Wassertemperaturreihe in einer Stationsantwort.
+
+    Die Sammeldatei legt sie unter ``werte.wassertemperatur`` ab. Wie die
+    Datei je Messstelle aufgebaut ist, wissen wir nicht sicher -- also
+    wird gesucht statt angenommen: eine Liste von Messwerten unterhalb
+    eines Schlüssels, der nach Wassertemperatur klingt.
+
+    Kein blinder Rückfall auf "irgendeine Messreihe": in derselben Datei
+    steht der Wasserstand. Lieber nichts finden und es melden, als
+    Zentimeter für Grad zu halten.
+    """
+    treffer: list[dict] = []
+
+    def geh(knoten: Any, weg: str = "") -> None:
+        if isinstance(knoten, dict):
+            for schluessel, wert in knoten.items():
+                geh(wert, f"{weg}.{schluessel}" if weg else str(schluessel))
+        elif isinstance(knoten, list):
+            if knoten and isinstance(knoten[0], dict) and _TEMP_KEY.search(weg):
+                treffer.extend(e for e in knoten if isinstance(e, dict))
+            else:
+                for eintrag in knoten:
+                    if isinstance(eintrag, (dict, list)):
+                        geh(eintrag, weg)
+
+    geh(payload)
+    return treffer
+
+
+def station_ids(payload: Any) -> dict[str, str]:
+    """Kennung und Name je Messstelle aus einer Sammelantwort."""
+    gefunden = {}
+    for record in records(payload):
+        kennung = record.get("id")
+        if kennung is not None:
+            gefunden[str(kennung)] = str(record.get("name") or record.get("gewaesser") or "")
+    return gefunden
+
+
+def station_snapshot_name(kennung: str, when: pd.Timestamp | None = None) -> str:
+    when = when or local_now()
+    return f"station-{kennung}-{when:%Y%m%dT%H%M}.json"
+
+
 def daily_series(directory: str | Path = SNAPSHOT_DIR,
                  config: dict | None = None) -> pd.DataFrame:
     """Tagesreihe aus allen abgelegten Abrufen.
 
-    Jeder Abruf trägt die Messreihe der letzten rund 24 Stunden. Legt man
-    regelmässig ab, überlappen sie sich und ergänzen einander zu einer
-    lückenlosen Reihe -- deshalb werden hier alle Abrufe gelesen, die
-    Einzelmessungen über (See, Zeitpunkt) entdoppelt und zu Tagesmitteln
-    zusammengefasst.
+    Gelesen werden beide Fassungen, die der Dienst abgibt: die Sammeldatei
+    über alle Seen (letzte 24 h) und die Datei je Messstelle (letzte 72 h).
+    Legt man regelmässig ab, überlappen sie sich und ergänzen einander zu
+    einer lückenlosen Reihe -- die Einzelmessungen werden über
+    (See, Zeitpunkt) entdoppelt und zu Tagesmitteln zusammengefasst.
 
     Rückgabe: ``lake_key``, ``date``, ``temp_c``, ``messungen`` (wie viele
     Einzelwerte in den Tag eingingen) -- letzteres, damit ein Tag mit zwei
@@ -345,8 +474,18 @@ def daily_series(directory: str | Path = SNAPSHOT_DIR,
     by_name = {_fold(k): v for k, v in (config.get("name_to_lake_key") or {}).items()}
     by_hzb = {str(v).strip(): k for k, v in (config.get("hzb_to_lake_key") or {}).items()
               if str(v).strip()}
+    by_id = {str(k).strip(): v for k, v in (config.get("id_to_lake_key") or {}).items()}
 
     punkte: dict[tuple[str, pd.Timestamp], float] = {}
+
+    def merke(lake_key: str, entries) -> None:
+        for entry in entries or []:
+            when = _stamp(entry.get("date"))
+            value = _number(entry.get("value"))
+            if when is not None and value is not None:
+                # Derselbe Zeitpunkt in mehreren Abrufen ist eine Messung.
+                punkte[(lake_key, when)] = value
+
     for path in sorted(Path(directory).glob("hdkaernten_see-*.json")):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -356,14 +495,21 @@ def daily_series(directory: str | Path = SNAPSHOT_DIR,
             hzb = record.get("hzbnr")
             lake_key = by_hzb.get(str(hzb).strip()) if hzb is not None else None
             lake_key = lake_key or by_name.get(_fold(record.get("gewaesser", "")))
-            if not lake_key:
-                continue
-            for entry in (record.get("werte") or {}).get("wassertemperatur") or []:
-                when = _stamp(entry.get("date"))
-                value = _number(entry.get("value"))
-                if when is not None and value is not None:
-                    # Derselbe Zeitpunkt in mehreren Abrufen ist eine Messung.
-                    punkte[(lake_key, when)] = value
+            if lake_key:
+                merke(lake_key, (record.get("werte") or {}).get("wassertemperatur"))
+
+    # Die Dateien je Messstelle: der See steht im Dateinamen, nicht
+    # zwangsläufig im Inhalt -- deshalb wird er von dort genommen.
+    for path in sorted(Path(directory).glob("station/station-*.json")):
+        teile = path.stem.split("-")
+        lake_key = by_id.get(teile[1]) if len(teile) > 2 else None
+        if not lake_key:
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        merke(lake_key, temperature_series(payload))
 
     if not punkte:
         return pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])

@@ -38,6 +38,19 @@ als solches gezeichnet, nicht zu einer Kurve verschliffen, die er nicht ist
 — und darüber die gemessenen Tagesmittel. Die Reihe wächst mit jedem
 abgelegten Abruf.
 
+Der Dienst des Landes gibt zwei Fassungen ab: die Sammeldatei über alle
+Seen trägt die letzten **24 Stunden**, die Datei je Messstelle
+(`.../json/station/<id>.json`) die letzten **72 Stunden**. Beide werden
+abgerufen; die 72 Stunden sind der Grund, warum ein Abruf alle zwei Tage
+genügt statt täglich einer. Ein Archiv gibt es nicht — was heute nicht
+abgerufen wird, ist in drei Tagen fort.
+
+Damit die Reihe nicht davon abhängt, welche Rohabrufe gerade herumliegen,
+wird sie fortgeschrieben: `data/aktuell/tagesreihe.csv` sammelt Tag für
+Tag, was je gemessen wurde. Taucht ein Tag zweimal auf, gewinnt der mit
+den meisten Einzelmessungen — ein halb erwischter Tag verdrängt keinen
+ganzen. Die Rohabrufe dürfen danach aufgeräumt werden.
+
 Die Grafiken sind für beide Farbschemata getrennt abgestimmt; die Palette ist
 gegen Farbfehlsichtigkeit geprüft, Abweichungen laufen über eine
 divergierende Blau/Rot-Skala mit neutraler Mitte.
@@ -126,7 +139,8 @@ keine einzelne Quelle gleich gut liefert: **Jahrzehnte** für den Normalwert und
 |---|---|---|
 | Betreiber | BMLUK, Hydrographie Österreich | Amt der Kärntner Landesregierung, Abt. 12 |
 | Reichweite | gesamte Beobachtungsdauer der Messstelle | aktuelles Messfenster |
-| Auflösung | **WT-Monatsmittel** | 30-Minuten-Werte |
+| Auflösung | **WT-Monatsmittel** | 15-Minuten-Werte |
+| Zeitraum je Abruf | die ganze Reihe bis 2023 | 24 h (Sammeldatei), **72 h** (je Messstelle) |
 | Format | CSV (ISO-8859-1, Dezimalkomma) | JSON/GeoJSON |
 | Rolle hier | Normalwert **und** Vergleich | Tagesaktualität |
 

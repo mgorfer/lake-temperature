@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T21:11:46+00:00",
+  "generated_at": "2026-09-05T21:57:01+00:00",
   "source": "Demo-Modell (synthetisch)",
   "is_demo": true,
   "resolution": "daily",
@@ -266,7 +266,7 @@
       "anomaly_k": 0.2
     }
   ],
-  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (6 h alt)",
+  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (7 h alt)",
   "current_caveat": "Achtung - ungeprüfte Rohdaten!",
   "notes": [
     "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",

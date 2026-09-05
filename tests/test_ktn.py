@@ -8,6 +8,7 @@ bei einem unbekannten Aufbau sagen, was er vorgefunden hat.
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -279,3 +280,71 @@ class SnapshotTest(unittest.TestCase):
         """Sonst ist ein eben abgerufener Wert im Rechenzentrum "in der Zukunft"."""
         versatz = ktn.local_now() - pd.Timestamp.now()
         self.assertGreaterEqual(versatz.total_seconds(), -60)
+
+
+class Stationsdatei(unittest.TestCase):
+    """Die Datei je Messstelle -- 72 Stunden statt 24."""
+
+    def test_finds_the_temperature_series(self):
+        payload = {"werte": {"wassertemperatur": [
+            {"date": "2026-09-05T06:00:00+01:00", "value": 21.4}]}}
+        self.assertEqual(len(ktn.temperature_series(payload)), 1)
+
+    def test_water_level_is_not_mistaken_for_temperature(self):
+        """Der Fehler, der wehtäte: Zentimeter als Grad zu lesen."""
+        payload = {"werte": {
+            "wasserstand": [{"date": "2026-09-05T06:00:00+01:00", "value": 147}]}}
+        self.assertEqual(ktn.temperature_series(payload), [])
+
+    def test_picks_only_the_temperature_from_a_file_with_both(self):
+        payload = {"werte": {
+            "wasserstand": [{"date": "2026-09-05T06:00:00+01:00", "value": 147},
+                            {"date": "2026-09-05T06:15:00+01:00", "value": 146}],
+            "wassertemperatur": [{"date": "2026-09-05T06:00:00+01:00", "value": 21.4}],
+        }}
+        reihe = ktn.temperature_series(payload)
+        self.assertEqual([e["value"] for e in reihe], [21.4])
+
+    def test_survives_a_different_nesting(self):
+        """Wie die Datei aufgebaut ist, wissen wir nicht -- gesucht wird."""
+        payload = {"station": {"id": 2001056, "messreihen": {
+            "WT": [{"date": "2026-09-05T06:00:00+01:00", "value": 24.1}]}}}
+        self.assertEqual(len(ktn.temperature_series(payload)), 1)
+
+    def test_station_ids_from_a_collection(self):
+        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        kennungen = ktn.station_ids(payload)
+        self.assertIn("2001056", kennungen)
+        self.assertTrue(all(k.isdigit() for k in kennungen))
+
+
+class Tagesreihe(unittest.TestCase):
+    """Fortschreibung: was einmal gemessen wurde, bleibt."""
+
+    def frame(self, tag, temp, messungen):
+        return pd.DataFrame([{"lake_key": "woerthersee", "date": pd.Timestamp(tag),
+                              "temp_c": temp, "messungen": messungen}])
+
+    def test_new_days_are_added(self):
+        zusammen = ktn.merge_daily(self.frame("2026-09-01", 22.0, 90),
+                                   self.frame("2026-09-02", 22.5, 90))
+        self.assertEqual(len(zusammen), 2)
+
+    def test_better_covered_day_wins(self):
+        """Ein halb erwischter Tag darf einen ganzen nicht verdrängen."""
+        zusammen = ktn.merge_daily(self.frame("2026-09-01", 22.0, 96),
+                                   self.frame("2026-09-01", 25.0, 3))
+        self.assertEqual(len(zusammen), 1)
+        self.assertEqual(zusammen.iloc[0]["messungen"], 96)
+        self.assertEqual(zusammen.iloc[0]["temp_c"], 22.0)
+
+    def test_roundtrip_through_the_csv(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            pfad = Path(ordner) / "tagesreihe.csv"
+            ktn.write_daily(self.frame("2026-09-01", 22.0, 96), pfad)
+            zurueck = ktn.read_daily(pfad)
+        self.assertEqual(len(zurueck), 1)
+        self.assertEqual(zurueck.iloc[0]["date"], pd.Timestamp("2026-09-01"))
+
+    def test_missing_csv_is_not_an_error(self):
+        self.assertTrue(ktn.read_daily("/nirgends/tagesreihe.csv").empty)

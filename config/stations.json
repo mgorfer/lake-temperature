@@ -123,6 +123,23 @@
       "Maltschacher See": "maltschacher_see",
       "Rauschele See": "rauschele_see",
       "Magdalensee": "magdalensee"
+    },
+    "id_to_lake_key": {
+      "2001018": "millstaetter_see",
+      "2001022": "weissensee",
+      "2001037": "pressegger_see",
+      "2001042": "faaker_see",
+      "2001056": "woerthersee",
+      "2001082": "ossiacher_see",
+      "2001088": "klopeiner_see",
+      "2002201": "keutschacher_see",
+      "2002213": "rauschele_see",
+      "2002224": "laengsee",
+      "2002235": "goesselsdorfer_see",
+      "2900120": "afritzer_see",
+      "2900121": "brennsee",
+      "2900132": "maltschacher_see",
+      "2900222": "turnersee"
     }
   }
 }

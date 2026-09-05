@@ -17,6 +17,7 @@ Alle Prüfungen liefen vom GitHub-Runner aus (`Quelle erkunden` →
 | **GeoSphere Austria Data Hub** | Erreichbar, 67 Datensätze, **keiner** zu Seen oder Wassertemperatur. Meteorologie, nicht Hydrologie. |
 | **Textspiegel r.jina.ai** | HTTP 422. |
 | **eHYD als Tagesquelle** | Führt Wassertemperatur nur als `WT-Monatsmittel`. Die vollständige Dateiliste je Messstelle bestätigt: nichts Tägliches. |
+| **Archiv des Landes** | Der Katalog auf data.gv.at weist alle zehn Ressourcen aus: die Sammeldateien tragen "Jetzt -24h", die Lite-Fassungen "letzter Messwert", die Datei je Messstelle "Jetzt -72h". Ein Archiv gibt es nicht. Vergangene Tage dieses Jahres sind über die offene Schnittstelle nicht mehr zu holen. |
 
 Die eine Aufnahme von 2024 war nicht ganz umsonst: sie zeigt dasselbe
 Feldschema wie heute. Der Aufbau des Dienstes ist also über zwei Jahre
