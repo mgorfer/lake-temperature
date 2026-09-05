@@ -203,6 +203,9 @@ aktuelle Gerät unkritisch.
 * **Akku-Optimierung.** Android kann Termux im Hintergrund einfrieren. Für den
   vollen Lauf das Display anlassen oder in den Termux-Einstellungen einen
   Wakelock setzen.
+* **„Push fehlgeschlagen".** Dann fehlt die Anmeldung: `gh auth login`
+  (*GitHub.com → HTTPS → Login with a web browser*). Der Commit liegt
+  lokal bereit und geht beim nächsten Lauf mit — nichts ist verloren.
 * **Es scheint zu hängen.** Sollte nicht mehr vorkommen: jeder Schritt meldet
   sich mit Uhrzeit, und nichts, was von aussen abhängt, läuft ohne Zeitlimit.
   Falls doch — `phone.log` im Projektverzeichnis zeigt, bei welchem Schritt

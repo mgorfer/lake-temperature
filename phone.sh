@@ -26,6 +26,23 @@ log() {
     printf '%s  %s\n' "$(date '+%H:%M:%S')" "$*" | tee -a "$LOG"
 }
 
+STATUSFILE="$ROOT/.phone-status"
+FEHLER=0
+
+# Führt einen Befehl aus, schreibt seine Ausgabe ins Protokoll mit -- und
+# gibt DESSEN Rückgabewert zurück, nicht den von tee.
+#
+# Ohne diesen Umweg meldet "wenn befehl | tee" immer Erfolg, weil tee
+# gelingt, auch wenn der Befehl scheitert. Genau daran hat dieses Skript
+# einmal "gepusht." gemeldet, während git danebenstand und "fatal: could
+# not read Username" schrieb.
+lauf() {
+    { "$@"; echo $? > "$STATUSFILE"; } 2>&1 | tee -a "$LOG"
+    code=$(cat "$STATUSFILE" 2>/dev/null || echo 1)
+    rm -f "$STATUSFILE"
+    return "$code"
+}
+
 # Führt einen Befehl mit Zeitlimit aus, wenn 'timeout' vorhanden ist.
 # Rückgabe 124 heisst: Zeit abgelaufen.
 mit_zeitlimit() {
@@ -86,9 +103,7 @@ esac
 # ------------------------------------------------------- 1: Messwerte holen
 if [ -n "$CURRENT" ]; then
     log "[1/4] Aktuelle Messwerte holen"
-    if mit_zeitlimit 90 "$PYTHON" tools/snapshot_ktn.py 2>&1 | tee -a "$LOG"; then
-        :
-    else
+    if ! lauf mit_zeitlimit 90 "$PYTHON" tools/snapshot_ktn.py; then
         log "      kein neuer Abruf abgelegt (die Auswertung läuft trotzdem)"
     fi
 else
@@ -98,14 +113,10 @@ fi
 # ------------------------------------------------------------ 2: Auswertung
 log "[2/4] Auswertung rechnen"
 mkdir -p "$OUT"
-STATUS="$ROOT/.phone-status"
 # shellcheck disable=SC2086
-{ "$PYTHON" -m seetemp --out "$OUT" $CURRENT "$@"; echo $? > "$STATUS"; } 2>&1 | tee -a "$LOG"
-CODE=$(cat "$STATUS" 2>/dev/null || echo 1)
-rm -f "$STATUS"
-if [ "$CODE" -ne 0 ]; then
-    log "      Auswertung fehlgeschlagen (Code $CODE) -- siehe $LOG"
-    exit "$CODE"
+if ! lauf "$PYTHON" -m seetemp --out "$OUT" $CURRENT "$@"; then
+    log "      Auswertung fehlgeschlagen -- siehe $LOG"
+    exit 1
 fi
 
 # ---------------------------------------------------------------- 3: Galerie
@@ -139,7 +150,8 @@ if [ "$PUSH" -eq 1 ]; then
     else
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
         git add data/aktuell
-        if ! git commit -q -m "Messwerte vom $(date '+%d.%m.%Y, %H:%M')" 2>&1 | tee -a "$LOG"; then
+        if ! lauf git commit -q -m "Messwerte vom $(date '+%d.%m.%Y, %H:%M')"; then
+            FEHLER=1
             log "      Commit fehlgeschlagen. Fehlt die Identität? Dann einmalig:"
             log "      git config --global user.name \"Dein Name\""
             log "      git config --global user.email \"du@example.com\""
@@ -147,11 +159,12 @@ if [ "$PUSH" -eq 1 ]; then
             log "      Push nach $BRANCH"
             # Ohne GIT_TERMINAL_PROMPT=0 wartet git auf Benutzername und
             # Passwort -- im Skript sieht das aus wie ein Hänger.
-            if GIT_TERMINAL_PROMPT=0 mit_zeitlimit 120 \
-                   git push -u origin "$BRANCH" 2>&1 | tee -a "$LOG"; then
+            if GIT_TERMINAL_PROMPT=0 lauf mit_zeitlimit 120 \
+                   git push -u origin "$BRANCH"; then
                 log "      gepusht."
             else
-                log "      Push fehlgeschlagen oder Zeit abgelaufen."
+                FEHLER=1
+                log "      PUSH FEHLGESCHLAGEN."
                 log "      Einmalig anmelden:  gh auth login"
                 log "      (Termux: pkg install gh, dann HTTPS + Web-Browser wählen)"
                 log "      Der Commit liegt lokal bereit und geht beim nächsten Mal mit."
@@ -165,3 +178,8 @@ fi
 log ""
 log "Bilder:    $OUT"
 log "Protokoll: $LOG"
+if [ "$FEHLER" -ne 0 ]; then
+    log ""
+    log "ACHTUNG: mindestens ein Schritt ist fehlgeschlagen (siehe oben)."
+    exit 1
+fi
