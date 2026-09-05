@@ -18,6 +18,7 @@ es gibt, statt zu raten.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 import time
@@ -149,6 +150,59 @@ def katalog() -> None:
             zeige_funde(r.text, grenze=15)
 
 
+def beschreibungen() -> None:
+    """Der Katalogeintrag im Volltext -- dort steht, was ein Endpunkt trägt.
+
+    Die Adressen allein sagen nichts über den Zeitraum. Ob
+    ``station/<id>.json`` einen Tag oder ein Jahr führt und wofür die
+    Fassung mit ``_l`` steht, gehört in die Beschreibung der Ressource --
+    also wird sie gelesen, statt an den Adressen herumzuraten.
+    """
+    out("\n\n## 1b. Der Eintrag im Volltext")
+    url = ("https://www.data.gv.at/api/hub/search/search"
+           "?q=hdkaernten&filter=dataset&limit=5")
+    out(f"\n{url}")
+    r = get(url)
+    if r is None or r.status_code != 200:
+        return
+    try:
+        daten = r.json()
+    except ValueError:
+        out("  keine JSON-Antwort")
+        return
+
+    # Nicht raten, wie der Katalog seine Felder nennt: alles einsammeln,
+    # was "hdkaernten" erwähnt, und im Zusammenhang zeigen.
+    treffer: list[dict] = []
+
+    def geh(knoten) -> None:
+        if isinstance(knoten, dict):
+            roh = json.dumps(knoten, ensure_ascii=False)
+            kinder = [v for v in knoten.values() if isinstance(v, (dict, list))]
+            # Das kleinste Gebilde, das die Adresse noch enthält -- also
+            # erst absteigen, dann selbst melden.
+            tiefer = any("hdkaernten" in json.dumps(k, ensure_ascii=False)
+                         for k in kinder)
+            if "hdkaernten" in roh and not tiefer:
+                treffer.append(knoten)
+            for kind in kinder:
+                geh(kind)
+        elif isinstance(knoten, list):
+            for kind in knoten:
+                geh(kind)
+
+    geh(daten)
+    out(f"  {len(treffer)} Stellen erwähnen hdkaernten")
+    for knoten in treffer[:14]:
+        out("")
+        for schluessel, wert in knoten.items():
+            text = json.dumps(wert, ensure_ascii=False) if not isinstance(wert, str) else wert
+            text = " ".join(text.split())
+            if len(text) > 500:
+                text = text[:500] + " …"
+            out(f"    {schluessel}: {text}")
+
+
 def kandidaten(alle: bool = False) -> None:
     out("\n\n## 2. ktn.gv.at: Kandidaten, direkt versucht")
     out("(Ein Fehlschlag hier ist kein Urteil -- der Dienst sperrt Rechenzentren.")
@@ -169,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
     out(f"(Budget {BUDGET_S} s)\n")
     if "--nur-ktn" not in argv:
         katalog()
+        beschreibungen()
     kandidaten(alle="--ktn" in argv or "--nur-ktn" in argv)
     out(f"\nFertig nach {time.monotonic() - _START:.0f} s.")
     return 0
