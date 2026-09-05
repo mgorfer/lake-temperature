@@ -89,14 +89,23 @@ jobs:
           SEETEMP_SOURCE: ${{ inputs.source || 'ehyd' }}
           SEETEMP_YEAR: ${{ inputs.year }}
           SEETEMP_REF: ${{ inputs.reference || '1991-2020' }}
-          # Immer versuchen: der Abruf scheitert hier zwar am Netz, fällt dann
-          # aber auf den jüngsten eingecheckten Abruf zurück. Ohne Abruf wird
-          # der Schritt vermerkt und der Lauf läuft weiter.
-          SEETEMP_CURRENT: ${{ (inputs.aktuelle_werte == false) && 'none' || 'ktn' }}
+          # Roh durchreichen und in der Shell auswerten. Ein Ausdruck wie
+          # "inputs.x == false" ist hier eine Falle: bei Push und Zeitplan ist
+          # inputs.x null, GitHub vergleicht lose über Zahlen, und null == false
+          # ist wahr -- die aktuellen Werte wären genau dann aus, wenn sie an
+          # sein sollen.
+          SEETEMP_AKTUELL: ${{ inputs.aktuelle_werte }}
         run: |
           set -euo pipefail
+          # Nur ein ausdrückliches "false" schaltet die aktuellen Werte ab;
+          # leer (Push, Zeitplan) heisst an. Der Netzabruf scheitert hier am
+          # Netz und fällt auf den jüngsten Abruf aus data/aktuell zurück.
+          current=ktn
+          if [ "${SEETEMP_AKTUELL}" = "false" ]; then
+            current=none
+          fi
           args="--source $SEETEMP_SOURCE --ref $SEETEMP_REF --out site"
-          args="$args --current $SEETEMP_CURRENT"
+          args="$args --current $current"
           if [ -n "${SEETEMP_YEAR}" ]; then
             args="$args --year $SEETEMP_YEAR"
           fi
