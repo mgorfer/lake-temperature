@@ -25,23 +25,25 @@ on:
         default: "1991-2020"
       aktuelle_werte:
         description: >-
-          Aktuelle Werte des Landes Kärnten mitholen. Vorgabe nein, weil der
-          Dienst Rechenzentrums-Adressen nicht beantwortet -- lokal in
-          Österreich funktioniert es.
+          Aktuelle Werte einbeziehen. Der Dienst des Landes antwortet
+          Rechenzentren nicht; dann wird der jüngste abgelegte Abruf aus
+          data/aktuell genommen, mit seinem Alter beschriftet.
         type: boolean
-        default: false
+        default: true
   # eHYD führt die Wassertemperatur als Monatsmittel -- öfter als wöchentlich
   # abzurufen brächte keine neuen Werte.
   schedule:
     - cron: "17 4 * * 1"
   # Codeänderungen sollen die Seite erneuern; Änderungen an den fertigen
-  # PNGs im Repo dagegen nicht.
+  # PNGs im Repo dagegen nicht. Neue Messwerte schon: sie sind der Grund,
+  # warum jemand vom Handy aus eincheckt.
   push:
     branches: [claude/kaerntner-seen-temperatur-app-6pgtdh]
     paths:
       - "seetemp/**"
       - "tools/**"
       - "config/**"
+      - "data/aktuell/**"
       - "requirements.txt"
       - ".github/workflows/seetemperaturen.yml"
 
@@ -87,7 +89,10 @@ jobs:
           SEETEMP_SOURCE: ${{ inputs.source || 'ehyd' }}
           SEETEMP_YEAR: ${{ inputs.year }}
           SEETEMP_REF: ${{ inputs.reference || '1991-2020' }}
-          SEETEMP_CURRENT: ${{ inputs.aktuelle_werte && 'ktn' || 'none' }}
+          # Immer versuchen: der Abruf scheitert hier zwar am Netz, fällt dann
+          # aber auf den jüngsten eingecheckten Abruf zurück. Ohne Abruf wird
+          # der Schritt vermerkt und der Lauf läuft weiter.
+          SEETEMP_CURRENT: ${{ (inputs.aktuelle_werte == false) && 'none' || 'ktn' }}
         run: |
           set -euo pipefail
           args="--source $SEETEMP_SOURCE --ref $SEETEMP_REF --out site"
