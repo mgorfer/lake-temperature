@@ -162,6 +162,14 @@ def run(argv: list[str] | None = None) -> int:
     clim = climatology.build(frame, reference, args.window, args.min_samples, resolution)
     annotated = climatology.with_anomaly(frame, clim)
     print(f"Bezugszeitraum:  {clim.label} ({clim.method})")
+    if not clim.coverage.empty:
+        knapp = clim.thin()
+        gut = len(clim.coverage) - len(knapp)
+        print(f"Belegung:        {gut} von {len(clim.coverage)} Seen mit mindestens "
+              f"{climatology.MIN_YEARS} Jahren")
+        for key in knapp:
+            print(f"                 {lakes_mod.BY_KEY[key].name}: "
+                  f"{clim.describe_coverage(key)}")
 
     # Nur Jahre, die auch einen Normalwert zum Vergleich haben.
     available = sorted(int(y) for y in annotated.loc[annotated["anomaly"].notna(), "year"].unique())
@@ -284,7 +292,15 @@ def run(argv: list[str] | None = None) -> int:
         "reference": clim.label,
         "method": clim.method,
         "threshold_c": args.threshold,
-        "lakes": [{"key": l.key, "name": l.name} for l in selected],
+        "lakes": [
+            {
+                "key": l.key, "name": l.name,
+                "normal_jahre": clim.years(l.key) or None,
+                "normal_belegung": clim.describe_coverage(l.key) or None,
+            }
+            for l in selected
+        ],
+        "normal_duenn": clim.thin(),
         "data_from": f"{span.min():%Y-%m-%d}",
         "data_until": f"{span.max():%Y-%m-%d}",
         "values": int(len(frame)),

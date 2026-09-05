@@ -238,3 +238,34 @@ class EhydDiscoveryTest(unittest.TestCase):
         monthly = pd.Series(pd.date_range("2020-01-01", periods=40, freq="MS"))
         self.assertEqual(ehyd.infer_resolution(daily), "daily")
         self.assertEqual(ehyd.infer_resolution(monthly), "monthly")
+
+
+class CoverageTest(unittest.TestCase):
+    """Ein Normalwert aus zwölf Jahren ist keiner aus dreissig -- das muss
+    aus der Auswertung hervorgehen, nicht in der Zahl verschwinden."""
+
+    def series(self, lake: str, first_year: int) -> pd.DataFrame:
+        dates = pd.date_range(f"{first_year}-01-01", "2020-12-31", freq="D")
+        return pd.DataFrame({"lake_key": lake, "date": dates, "temp_c": 12.0})
+
+    def setUp(self):
+        frame = pd.concat([self.series("lang", 1991), self.series("kurz", 2009)],
+                          ignore_index=True)
+        self.clim = climatology.build(frame)
+
+    def test_counts_the_years_behind_each_normal(self):
+        self.assertEqual(self.clim.years("lang"), 30)
+        self.assertEqual(self.clim.years("kurz"), 12)
+
+    def test_describes_the_span(self):
+        self.assertEqual(self.clim.describe_coverage("lang"), "aus 30 Jahren (1991–2020)")
+        self.assertEqual(self.clim.describe_coverage("kurz"), "aus 12 Jahren (2009–2020)")
+
+    def test_names_the_thinly_covered_lakes(self):
+        self.assertEqual(self.clim.thin(), ["kurz"])
+        self.assertEqual(self.clim.thin(minimum=10), [])
+        self.assertEqual(sorted(self.clim.thin(minimum=99)), ["kurz", "lang"])
+
+    def test_unknown_lake_is_not_an_error(self):
+        self.assertEqual(self.clim.years("gibtsnicht"), 0)
+        self.assertEqual(self.clim.describe_coverage("gibtsnicht"), "")

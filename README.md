@@ -333,6 +333,13 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 * **Datenlücken.** Ein Kalendertag bekommt nur dann einen Normalwert, wenn im
   Fenster mindestens `--min-samples` Werte liegen. Tage ohne Normalwert
   bleiben in der Auswertung leer statt geschätzt zu werden.
+* **Belegung.** Die Messreihen beginnen unterschiedlich früh: der Ossiacher
+  See reicht bis 1910 zurück, der Pressegger See erst bis Juli 2009. Ein
+  Normalwert aus zwölf Jahren ist keiner aus dreissig, und das soll nicht in
+  der Zahl verschwinden. Deshalb steht die Belegung je See in der Kopfzeile
+  des Jahresgangs, dünn belegte Seen tragen in der Übersicht einen Stern mit
+  auflösender Fussnote, und die Seite führt eine Tabelle „Grundlage der
+  Normalwerte". Als dünn gilt weniger als `MIN_YEARS` (20) Jahre.
 * **Angebrochenes Jahr.** Läuft das Vergleichsjahr noch, wird die
   Badetage-Bilanz für alle Jahre am selben Kalendertag abgeschnitten — sonst
   stünde eine halbe Saison gegen eine ganze.
@@ -355,7 +362,7 @@ Vergleichsjahres sowie die Kärntner Quelle: das echte GeoJSON-Schema
 HZB-Nummer mit Namensrückfall, das 24-Stunden-Mittel, ISO-Zeitstempel ohne
 Tag-zuerst-Verdrehung, Mitternachtswerte ohne Datumssprung, Felderkennung,
 Umlaut-Umschrift, Meldung bei unbekanntem Schema, Seen ohne lange Reihe sowie die abgelegten
-Abrufe samt ehrlicher Altersangabe.
+Abrufe samt ehrlicher Altersangabe und die Belegung der Normalwerte.
 
 ## Aufbau
 

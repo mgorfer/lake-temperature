@@ -194,9 +194,11 @@ def lake_season(
     else:
         stand = f"Letzter Monat {MONTH_NAMES[last['month'] - 1]} {last['date'].year}"
         normal = "Monatsnormalwert"
+    belegung = clim.describe_coverage(lake_key)
     subtitle = (
         f"{lake.altitude_m} m Seehöhe · {num(lake.area_km2, 2)} km² · "
-        f"max. {lake.max_depth_m} m tief\n"
+        f"max. {lake.max_depth_m} m tief"
+        + (f" · Normalwert {belegung}" if belegung else "") + "\n"
         f"{stand}: {num(last['temp_c'])} °C "
         f"({num(last['anomaly'], signed=True)} K gegenüber dem {normal})"
         + (f" · Saisonmittel Mai–September: {num(dev, signed=True)} K"
@@ -217,12 +219,15 @@ def anomaly_overview(
     if summary.empty:
         return None
     data = summary.sort_values("anomaly")
-    names = [BY_KEY[k].name for k in data["lake_key"]]
+    # Ein Normalwert aus elf Jahren ist keiner aus dreissig. Die betroffenen
+    # Seen bekommen einen Stern und unten eine Zeile, die ihn auflöst.
+    duenn = set(clim.thin())
+    names = [BY_KEY[k].name + (" *" if k in duenn else "") for k in data["lake_key"]]
     values = data["anomaly"].to_numpy()
     colors = [th.warm if v >= 0 else th.cool for v in values]
 
-    fig = plt.figure(figsize=(9.6, 0.40 * len(data) + 2.05))
-    ax = _axes(fig, 0.20, 0.955, header_in=1.15, footer_in=0.90)
+    fig = plt.figure(figsize=(9.6, 0.40 * len(data) + 2.05 + (0.3 if duenn else 0)))
+    ax = _axes(fig, 0.20, 0.955, header_in=1.15 + (0.30 if duenn else 0), footer_in=0.90)
     _despine(ax, th)
     ax.barh(names, values, color=colors, height=0.46, zorder=3)
     ax.axvline(0, color=th.text_secondary, linewidth=1.0, zorder=4)
@@ -243,9 +248,15 @@ def anomaly_overview(
     for label in ax.get_yticklabels():
         label.set_color(th.text)
 
+    hinweis = ""
+    if duenn:
+        aufzaehlung = ", ".join(
+            f"{BY_KEY[k].name} {clim.describe_coverage(k)}" for k in clim.thin()
+        )
+        hinweis = f"\n* Normalwert auf schmalerer Grundlage: {aufzaehlung}."
     _titleblock(fig, th, f"Badesaison {year} (Mai–September) im langjährigen Vergleich",
                 f"Mittlere Abweichung der Tageswerte vom Normalwert {clim.label}; "
-                f"in Klammern das Saisonmittel des Jahres {year}.")
+                f"in Klammern das Saisonmittel des Jahres {year}." + hinweis)
     _footer(fig, th, f"Quelle: {source}")
     _watermark(fig, th, is_demo)
     return _save(fig, out)

@@ -17,7 +17,7 @@ Vorgehen, angelehnt an die übliche Praxis für Klimanormalwerte:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,9 @@ DEFAULT_WINDOW = 7
 MIN_SAMPLES = 20
 #: Bei Monatsmitteln ist ein Wert ein ganzer Monat -- entsprechend weniger.
 MIN_SAMPLES_MONTHLY = 10
+#: Ab wie vielen Jahren ein Normalwert als solide gilt. Die WMO-Normalperiode
+#: umfasst dreissig; darunter wird die Angabe eigens ausgewiesen.
+MIN_YEARS = 20
 
 
 def add_daynumber(frame: pd.DataFrame) -> pd.DataFrame:
@@ -51,6 +54,10 @@ class Climatology:
     ref_end: int
     window: int
     resolution: str = "daily"
+    #: Je See: auf wie vielen Jahren der Normalwert steht (jahre, von, bis,
+    #: werte). Ein Mittel aus elf Jahren ist kein Mittel aus dreissig, und
+    #: das gehört sichtbar gemacht statt in der Zahl zu verschwinden.
+    coverage: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @property
     def key(self) -> str:
@@ -67,14 +74,29 @@ class Climatology:
             return f"gleitendes ±{self.window}-Tage-Fenster"
         return "Monatsmittel"
 
-    def coverage(self) -> pd.DataFrame:
-        """Je See: Anzahl belegter Stützstellen und Werte je Stützstelle."""
-        return (
-            self.table.groupby("lake_key")
-            .agg(stuetzstellen=(self.key, "size"), werte_min=("n", "min"),
-                 werte_median=("n", "median"))
-            .reset_index()
-        )
+    def years(self, lake_key: str) -> int:
+        """Anzahl Jahre, die zum Normalwert dieses Sees beitragen."""
+        if self.coverage.empty:
+            return 0
+        row = self.coverage[self.coverage["lake_key"] == lake_key]
+        return int(row["jahre"].iloc[0]) if len(row) else 0
+
+    def describe_coverage(self, lake_key: str) -> str:
+        """Kurzfassung für die Beschriftung, etwa "aus 11 Jahren (2009–2020)"."""
+        if self.coverage.empty:
+            return ""
+        row = self.coverage[self.coverage["lake_key"] == lake_key]
+        if not len(row):
+            return ""
+        r = row.iloc[0]
+        return f"aus {int(r['jahre'])} Jahren ({int(r['von'])}–{int(r['bis'])})"
+
+    def thin(self, minimum: int = MIN_YEARS) -> list[str]:
+        """Seen, deren Normalwert auf weniger als ``minimum`` Jahren steht."""
+        if self.coverage.empty:
+            return []
+        mager = self.coverage[self.coverage["jahre"] < minimum]
+        return mager.sort_values("jahre")["lake_key"].tolist()
 
 
 def _summarise(pool: np.ndarray, lake_key: str, key: str, value: int) -> dict:
@@ -143,7 +165,18 @@ def build(
             f"mindestens {min_samples} Werte. Bezugszeitraum verlängern oder "
             "--min-samples senken."
         )
-    return Climatology(pd.DataFrame(rows), ref_start, ref_end, window, resolution)
+
+    table = pd.DataFrame(rows)
+    # Wie gut ist der Normalwert je See belegt? Nur Seen, für die er
+    # überhaupt zustande kam.
+    belegt = ref[ref["lake_key"].isin(table["lake_key"].unique())]
+    coverage = (
+        belegt.groupby("lake_key")
+        .agg(jahre=("year", "nunique"), von=("year", "min"), bis=("year", "max"),
+             werte=("temp_c", "size"))
+        .reset_index()
+    )
+    return Climatology(table, ref_start, ref_end, window, resolution, coverage)
 
 
 def with_anomaly(frame: pd.DataFrame, clim: Climatology) -> pd.DataFrame:

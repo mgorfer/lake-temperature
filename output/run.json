@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T16:18:44+00:00",
+  "generated_at": "2026-09-05T16:33:37+00:00",
   "source": "Demo-Modell (synthetisch)",
   "is_demo": true,
   "resolution": "daily",
@@ -10,69 +10,102 @@
   "lakes": [
     {
       "key": "woerthersee",
-      "name": "Wörthersee"
+      "name": "Wörthersee",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "ossiacher_see",
-      "name": "Ossiacher See"
+      "name": "Ossiacher See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "millstaetter_see",
-      "name": "Millstätter See"
+      "name": "Millstätter See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "faaker_see",
-      "name": "Faaker See"
+      "name": "Faaker See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "klopeiner_see",
-      "name": "Klopeiner See"
+      "name": "Klopeiner See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "weissensee",
-      "name": "Weißensee"
+      "name": "Weißensee",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "keutschacher_see",
-      "name": "Keutschacher See"
+      "name": "Keutschacher See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "laengsee",
-      "name": "Längsee"
+      "name": "Längsee",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "turnersee",
-      "name": "Turnersee"
+      "name": "Turnersee",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "pressegger_see",
-      "name": "Pressegger See"
+      "name": "Pressegger See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "afritzer_see",
-      "name": "Afritzer See"
+      "name": "Afritzer See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "brennsee",
-      "name": "Feldsee (Brennsee)"
+      "name": "Feldsee (Brennsee)",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "goesselsdorfer_see",
-      "name": "Gösselsdorfer See"
+      "name": "Gösselsdorfer See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "maltschacher_see",
-      "name": "Maltschacher See"
+      "name": "Maltschacher See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "rauschele_see",
-      "name": "Rauschele See"
+      "name": "Rauschele See",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     },
     {
       "key": "magdalensee",
-      "name": "Magdalensee"
+      "name": "Magdalensee",
+      "normal_jahre": 30,
+      "normal_belegung": "aus 30 Jahren (1991–2020)"
     }
   ],
+  "normal_duenn": [],
   "data_from": "1991-01-01",
   "data_until": "2026-09-05",
   "values": 208512,
@@ -229,7 +262,7 @@
       "anomaly_k": 0.2
     }
   ],
-  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (frisch)",
+  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (2 h alt)",
   "current_caveat": "Achtung - ungeprüfte Rohdaten!",
   "notes": [
     "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",

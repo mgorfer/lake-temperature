@@ -98,6 +98,8 @@ th { color: var(--ink-3); font-weight: 600; }
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tbody tr:last-child td { border-bottom: none; }
 .warm { color: #b3312f; } .cool { color: #1f5fa8; }
+tr.thin td { color: var(--ink-3); }
+tr.thin td:first-child::after { content: " *"; color: var(--warn-line); }
 @media (prefers-color-scheme: dark) { .warm { color: #ef8b8b; } .cool { color: #6aa6ef; } }
 """
 
@@ -174,6 +176,39 @@ def current_table(run: dict) -> str:
     )
 
 
+def coverage_table(run: dict) -> str:
+    """Auf wie vielen Jahren der Normalwert je See steht.
+
+    Ein Mittel aus zwölf Jahren ist kein Mittel aus dreissig. Wer die
+    Abweichungen liest, soll sehen, wie tragfähig der Vergleichswert ist.
+    """
+    lakes = [l for l in run.get("lakes", []) if l.get("normal_jahre")]
+    if not lakes:
+        return ""
+    esc = lambda v: html.escape(str(v))
+    duenn = set(run.get("normal_duenn") or [])
+    body = []
+    for lake in sorted(lakes, key=lambda l: -l["normal_jahre"]):
+        css = ' class="thin"' if lake["key"] in duenn else ""
+        zeitraum = (lake.get("normal_belegung") or "").split("(")[-1].rstrip(")")
+        body.append(f"<tr{css}><td>{esc(lake['name'])}</td>"
+                    f'<td class="n">{lake["normal_jahre"]}</td>'
+                    f"<td>{esc(zeitraum)}</td></tr>")
+    hinweis = ""
+    if duenn:
+        hinweis = ('<p class="caption">Hervorgehoben: weniger als 20 Jahre. '
+                   "Die Abweichung dieser Seen ist mit mehr Vorsicht zu lesen — "
+                   "nicht falsch, aber schmaler begründet.</p>")
+    return (
+        '<h2>Grundlage der Normalwerte</h2>'
+        '<p class="caption">Wie viele Jahre zum Vergleichswert je See beitragen. '
+        "Die WMO-Normalperiode umfasst dreissig.</p>"
+        '<table><thead><tr><th>See</th><th class="n">Jahre</th>'
+        "<th>Zeitraum</th></tr></thead>"
+        f"<tbody>{''.join(body)}</tbody></table>{hinweis}"
+    )
+
+
 def render(root: Path, run: dict) -> str:
     esc = lambda v: html.escape(str(v))
     overview, lakes = collect(root, run)
@@ -235,6 +270,7 @@ def render(root: Path, run: dict) -> str:
             parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
                       picture(light, dark, name)]
 
+    parts.append(coverage_table(run))
     parts += [
         "<footer>",
         "Erzeugt mit <a href=\"https://github.com/mgorfer/lake-temperature\">seetemp</a>. ",
