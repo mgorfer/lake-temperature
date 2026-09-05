@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T16:33:37+00:00",
+  "generated_at": "2026-09-05T21:11:46+00:00",
   "source": "Demo-Modell (synthetisch)",
   "is_demo": true,
   "resolution": "daily",
@@ -7,6 +7,10 @@
   "reference": "1991–2020",
   "method": "gleitendes ±7-Tage-Fenster",
   "threshold_c": 22.0,
+  "month": 8,
+  "month_file": "august",
+  "month_name": "August",
+  "current_year": 2026,
   "lakes": [
     {
       "key": "woerthersee",
@@ -112,34 +116,24 @@
   "skipped": [],
   "current": [
     {
-      "lake_key": "klopeiner_see",
-      "name": "Klopeiner See",
-      "date": "2026-09-05",
-      "temp_c": 25.3,
-      "temp_latest": 25.1,
-      "latest_at": "2026-09-05 15:00",
-      "normal_c": 23.5,
-      "anomaly_k": 1.7
-    },
-    {
       "lake_key": "woerthersee",
       "name": "Wörthersee",
       "date": "2026-09-05",
       "temp_c": 25.3,
       "temp_latest": 25.2,
-      "latest_at": "2026-09-05 17:00",
+      "latest_at": "2026-09-05 17:15",
       "normal_c": 23.8,
       "anomaly_k": 1.5
     },
     {
-      "lake_key": "maltschacher_see",
-      "name": "Maltschacher See",
+      "lake_key": "klopeiner_see",
+      "name": "Klopeiner See",
       "date": "2026-09-05",
-      "temp_c": 24.9,
-      "temp_latest": 24.7,
-      "latest_at": "2026-09-05 16:00",
-      "normal_c": 23.0,
-      "anomaly_k": 1.9
+      "temp_c": 25.2,
+      "temp_latest": 25.1,
+      "latest_at": "2026-09-05 15:00",
+      "normal_c": 23.5,
+      "anomaly_k": 1.7
     },
     {
       "lake_key": "keutschacher_see",
@@ -150,6 +144,16 @@
       "latest_at": "2026-09-05 16:00",
       "normal_c": 23.8,
       "anomaly_k": 1.1
+    },
+    {
+      "lake_key": "maltschacher_see",
+      "name": "Maltschacher See",
+      "date": "2026-09-05",
+      "temp_c": 24.9,
+      "temp_latest": 24.7,
+      "latest_at": "2026-09-05 16:00",
+      "normal_c": 23.0,
+      "anomaly_k": 1.9
     },
     {
       "lake_key": "turnersee",
@@ -189,25 +193,25 @@
       "temp_latest": 25.0,
       "latest_at": "2026-09-05 15:00",
       "normal_c": 22.3,
-      "anomaly_k": 2.1
+      "anomaly_k": 2.0
     },
     {
       "lake_key": "ossiacher_see",
       "name": "Ossiacher See",
       "date": "2026-09-05",
-      "temp_c": 24.1,
-      "temp_latest": 24.3,
-      "latest_at": "2026-09-05 17:00",
+      "temp_c": 24.0,
+      "temp_latest": 24.2,
+      "latest_at": "2026-09-05 17:15",
       "normal_c": 23.3,
-      "anomaly_k": 0.8
+      "anomaly_k": 0.7
     },
     {
       "lake_key": "pressegger_see",
       "name": "Pressegger See",
       "date": "2026-09-05",
       "temp_c": 23.9,
-      "temp_latest": 24.9,
-      "latest_at": "2026-09-05 17:00",
+      "temp_latest": 24.8,
+      "latest_at": "2026-09-05 17:15",
       "normal_c": 23.1,
       "anomaly_k": 0.8
     },
@@ -226,10 +230,10 @@
       "name": "Faaker See",
       "date": "2026-09-05",
       "temp_c": 23.5,
-      "temp_latest": 23.9,
-      "latest_at": "2026-09-05 17:00",
+      "temp_latest": 24.0,
+      "latest_at": "2026-09-05 17:15",
       "normal_c": 23.0,
-      "anomaly_k": 0.4
+      "anomaly_k": 0.5
     },
     {
       "lake_key": "weissensee",
@@ -237,7 +241,7 @@
       "date": "2026-09-05",
       "temp_c": 23.1,
       "temp_latest": 23.3,
-      "latest_at": "2026-09-05 17:00",
+      "latest_at": "2026-09-05 17:15",
       "normal_c": 19.5,
       "anomaly_k": 3.6
     },
@@ -262,7 +266,7 @@
       "anomaly_k": 0.2
     }
   ],
-  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (2 h alt)",
+  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (6 h alt)",
   "current_caveat": "Achtung - ungeprüfte Rohdaten!",
   "notes": [
     "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",
@@ -274,42 +278,74 @@
     "dark/02_monatsmatrix_2026.png",
     "dark/03_badetage_2026.png",
     "dark/04_saisonabweichung_zeitreihe.png",
+    "dark/05_august_je_jahr.png",
     "dark/seen/afritzer_see_2026.png",
+    "dark/seen/afritzer_see_heuer.png",
     "dark/seen/brennsee_2026.png",
+    "dark/seen/brennsee_heuer.png",
     "dark/seen/faaker_see_2026.png",
+    "dark/seen/faaker_see_heuer.png",
     "dark/seen/goesselsdorfer_see_2026.png",
+    "dark/seen/goesselsdorfer_see_heuer.png",
     "dark/seen/keutschacher_see_2026.png",
+    "dark/seen/keutschacher_see_heuer.png",
     "dark/seen/klopeiner_see_2026.png",
+    "dark/seen/klopeiner_see_heuer.png",
     "dark/seen/laengsee_2026.png",
+    "dark/seen/laengsee_heuer.png",
     "dark/seen/magdalensee_2026.png",
     "dark/seen/maltschacher_see_2026.png",
+    "dark/seen/maltschacher_see_heuer.png",
     "dark/seen/millstaetter_see_2026.png",
+    "dark/seen/millstaetter_see_heuer.png",
     "dark/seen/ossiacher_see_2026.png",
+    "dark/seen/ossiacher_see_heuer.png",
     "dark/seen/pressegger_see_2026.png",
+    "dark/seen/pressegger_see_heuer.png",
     "dark/seen/rauschele_see_2026.png",
+    "dark/seen/rauschele_see_heuer.png",
     "dark/seen/turnersee_2026.png",
+    "dark/seen/turnersee_heuer.png",
     "dark/seen/weissensee_2026.png",
+    "dark/seen/weissensee_heuer.png",
     "dark/seen/woerthersee_2026.png",
+    "dark/seen/woerthersee_heuer.png",
     "light/00_aktuell.png",
     "light/01_uebersicht_abweichung_2026.png",
     "light/02_monatsmatrix_2026.png",
     "light/03_badetage_2026.png",
     "light/04_saisonabweichung_zeitreihe.png",
+    "light/05_august_je_jahr.png",
     "light/seen/afritzer_see_2026.png",
+    "light/seen/afritzer_see_heuer.png",
     "light/seen/brennsee_2026.png",
+    "light/seen/brennsee_heuer.png",
     "light/seen/faaker_see_2026.png",
+    "light/seen/faaker_see_heuer.png",
     "light/seen/goesselsdorfer_see_2026.png",
+    "light/seen/goesselsdorfer_see_heuer.png",
     "light/seen/keutschacher_see_2026.png",
+    "light/seen/keutschacher_see_heuer.png",
     "light/seen/klopeiner_see_2026.png",
+    "light/seen/klopeiner_see_heuer.png",
     "light/seen/laengsee_2026.png",
+    "light/seen/laengsee_heuer.png",
     "light/seen/magdalensee_2026.png",
     "light/seen/maltschacher_see_2026.png",
+    "light/seen/maltschacher_see_heuer.png",
     "light/seen/millstaetter_see_2026.png",
+    "light/seen/millstaetter_see_heuer.png",
     "light/seen/ossiacher_see_2026.png",
+    "light/seen/ossiacher_see_heuer.png",
     "light/seen/pressegger_see_2026.png",
+    "light/seen/pressegger_see_heuer.png",
     "light/seen/rauschele_see_2026.png",
+    "light/seen/rauschele_see_heuer.png",
     "light/seen/turnersee_2026.png",
+    "light/seen/turnersee_heuer.png",
     "light/seen/weissensee_2026.png",
-    "light/seen/woerthersee_2026.png"
+    "light/seen/weissensee_heuer.png",
+    "light/seen/woerthersee_2026.png",
+    "light/seen/woerthersee_heuer.png"
   ]
 }

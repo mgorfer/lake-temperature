@@ -16,6 +16,10 @@ from .sources import csvfile, synthetic
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = ROOT / "config" / "stations.json"
 
+# Für Dateinamen: ohne Umlaute, damit die Pfade überall gleich heissen.
+MONTH_FILES = ["jaenner", "februar", "maerz", "april", "mai", "juni", "juli",
+               "august", "september", "oktober", "november", "dezember"]
+
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -57,6 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Zeitliche Auflösung der Auswertung (Vorgabe: aus der Quelle)")
     p.add_argument("--threshold", type=float, default=22.0,
                    help="Schwelle für die Badetage-Bilanz in °C (Vorgabe: 22)")
+    p.add_argument("--month", type=int, default=8, choices=range(1, 13), metavar="1-12",
+                   help="Monat für den Jahresvergleich 'jeder Monat der Aufzeichnung' "
+                        "(Vorgabe: 8 -- August)")
     p.add_argument("--theme", choices=["light", "dark", "both"], default="both",
                    help="Farbschema der Grafiken (Vorgabe: both)")
     p.add_argument("--out", type=Path, default=ROOT / "output", help="Ausgabeverzeichnis")
@@ -232,6 +239,30 @@ def run(argv: list[str] | None = None) -> int:
             skipped.append(f"Aktuelle Werte: {exc}")
             print(f"\nAktuelle Werte nicht verfügbar:\n{exc}\n", file=sys.stderr)
 
+    # Die amtliche lange Reihe endet mit dem letzten Jahrbuch. Was heuer
+    # geschieht, steht allein in den abgelegten Abrufen -- die tragen wir
+    # hier zu einer Tagesreihe zusammen.
+    daily_now = pd.DataFrame()
+    heuer = None
+    if args.current == "ktn":
+        from .sources import ktn
+
+        daily_now = ktn.daily_series(config=load_config(args.config).get("ktn", {}))
+        if not daily_now.empty:
+            daily_now = daily_now[daily_now["lake_key"].isin({l.key for l in selected})]
+    if daily_now.empty:
+        if args.current == "ktn":
+            skipped.append("Tageswerte des laufenden Jahres "
+                           "(noch keine abgelegten Abrufe unter data/aktuell/)")
+    else:
+        heuer = int(pd.DatetimeIndex(daily_now["date"]).year.max())
+        daily_now = daily_now[pd.DatetimeIndex(daily_now["date"]).year == heuer]
+        tage = pd.DatetimeIndex(daily_now["date"])
+        print(f"Tageswerte {heuer}:  {len(daily_now)} Tageswerte, "
+              f"{daily_now['lake_key'].nunique()} Seen, "
+              f"{tage.min():%d.%m.} – {tage.max():%d.%m.} "
+              f"({int(daily_now['messungen'].sum())} Einzelmessungen)")
+
     summary = climatology.season_summary(annotated, year)
     matrix = climatology.monthly_anomaly(annotated, year)
     year_rows = annotated[annotated["year"] == year]
@@ -265,6 +296,12 @@ def run(argv: list[str] | None = None) -> int:
             if not days.empty else None,
             charts.anomaly_trend(annotated, clim,
                                  out=target / "04_saisonabweichung_zeitreihe.png", **common),
+            charts.month_history(
+                annotated, clim, args.month,
+                # Bei Tageswerten zählt nur ein halbwegs belegter Monat; aus
+                # Monatsmitteln ist ein Wert je Jahr alles, was es gibt.
+                min_values=15 if resolution == "daily" else 1,
+                out=target / f"05_{MONTH_FILES[args.month - 1]}_je_jahr.png", **common),
         ] if p]
 
         if not current.empty:
@@ -282,6 +319,15 @@ def run(argv: list[str] | None = None) -> int:
             )
             if path:
                 written.append(path)
+            if daily_now.empty:
+                continue
+            path = charts.current_year_daily(
+                daily_now, clim, lake.key, heuer,
+                out=target / "seen" / f"{lake.key}_heuer.png",
+                measured_source=current_source, caveat=current_caveat, **common,
+            )
+            if path:
+                written.append(path)
 
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -292,6 +338,10 @@ def run(argv: list[str] | None = None) -> int:
         "reference": clim.label,
         "method": clim.method,
         "threshold_c": args.threshold,
+        "month": args.month,
+        "month_file": MONTH_FILES[args.month - 1],
+        "month_name": charts.MONTH_NAMES[args.month - 1],
+        "current_year": heuer,
         "lakes": [
             {
                 "key": l.key, "name": l.name,

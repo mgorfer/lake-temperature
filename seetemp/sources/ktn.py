@@ -325,3 +325,56 @@ def load_snapshot(path: str | Path, config: dict | None = None) -> Dataset:
     data.source = f"Hydrographischer Dienst Kärnten — abgelegter Abruf ({wie_alt})"
     data.notes.insert(0, f"Aus {path}, Messwerte {wie_alt}.")
     return data
+
+
+def daily_series(directory: str | Path = SNAPSHOT_DIR,
+                 config: dict | None = None) -> pd.DataFrame:
+    """Tagesreihe aus allen abgelegten Abrufen.
+
+    Jeder Abruf trägt die Messreihe der letzten rund 24 Stunden. Legt man
+    regelmässig ab, überlappen sie sich und ergänzen einander zu einer
+    lückenlosen Reihe -- deshalb werden hier alle Abrufe gelesen, die
+    Einzelmessungen über (See, Zeitpunkt) entdoppelt und zu Tagesmitteln
+    zusammengefasst.
+
+    Rückgabe: ``lake_key``, ``date``, ``temp_c``, ``messungen`` (wie viele
+    Einzelwerte in den Tag eingingen) -- letzteres, damit ein Tag mit zwei
+    Messungen nicht wie einer mit achtundvierzig aussieht.
+    """
+    config = config or {}
+    by_name = {_fold(k): v for k, v in (config.get("name_to_lake_key") or {}).items()}
+    by_hzb = {str(v).strip(): k for k, v in (config.get("hzb_to_lake_key") or {}).items()
+              if str(v).strip()}
+
+    punkte: dict[tuple[str, pd.Timestamp], float] = {}
+    for path in sorted(Path(directory).glob("hdkaernten_see-*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for record in records(payload):
+            hzb = record.get("hzbnr")
+            lake_key = by_hzb.get(str(hzb).strip()) if hzb is not None else None
+            lake_key = lake_key or by_name.get(_fold(record.get("gewaesser", "")))
+            if not lake_key:
+                continue
+            for entry in (record.get("werte") or {}).get("wassertemperatur") or []:
+                when = _stamp(entry.get("date"))
+                value = _number(entry.get("value"))
+                if when is not None and value is not None:
+                    # Derselbe Zeitpunkt in mehreren Abrufen ist eine Messung.
+                    punkte[(lake_key, when)] = value
+
+    if not punkte:
+        return pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])
+
+    frame = pd.DataFrame(
+        [{"lake_key": k, "when": w, "temp_c": v} for (k, w), v in punkte.items()]
+    )
+    frame["date"] = frame["when"].dt.normalize()
+    return (
+        frame.groupby(["lake_key", "date"], as_index=False)
+        .agg(temp_c=("temp_c", "mean"), messungen=("temp_c", "size"))
+        .sort_values(["lake_key", "date"])
+        .reset_index(drop=True)
+    )

@@ -19,7 +19,8 @@ from datetime import datetime
 from pathlib import Path
 
 # Reihenfolge und Beschriftung der Übersichtsgrafiken.
-# Der dritte Eintrag ist die Dateivorlage: {year} wird eingesetzt.
+# Der dritte Eintrag ist die Dateivorlage: {year} und {month_file} werden
+# eingesetzt, ebenso {month_name} in Titel und Bildunterschrift.
 OVERVIEW = [
     ("00_aktuell", "Heute", "00_aktuell.png",
      "Gemessener Wert je See gegenüber seinem Normalwert."),
@@ -32,6 +33,9 @@ OVERVIEW = [
     ("04_saisonabweichung_zeitreihe", "Jeder Sommer seit Reihenbeginn",
      "04_saisonabweichung_zeitreihe.png",
      "Ein Balken je Jahr und See -- der lange Blick auf die Entwicklung."),
+    ("05_monat_je_jahr", "Jeder {month_name} der Aufzeichnung",
+     "05_{month_file}_je_jahr.png",
+     "Das {month_name}-Mittel jedes Jahres gegen den Normalwert desselben Monats."),
 ]
 
 STYLE = """
@@ -125,22 +129,31 @@ def find(root: Path, relative: str) -> str | None:
     return relative if (root / relative).is_file() else None
 
 
-def collect(root: Path, run: dict) -> tuple[list, list]:
+def collect(root: Path, run: dict) -> tuple[list, list, list]:
     year = run.get("year", "")
+    felder = {
+        "year": year,
+        "month_file": run.get("month_file", ""),
+        "month_name": run.get("month_name", ""),
+    }
     overview = []
     for _prefix, title, template, caption in OVERVIEW:
-        stem = template.format(year=year)
+        stem = template.format(**felder)
         light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
         if light or dark:
-            overview.append((title, caption, light, dark))
+            overview.append((title.format(**felder), caption.format(**felder), light, dark))
 
-    lakes = []
+    lakes, heuer = [], []
     for lake in run.get("lakes", []):
         stem = f"seen/{lake['key']}_{year}.png"
         light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
         if light or dark:
             lakes.append((lake["name"], light, dark))
-    return overview, lakes
+        stem = f"seen/{lake['key']}_heuer.png"
+        light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
+        if light or dark:
+            heuer.append((lake["name"], light, dark))
+    return overview, lakes, heuer
 
 
 def current_table(run: dict) -> str:
@@ -211,7 +224,7 @@ def coverage_table(run: dict) -> str:
 
 def render(root: Path, run: dict) -> str:
     esc = lambda v: html.escape(str(v))
-    overview, lakes = collect(root, run)
+    overview, lakes, heuer = collect(root, run)
     year = run.get("year", "")
     generated = datetime.fromisoformat(run["generated_at"]).strftime("%d.%m.%Y, %H:%M UTC")
     aufloesung = "Tageswerte" if run.get("resolution") == "daily" else "Monatsmittel"
@@ -261,6 +274,16 @@ def render(root: Path, run: dict) -> str:
                   picture(light, dark, title)]
         if title == "Heute":
             parts.append(current_table(run))
+
+    if heuer:
+        jahr = run.get("current_year") or ""
+        parts += [f'<h2 class="lakes">{esc(jahr)} in Tageswerten</h2>',
+                  '<p class="caption">Die amtliche lange Reihe endet mit dem letzten '
+                  "Jahrbuch. Was heuer gemessen wurde, steht hier — Tag für Tag gegen "
+                  "den Monatsnormalwert. Die Reihe wächst mit jedem abgelegten Abruf.</p>"]
+        for name, light, dark in heuer:
+            parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
+                      picture(light, dark, name)]
 
     if lakes:
         parts += ['<h2 class="lakes">Jahresgang je See</h2>',

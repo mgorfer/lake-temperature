@@ -412,6 +412,14 @@ def anomaly_trend(annotated: pd.DataFrame, clim, th, source, is_demo, out: Path,
         de_axis(ax, "y", digits=0)
     for ax in axes[len(keys):]:
         ax.set_visible(False)
+
+    # sharex blendet die Jahreszahlen überall ausser in der letzten Zeile aus.
+    # Die letzte Zeile ist aber selten voll -- also beschriften wir in jeder
+    # Spalte das unterste sichtbare Feld.
+    for spalte in range(cols):
+        sichtbar = [i for i in range(spalte, len(keys), cols)]
+        if sichtbar:
+            axes[sichtbar[-1]].tick_params(labelbottom=True)
     for ax in axes[: len(keys)]:
         ax.tick_params(axis="x", rotation=0)
 
@@ -523,5 +531,232 @@ def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
         f"sortiert nach Temperatur.\nMesswerte: {measured_source or source}",
     )
     _footer(fig, th, ((caveat + " · ") if caveat else "") + f"Normalwert: {source}")
+    _watermark(fig, th, is_demo)
+    return _save(fig, out)
+
+
+# -------------------------------------- 5: Ein Monat über die ganze Reihe
+
+def month_history(annotated: pd.DataFrame, clim, month: int, th, source, is_demo,
+                  out: Path, min_values: int = 1):
+    """Ein Kalendermonat über alle Jahre der Aufzeichnung, je See ein Feld.
+
+    Die Linie ist das Monatsmittel des jeweiligen Jahres, die gestrichelte
+    Waagrechte der Normalwert desselben Monats. Die Fläche dazwischen ist
+    warm oder kühl eingefärbt -- dieselbe Bildsprache wie beim Jahresgang,
+    damit man nicht umlernen muss.
+
+    Der Titel jedes Feldes nennt die lineare Steigung über die vorhandenen
+    Jahre. Das ist eine Ausgleichsgerade, keine Aussage über Signifikanz.
+    """
+    subset = annotated[(annotated["month"] == month) & annotated["temp_c"].notna()]
+    if subset.empty:
+        return None
+    reihe = (
+        subset.groupby(["lake_key", "year"], as_index=False)
+        .agg(temp_c=("temp_c", "mean"), werte=("temp_c", "size"))
+    )
+    reihe = reihe[reihe["werte"] >= min_values]
+    keys = sorted(reihe["lake_key"].unique(), key=lambda k: BY_KEY[k].name)
+    if not keys:
+        return None
+
+    # Normalwert desselben Monats je See.
+    normal = {}
+    if clim.resolution == "monthly":
+        rows = clim.table[clim.table["month"] == month]
+        normal = dict(zip(rows["lake_key"], rows["mean"]))
+    else:
+        starts = dict(zip(range(1, 13), MONTH_STARTS))
+        tage = range(starts[month], (starts.get(month + 1) or 366))
+        rows = clim.table[clim.table["doy"].isin(tage)]
+        normal = rows.groupby("lake_key")["mean"].mean().to_dict()
+
+    cols = 3
+    rows_n = math.ceil(len(keys) / cols)
+    height = 2.05 * rows_n + 2.3
+    fig, axes = plt.subplots(rows_n, cols, figsize=(9.6, height), sharex=True)
+    axes = np.atleast_1d(axes).ravel()
+
+    for ax, key in zip(axes, keys):
+        teil = reihe[reihe["lake_key"] == key].sort_values("year")
+        jahre = teil["year"].to_numpy(dtype=float)
+        werte = teil["temp_c"].to_numpy()
+        mittel = normal.get(key)
+
+        if mittel is not None and len(jahre):
+            ax.axhline(mittel, color=th.text_secondary, linewidth=1.4,
+                       linestyle=(0, (4.5, 2.4)), zorder=3)
+            ax.fill_between(jahre, mittel, werte, where=werte >= mittel,
+                            color=th.warm, alpha=th.fill_alpha, linewidth=0,
+                            interpolate=True, zorder=2)
+            ax.fill_between(jahre, mittel, werte, where=werte < mittel,
+                            color=th.cool, alpha=th.fill_alpha, linewidth=0,
+                            interpolate=True, zorder=2)
+        ax.plot(jahre, werte, color=th.ink, linewidth=1.4, zorder=4)
+        if len(jahre) <= 45:
+            ax.scatter(jahre, werte, s=9, color=th.ink, zorder=5)
+
+        titel = BY_KEY[key].name
+        if len(jahre) >= 10:
+            steigung = np.polyfit(jahre, werte, 1)[0] * 10
+            ax.plot(jahre, np.poly1d(np.polyfit(jahre, werte, 1))(jahre),
+                    color=th.series_2, linewidth=1.6, zorder=6)
+            titel += f"   {num(steigung, signed=True)} K/Jahrzehnt"
+        ax.set_title(titel, fontsize=9.5, color=th.text, loc="left", pad=5)
+        ax.grid(False, axis="x")
+        _despine(ax, th)
+        ax.tick_params(labelsize=8)
+        de_axis(ax, "y", digits=0)
+        ax.margins(x=0.02)
+
+    for ax in axes[len(keys):]:
+        ax.set_visible(False)
+
+    # sharex blendet die Jahreszahlen ausserhalb der letzten Zeile aus; die ist
+    # aber selten voll. Also beschriften wir in jeder Spalte das unterste Feld.
+    for spalte in range(cols):
+        sichtbar = list(range(spalte, len(keys), cols))
+        if sichtbar:
+            axes[sichtbar[-1]].tick_params(labelbottom=True)
+
+    fig.supylabel("Wassertemperatur (°C)", color=th.text_secondary, fontsize=9.5, x=0.008)
+    fig.subplots_adjust(left=0.075, right=0.985, top=1 - 1.72 / height,
+                        bottom=0.60 / height, hspace=0.62, wspace=0.22)
+
+    von, bis = int(reihe["year"].min()), int(reihe["year"].max())
+    handles = [
+        Line2D([], [], color=th.ink, linewidth=1.4, label=f"{MONTH_NAMES[month - 1]}-Mittel"),
+        Line2D([], [], color=th.text_secondary, linewidth=1.4, linestyle=(0, (4.5, 2.4)),
+               label=f"Normalwert {clim.label}"),
+        Line2D([], [], color=th.series_2, linewidth=1.6, label="Ausgleichsgerade"),
+    ]
+    fig.legend(handles=handles, loc="lower left",
+               bbox_to_anchor=(0.012, 1 - 1.45 / height), ncol=3,
+               labelcolor=th.text_secondary, handlelength=2.2, columnspacing=1.8,
+               borderpad=0.0, handletextpad=0.6)
+    _titleblock(
+        fig, th, f"Jeder {MONTH_NAMES[month - 1]} der Aufzeichnung — {von} bis {bis}",
+        f"Monatsmittel je Jahr gegen den Normalwert {clim.label}. Die Reihen "
+        "beginnen unterschiedlich früh;\ndie Gerade ist ein linearer Ausgleich über "
+        "die jeweils vorhandenen Jahre, keine Signifikanzaussage.",
+    )
+    _footer(fig, th, f"Quelle: {source}")
+    _watermark(fig, th, is_demo)
+    return _save(fig, out)
+
+
+# ------------------------------ 6: Das laufende Jahr in Tageswerten
+
+def current_year_daily(daily: pd.DataFrame, clim, lake_key: str, year: int, th,
+                       source, is_demo, out: Path, measured_source: str = "",
+                       caveat: str = ""):
+    """Tageswerte des laufenden Jahres gegen den langjährigen Normalwert.
+
+    Die amtliche lange Reihe endet mit dem letzten Jahrbuch; was heuer
+    geschieht, steht nur in den tagesaktuellen Messwerten. Beides gehört in
+    ein Bild: der Normalwert als Treppe über das Jahr -- er ist ein
+    Monatsmittel und wird deshalb auch als solches gezeichnet, nicht zu
+    einer Kurve verschliffen, die er nicht ist -- und darüber die
+    gemessenen Tagesmittel.
+    """
+    teil = daily[(daily["lake_key"] == lake_key)
+                 & (pd.DatetimeIndex(daily["date"]).year == year)].sort_values("date")
+    if teil.empty:
+        return None
+    norm = clim.table[clim.table["lake_key"] == lake_key]
+    if norm.empty:
+        return None
+
+    lake = BY_KEY[lake_key]
+    fig = plt.figure(figsize=(9.6, 5.6))
+    ax = _axes(fig, 0.068, 0.968, header_in=1.62, footer_in=0.62)
+    _despine(ax, th)
+
+    # Normalwert als Treppe: je Monat ein waagrechtes Stück.
+    kanten, mittel, unten, oben = [], [], [], []
+    je_monat: dict[int, float] = {}
+    for m in range(1, 13):
+        if clim.resolution == "monthly":
+            zeile = norm[norm["month"] == m]
+        else:
+            tage = range(MONTH_STARTS[m - 1], (MONTH_STARTS[m] if m < 12 else 366))
+            zeile = norm[norm["doy"].isin(tage)]
+        if zeile.empty:
+            continue
+        kanten.append(MONTH_STARTS[m - 1])
+        mittel.append(zeile["mean"].mean())
+        je_monat[m] = zeile["mean"].mean()
+        unten.append(zeile["p10"].mean())
+        oben.append(zeile["p90"].mean())
+    if not kanten:
+        return None
+    kanten.append(366)
+    schritt = lambda werte: np.array(werte + [werte[-1]])
+
+    ax.fill_between(kanten, schritt(unten), schritt(oben), step="post",
+                    color=th.band, alpha=th.band_inner, linewidth=0, zorder=1)
+    ax.step(kanten, schritt(mittel), where="post", color=th.text_secondary,
+            linewidth=1.6, linestyle=(0, (4.5, 2.4)), zorder=3)
+
+    doy = np.asarray(pd.DatetimeIndex(teil["date"]).dayofyear, dtype=float)
+    werte = teil["temp_c"].to_numpy()
+
+    # Der Normalwert am jeweiligen Messtag -- der Wert der Treppe, auf der
+    # der Tag liegt. Die Fläche dazwischen trägt dieselbe Farbe wie in den
+    # übrigen Grafiken: warm über, kühl unter dem Normalwert.
+    monate = np.asarray(pd.DatetimeIndex(teil["date"]).month)
+    normal_am_tag = np.array([je_monat.get(int(m), np.nan) for m in monate])
+    gueltig = ~np.isnan(normal_am_tag)
+    if gueltig.any():
+        ax.fill_between(doy, normal_am_tag, werte, where=gueltig & (werte >= normal_am_tag),
+                        color=th.warm, alpha=th.fill_alpha, linewidth=0,
+                        interpolate=True, zorder=4)
+        ax.fill_between(doy, normal_am_tag, werte, where=gueltig & (werte < normal_am_tag),
+                        color=th.cool, alpha=th.fill_alpha, linewidth=0,
+                        interpolate=True, zorder=4)
+
+    ax.plot(doy, werte, color=th.ink, linewidth=2.0, zorder=5)
+    ax.scatter(doy, werte, s=26, color=th.ink, zorder=6, edgecolor=th.surface,
+               linewidth=1.4)
+    if len(doy):
+        rechts = doy[-1] > 322
+        text = f"{num(werte[-1])} °C"
+        if gueltig[-1]:
+            text += f"  ({num(werte[-1] - normal_am_tag[-1], signed=True)} K)"
+        ax.annotate(text, (doy[-1], werte[-1]),
+                    textcoords="offset points", xytext=(-11 if rechts else 11, 0),
+                    ha="right" if rechts else "left", va="center",
+                    color=th.text, fontsize=10, fontweight="bold")
+
+    ax.set_ylabel("Wassertemperatur (°C)")
+    ax.set_ylim(bottom=0)
+    de_axis(ax, "y", digits=0)
+    _month_axis(ax, th, "daily")
+
+    handles = [
+        Line2D([], [], color=th.ink, linewidth=2, label=f"Tagesmittel {year}"),
+        Line2D([], [], color=th.text_secondary, linewidth=1.6, linestyle=(0, (4.5, 2.4)),
+               label=f"Monatsnormalwert {clim.label}"),
+        Patch(facecolor=th.band, alpha=th.band_inner,
+              label=f"10.–90. Perzentil {clim.label}"),
+    ]
+    fig.legend(handles=handles, loc="lower left",
+               bbox_to_anchor=(0.012, 1 - 1.18 / fig.get_size_inches()[1]), ncol=3,
+               labelcolor=th.text_secondary, handlelength=2.2, columnspacing=1.8,
+               borderpad=0.0, handletextpad=0.6)
+
+    tage_n = len(teil)
+    messungen = int(teil["messungen"].sum())
+    von, bis = teil["date"].min(), teil["date"].max()
+    zeitraum = (f"{von:%d.%m.}–{bis:%d.%m.}" if von != bis else f"{von:%d.%m.}")
+    _titleblock(
+        fig, th, f"{lake.name} — {year} in Tageswerten",
+        f"{tage_n} Tag{'e' if tage_n != 1 else ''} ({zeitraum}) aus {messungen} "
+        f"Einzelmessungen, gegen den Monatsnormalwert {clim.label}.\n"
+        f"Messwerte: {measured_source or source}",
+    )
+    _footer(fig, th, ((caveat + " · ") if caveat else "")
+            + f"Normalwert: {source} · Die Reihe wächst mit jedem abgelegten Abruf.")
     _watermark(fig, th, is_demo)
     return _save(fig, out)

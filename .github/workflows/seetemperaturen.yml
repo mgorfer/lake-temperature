@@ -23,6 +23,12 @@ on:
         description: Bezugszeitraum
         type: string
         default: "1991-2020"
+      monat:
+        description: >-
+          Monat für den Jahresvergleich "jeder Monat der Aufzeichnung"
+          (1-12, leer = August)
+        type: string
+        default: ""
       aktuelle_werte:
         description: >-
           Aktuelle Werte einbeziehen. Der Dienst des Landes antwortet
@@ -89,6 +95,7 @@ jobs:
           SEETEMP_SOURCE: ${{ inputs.source || 'ehyd' }}
           SEETEMP_YEAR: ${{ inputs.year }}
           SEETEMP_REF: ${{ inputs.reference || '1991-2020' }}
+          SEETEMP_MONAT: ${{ inputs.monat }}
           # Roh durchreichen und in der Shell auswerten. Ein Ausdruck wie
           # "inputs.x == false" ist hier eine Falle: bei Push und Zeitplan ist
           # inputs.x null, GitHub vergleicht lose über Zahlen, und null == false
@@ -108,6 +115,9 @@ jobs:
           args="$args --current $current"
           if [ -n "${SEETEMP_YEAR}" ]; then
             args="$args --year $SEETEMP_YEAR"
+          fi
+          if [ -n "${SEETEMP_MONAT}" ]; then
+            args="$args --month $SEETEMP_MONAT"
           fi
           echo "python -m seetemp $args"
           # Kein stiller Rückfall auf Demodaten: ist eHYD nicht erreichbar,

@@ -25,7 +25,18 @@ Je Farbschema (`output/light/`, `output/dark/`):
 | `02_monatsmatrix_<Jahr>.png` | Matrix See × Monat der Abweichungen |
 | `03_badetage_<Jahr>.png` | Tage ≥ Schwelle, aktuelles Jahr gegen das langjährige Mittel |
 | `04_saisonabweichung_zeitreihe.png` | Je See ein Kleindiagramm: jeder Sommer seit Reihenbeginn |
+| `05_<monat>_je_jahr.png` | Ein Kalendermonat über alle Jahre der Aufzeichnung, je See ein Feld (`--month`, Vorgabe August) |
 | `seen/<see>_<Jahr>.png` | Jahresgang eines Sees mit Normalwert, Perzentilband und Min/Max-Hülle |
+| `seen/<see>_heuer.png` | Das laufende Jahr in Tageswerten gegen den Monatsnormalwert (nur mit `--current ktn`) |
+
+Die amtliche Reihe endet mit dem letzten Jahrbuch — eHYD führt die
+Wassertemperatur derzeit bis 2023. Das laufende Jahr steht deshalb nicht in
+ihr, sondern allein in den abgelegten Abrufen des Landesdienstes unter
+`data/aktuell/`. `seen/<see>_heuer.png` setzt beides zusammen: der
+Normalwert als Treppe über das Jahr — er ist ein Monatsmittel und wird auch
+als solches gezeichnet, nicht zu einer Kurve verschliffen, die er nicht ist
+— und darüber die gemessenen Tagesmittel. Die Reihe wächst mit jedem
+abgelegten Abruf.
 
 Die Grafiken sind für beide Farbschemata getrennt abgestimmt; die Palette ist
 gegen Farbfehlsichtigkeit geprüft, Abweichungen laufen über eine
@@ -62,6 +73,7 @@ Wichtige Schalter:
 | `--min-samples` | Mindestzahl Werte je Stützstelle, Vorgabe 20 (Tages-) bzw. 10 (Monatswerte) |
 | `--resolution` | `auto` (aus der Quelle), `daily` oder `monthly` |
 | `--threshold` | Schwelle für die Badetage-Bilanz, Vorgabe 22 °C |
+| `--month` | Monat für `05_<monat>_je_jahr.png`, 1–12, Vorgabe 8 (August) |
 | `--theme` | `light`, `dark` oder `both` |
 | `--current` | `ktn` holt zusätzlich die aktuellen Werte des Landes Kärnten |
 | `--probe` | nur nachsehen, was eHYD je Messstelle anbietet (keine Grafiken) |
