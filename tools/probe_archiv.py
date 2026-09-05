@@ -69,15 +69,22 @@ INTERESSANT = re.compile(
 #: Adressen, die es geben könnte. Die erste ist belegt, die übrigen sind
 #: Kandidaten -- abgeleitet aus der bekannten Datei, aus grafik_url und aus
 #: dem Aufbau des neuen Portals.
+#: Der Katalogeintrag nennt neben der bekannten Sammeldatei einen Endpunkt
+#: **je Messstelle** und eine zweite Fassung mit ``_l``. Was die tragen,
+#: entscheidet sich am Inhalt -- hier stehen die Kandidaten, die das Handy
+#: durchgeht. 2001056 ist der Wörthersee, 2900120 der Afritzer See.
+BEKANNT = "https://info.ktn.gv.at/asp/hydro/daten/json"
 KANDIDATEN = [
-    "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see.json",
-    "https://info.ktn.gv.at/asp/hydro/daten/svg/2900120sw.svg",
-    "https://info.ktn.gv.at/asp/hydro/daten/json/hdkaernten_see_archiv.json",
-    "https://info.ktn.gv.at/asp/hydro/daten/json/2900120.json",
-    "https://hydrographie.ktn.gv.at/",
+    f"{BEKANNT}/hdkaernten_see.json",
+    f"{BEKANNT}/hdkaernten_see_lite.json",
+    f"{BEKANNT}/station/2001056.json",
+    f"{BEKANNT}/station/2001056_l.json",
+    f"{BEKANNT}/station/2900120.json",
+    f"{BEKANNT}/station/2900120_l.json",
+    f"{BEKANNT}/station/",
+    f"{BEKANNT}/",
+    "https://info.ktn.gv.at/asp/hydro/daten/svg/2001056sw.svg",
     "https://hydrographie.ktn.gv.at/gewasser/seen-wassertemperatur",
-    "https://hydrographie.ktn.gv.at/api/stations",
-    "https://hydrographie.ktn.gv.at/api/station/2900120",
 ]
 
 
@@ -175,35 +182,45 @@ def beschreibungen() -> None:
         out("  keine JSON-Antwort")
         return
 
-    # Nicht raten, wie der Katalog seine Felder nennt: alles einsammeln,
-    # was "hdkaernten" erwähnt, und im Zusammenhang zeigen.
+    # Nicht raten, wie der Katalog seine Felder nennt: die kleinste
+    # Struktur suchen, die eine hdkaernten-Adresse noch enthält, und sie
+    # mit allen Feldern zeigen.
+    #
+    # Wichtig: Adressen stehen hier oft als Zeichenketten *in Listen*
+    # ("accessURL": [...]). Wer nur in Dicts absteigt, läuft daran vorbei
+    # und meldet null Treffer, obwohl die Adresse im Text steht. Listen
+    # zählen deshalb zum Inhalt ihres Dicts; abgestiegen wird nur in
+    # Dicts -- auch in die, die in Listen liegen.
     treffer: list[dict] = []
 
-    def geh(knoten) -> None:
-        if isinstance(knoten, dict):
-            roh = json.dumps(knoten, ensure_ascii=False)
-            kinder = [v for v in knoten.values() if isinstance(v, (dict, list))]
-            # Das kleinste Gebilde, das die Adresse noch enthält -- also
-            # erst absteigen, dann selbst melden.
-            tiefer = any("hdkaernten" in json.dumps(k, ensure_ascii=False)
-                         for k in kinder)
-            if "hdkaernten" in roh and not tiefer:
-                treffer.append(knoten)
-            for kind in kinder:
-                geh(kind)
-        elif isinstance(knoten, list):
-            for kind in knoten:
-                geh(kind)
+    def enthaelt(knoten) -> bool:
+        return "hdkaernten" in json.dumps(knoten, ensure_ascii=False)
 
-    geh(daten)
+    def geh(knoten) -> None:
+        if not isinstance(knoten, dict):
+            return
+        unter = [v for v in knoten.values() if isinstance(v, dict)]
+        unter += [e for v in knoten.values() if isinstance(v, list)
+                  for e in v if isinstance(e, dict)]
+        if enthaelt(knoten) and not any(enthaelt(u) for u in unter):
+            treffer.append(knoten)
+        for kind in unter:
+            geh(kind)
+
+    if isinstance(daten, dict):
+        geh(daten)
+    elif isinstance(daten, list):
+        for kind in daten:
+            geh(kind)
+
     out(f"  {len(treffer)} Stellen erwähnen hdkaernten")
-    for knoten in treffer[:14]:
+    for knoten in treffer[:16]:
         out("")
         for schluessel, wert in knoten.items():
-            text = json.dumps(wert, ensure_ascii=False) if not isinstance(wert, str) else wert
+            text = wert if isinstance(wert, str) else json.dumps(wert, ensure_ascii=False)
             text = " ".join(text.split())
-            if len(text) > 500:
-                text = text[:500] + " …"
+            if len(text) > 600:
+                text = text[:600] + " …"
             out(f"    {schluessel}: {text}")
 
 
@@ -217,8 +234,7 @@ def kandidaten(alle: bool = False) -> None:
         r = get(url)
         if r is None or r.status_code != 200:
             continue
-        kopf = r.text[:400].replace("\n", " ")
-        out(f"  Anfang: {kopf[:300]}")
+        zeitraum(r)
 
 
 def main(argv: list[str] | None = None) -> int:

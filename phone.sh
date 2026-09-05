@@ -6,6 +6,7 @@
 #   ./phone.sh --source ehyd        # amtliche Messreihen von eHYD
 #   ./phone.sh --source ehyd --push # zusätzlich die Messwerte einchecken
 #   ./phone.sh --current none       # ohne die aktuellen Werte
+#   ./phone.sh --erkunden --push    # nur nachsehen, was das Land abgibt
 #
 # Alle Schalter werden unverändert an "python -m seetemp" durchgereicht,
 # ausgenommen --out (das setzt dieses Skript) und --push.
@@ -55,15 +56,17 @@ mit_zeitlimit() {
     fi
 }
 
-# --push aus der Argumentliste nehmen, alles andere geht an die App.
+# --push und --erkunden aus der Argumentliste nehmen, alles andere geht
+# an die App.
 PUSH=0
+ERKUNDEN=0
 ARGS=""
 for arg in "$@"; do
-    if [ "$arg" = "--push" ]; then
-        PUSH=1
-    else
-        ARGS="$ARGS $arg"
-    fi
+    case "$arg" in
+        --push) PUSH=1 ;;
+        --erkunden) ERKUNDEN=1 ;;
+        *) ARGS="$ARGS $arg" ;;
+    esac
 done
 # shellcheck disable=SC2086
 set -- $ARGS
@@ -74,6 +77,40 @@ command -v "$PYTHON" >/dev/null 2>&1 || {
     echo "Kein Python gefunden. Unter Termux: pkg install python" >&2
     exit 1
 }
+
+# ------------------------------------------------------- 0: Erkundung
+# Der Dienst des Landes antwortet nur österreichischen Anschlüssen. Was er
+# abgibt, lässt sich deshalb nur von hier aus feststellen -- der Bericht
+# wird abgelegt, damit er nachlesbar ist, statt im Bildschirm zu bleiben.
+if [ "$ERKUNDEN" -eq 1 ]; then
+    BERICHT="data/erkundung/bericht-$(date '+%Y%m%dT%H%M').txt"
+    mkdir -p data/erkundung
+    log "Erkundung: was gibt der Dienst her?"
+    log "Bericht: $BERICHT"
+    # Wie lauf(), nur mit einem zweiten Ziel: der Bericht soll auf dem
+    # Bildschirm stehen, im Protokoll und in seiner eigenen Datei -- und
+    # der Rückgabewert muss der des Programms bleiben, nicht der von tee.
+    { mit_zeitlimit 300 "$PYTHON" -u tools/probe_archiv.py --nur-ktn
+      echo $? > "$STATUSFILE"; } 2>&1 | tee "$BERICHT" | tee -a "$LOG"
+    if [ "$(cat "$STATUSFILE" 2>/dev/null || echo 1)" = "0" ]; then
+        log "      fertig."
+    else
+        log "      unvollständig -- der Bericht zeigt, wie weit es kam."
+    fi
+    rm -f "$STATUSFILE"
+    if [ "$PUSH" -eq 1 ] && command -v git >/dev/null 2>&1; then
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        git add data/erkundung
+        if lauf git commit -q -m "Erkundung vom $(date '+%d.%m.%Y, %H:%M')"; then
+            log "Push nach $BRANCH"
+            GIT_TERMINAL_PROMPT=0 lauf mit_zeitlimit 120 git push -u origin "$BRANCH" \
+                && log "      gepusht." || log "      PUSH FEHLGESCHLAGEN."
+        fi
+    else
+        log "Mit --push wandert der Bericht gleich ins Projekt."
+    fi
+    exit 0
+fi
 
 # Unter Termux liegt der von der Galerie sichtbare Speicher unter
 # ~/storage/shared -- den gibt es aber erst nach "termux-setup-storage".
