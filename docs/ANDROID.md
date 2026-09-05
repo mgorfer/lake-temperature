@@ -19,61 +19,92 @@ auf einem Rechner, es fehlt nur eine Kommandozeile. Dafür gibt es zwei Wege.
 
 ## Weg A: Termux — funktioniert auf jedem Galaxy
 
-**Termux aus [F-Droid](https://f-droid.org/packages/com.termux/) installieren,
-nicht aus dem Play Store.** Die Play-Store-Fassung wird seit Jahren nicht mehr
-gepflegt und lässt sich nicht mit den aktuellen Paketen betreiben.
+### Einmalig einrichten (rund 10 Minuten)
+
+**1. Termux installieren** — aus [F-Droid](https://f-droid.org/packages/com.termux/),
+**nicht** aus dem Play Store. Die Play-Store-Fassung wird seit Jahren nicht
+mehr gepflegt und lässt sich mit den aktuellen Paketen nicht betreiben.
+
+**2. Pakete installieren.** Ein Block, zum Kopieren:
 
 ```bash
-pkg update && pkg upgrade
-
-# numpy, pillow und contourpy kommen als Abhängigkeiten von matplotlib mit
-pkg install python matplotlib git termux-api
-
-# pandas liegt nicht im Hauptrepo, sondern im Termux User Repository
-pkg install tur-repo
-pkg install python-pandas
-
-# zwei reine Python-Pakete, die es als Termux-Paket nicht gibt
+pkg update -y && pkg upgrade -y
+pkg install -y python matplotlib git gh termux-api
+pkg install -y tur-repo && pkg install -y python-pandas
 pip install python-dateutil requests
+```
 
-# einmalig: Zugriff auf den gemeinsamen Speicher, damit die Galerie
-# die Bilder sieht. Android fragt nach einer Bestätigung.
+`matplotlib` zieht numpy, pillow und contourpy mit. `python-pandas` liegt
+nicht im Hauptrepo, sondern im Termux User Repository — daher der Umweg über
+`tur-repo`.
+
+**3. Speicherzugriff freigeben:**
+
+```bash
 termux-setup-storage
 ```
 
-Dann das Projekt holen und starten:
+Android fragt einmal nach; bestätigen. Ohne das rechnet alles korrekt, aber
+die Galerie findet die Bilder nicht.
+
+**4. Bei GitHub anmelden:**
+
+```bash
+gh auth login
+```
+
+Wählen: *GitHub.com* → *HTTPS* → *Login with a web browser*. Termux zeigt
+einen achtstelligen Code, der Browser öffnet sich, Code eintippen, fertig.
+**Kein Token abtippen, kein Schlüssel erzeugen** — `gh` richtet die
+Git-Zugangsdaten selbst ein.
+
+Das ist nur nötig, wenn du die Messwerte einchecken willst (Schritt `--push`
+weiter unten). Zum blossen Rechnen reicht Schritt 1–3.
+
+**5. Projekt holen:**
 
 ```bash
 git clone https://github.com/mgorfer/lake-temperature
 cd lake-temperature
-./phone.sh
 ```
 
-`phone.sh` legt die PNGs unter `~/storage/shared/Pictures/Seetemperaturen` ab
-und meldet sie dem Media-Scanner an — sie tauchen also in der Galerie auf wie
-Fotos.
-
-Es holt ausserdem **die aktuellen Wassertemperaturen** vom Hydrographischen
-Dienst Kärnten dazu und stellt sie dem Normalwert gegenüber. Das ist der
-eigentliche Grund, das Ganze am Handy laufen zu lassen: der Dienst antwortet
-Rechenzentren nicht, einem österreichischen Anschluss aber schon — auf dem
-Telefon geht also etwas, was auf GitHub nicht geht. Mit `--current none`
-abschaltbar.
-
-Bei jedem Lauf legt es die geholten Werte zusätzlich unter `data/aktuell`
-ab. Wer sie eincheckt, gibt sie damit auch der Auswertung auf GitHub:
+### Ab dann: ein Befehl
 
 ```bash
-git add data/aktuell && git commit -m "Messwerte vom $(date +%d.%m.)" && git push
+cd lake-temperature && ./phone.sh --source ehyd --push
 ```
 
-Alle Schalter werden durchgereicht:
+Das macht in einem Zug:
+
+1. holt die **aktuellen Wassertemperaturen** beim Hydrographischen Dienst
+   Kärnten (geht am Handy, weil dein Anschluss österreichisch ist),
+2. legt sie unter `data/aktuell` ab,
+3. holt die **amtlichen langen Reihen** von eHYD,
+4. rechnet Normalwerte und Abweichungen,
+5. schreibt die PNGs nach `~/storage/shared/Pictures/Seetemperaturen` und
+   meldet sie der Galerie an,
+6. checkt die Messwerte ein und pusht sie — womit auch die Auswertung auf
+   GitHub Pages mit deinen frischen Werten rechnet.
+
+Ohne `--push` entfällt nur Schritt 6.
+
+### Varianten
 
 ```bash
-./phone.sh --source ehyd                       # amtliche Reihen + aktuelle Werte
-./phone.sh --source ehyd --lakes woerthersee   # nur ein See, geht schneller
-./phone.sh --theme dark --year 2026
+./phone.sh                                  # Demodaten, ohne Netz
+./phone.sh --source ehyd                    # rechnen, nicht einchecken
+./phone.sh --source ehyd --lakes woerthersee faaker_see   # schneller
+./phone.sh --source ehyd --theme dark
+./phone.sh --source ehyd --current none     # ohne die aktuellen Werte
 ```
+
+### Beim nächsten Mal
+
+```bash
+cd lake-temperature && git pull && ./phone.sh --source ehyd --push
+```
+
+`git pull` nur, wenn sich am Programm etwas geändert hat.
 
 ### Versionen im Termux-Repo (Stand September 2026)
 
@@ -84,10 +115,7 @@ Alle Schalter werden durchgereicht:
 | `matplotlib` | 3.11.1 | Haupt |
 | `python-pandas` | 3.0.5 | TUR |
 
-Das deckt sich mit den Versionen, gegen die entwickelt wurde — es ist also
-keine ältere Nebenversion, mit der man sich behelfen muss.
-
----
+Das deckt sich mit den Versionen, gegen die entwickelt wurde.
 
 ## Weg B: Samsung Linux Terminal — bequemer, aber nicht auf jedem Gerät
 
@@ -163,6 +191,9 @@ aktuelle Gerät unkritisch.
 * **`pip install pandas`** statt `pkg install python-pandas`: pip versucht dann,
   pandas aus dem Quelltext zu übersetzen. Das dauert auf einem Handy sehr lange
   und scheitert meist. Immer erst das Termux-Paket nehmen.
+* **Push scheitert mit „Authentication failed".** Dann fehlt die Anmeldung:
+  `gh auth login`. Ein von Hand angelegtes Token in die URL zu schreiben
+  funktioniert zwar auch, steht dann aber im Klartext in der Git-Konfiguration.
 * **Akku-Optimierung.** Android kann Termux im Hintergrund einfrieren. Für den
   vollen Lauf das Display anlassen oder in den Termux-Einstellungen einen
   Wakelock setzen.

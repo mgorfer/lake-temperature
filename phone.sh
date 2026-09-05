@@ -6,14 +6,28 @@
 #   ./phone.sh --source ehyd        # amtliche Messreihen von eHYD
 #   ./phone.sh --source ehyd --lakes woerthersee --theme light
 #   ./phone.sh --current none        # ohne die aktuellen Werte
+#   ./phone.sh --push                # zusätzlich die Messwerte einchecken
 #
 # Alle Schalter werden unverändert an "python -m seetemp" durchgereicht,
-# ausgenommen --out: das setzt dieses Skript.
+# ausgenommen --out (das setzt dieses Skript) und --push.
 
 set -eu
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
 cd "$ROOT"
+
+# --push aus der Argumentliste nehmen, alles andere geht an die App.
+PUSH=0
+ARGS=""
+for arg in "$@"; do
+    if [ "$arg" = "--push" ]; then
+        PUSH=1
+    else
+        ARGS="$ARGS $arg"
+    fi
+done
+# shellcheck disable=SC2086
+set -- $ARGS
 
 PYTHON=${PYTHON:-python3}
 command -v "$PYTHON" >/dev/null 2>&1 || PYTHON=python
@@ -70,6 +84,31 @@ elif [ "$IS_TERMUX" -eq 1 ]; then
     echo
     echo "Für die Galerie zusätzlich: pkg install termux-api"
     echo "(dann meldet dieses Skript neue Bilder automatisch an)"
+fi
+
+# Die abgelegten Messwerte einchecken -- damit rechnet auch die Auswertung
+# auf GitHub damit, die den Dienst selbst nicht erreicht.
+if [ "$PUSH" -eq 1 ]; then
+    echo
+    if ! command -v git >/dev/null 2>&1; then
+        echo "git fehlt. Unter Termux: pkg install git" >&2
+    elif ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo "Kein Git-Projekt -- nichts zu pushen." >&2
+    elif git diff --quiet -- data/aktuell && git diff --cached --quiet -- data/aktuell \
+         && [ -z "$(git ls-files --others --exclude-standard -- data/aktuell)" ]; then
+        echo "Keine neuen Messwerte -- nichts einzuchecken."
+    else
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        git add data/aktuell
+        git commit -q -m "Messwerte vom $(date '+%d.%m.%Y, %H:%M')"
+        if git push -u origin "$BRANCH"; then
+            echo "Messwerte auf $BRANCH gepusht."
+        else
+            echo >&2
+            echo "Push fehlgeschlagen. Einmalig anmelden mit:  gh auth login" >&2
+            echo "(Termux: pkg install gh)" >&2
+        fi
+    fi
 fi
 
 echo
