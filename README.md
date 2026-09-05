@@ -262,7 +262,9 @@ python tools/snapshot_ktn.py     # holt und legt unter data/aktuell ab
 git add data/aktuell && git commit -m "Messwerte vom ..." && git push
 ```
 
-`./phone.sh` erledigt das bei jedem Lauf von selbst. Die Auswertung auf
+`./phone.sh` erledigt das bei jedem Lauf von selbst; mit `--push` auch das
+Einchecken. Es meldet jeden Schritt mit Uhrzeit und schreibt `phone.log` mit,
+und kein Schritt, der von aussen abhängt, läuft ohne Zeitlimit. Die Auswertung auf
 GitHub nimmt dann den jüngsten abgelegten Abruf und schreibt dessen Alter
 in den Quellennamen und auf die Grafik — „abgelegter Abruf (2 h alt)" statt
 „aktuell". Ein alter Wert erscheint als alter Wert.

@@ -38,6 +38,12 @@ pip install python-dateutil requests
 nicht im Hauptrepo, sondern im Termux User Repository — daher der Umweg über
 `tur-repo`.
 
+**Für die Galerie zusätzlich die App [Termux:API](https://f-droid.org/packages/com.termux.api/)
+aus F-Droid installieren.** Das Paket `termux-api` allein genügt nicht: es
+bringt nur die Befehle mit, die Gegenstelle steckt in der App. Fehlt sie,
+antwortet `termux-media-scan` gar nicht — `phone.sh` bricht das nach 20
+Sekunden ab und sagt es, die Bilder liegen trotzdem am richtigen Ort.
+
 **3. Speicherzugriff freigeben:**
 
 ```bash
@@ -197,3 +203,7 @@ aktuelle Gerät unkritisch.
 * **Akku-Optimierung.** Android kann Termux im Hintergrund einfrieren. Für den
   vollen Lauf das Display anlassen oder in den Termux-Einstellungen einen
   Wakelock setzen.
+* **Es scheint zu hängen.** Sollte nicht mehr vorkommen: jeder Schritt meldet
+  sich mit Uhrzeit, und nichts, was von aussen abhängt, läuft ohne Zeitlimit.
+  Falls doch — `phone.log` im Projektverzeichnis zeigt, bei welchem Schritt
+  Schluss war.
