@@ -224,6 +224,44 @@ def beschreibungen() -> None:
             out(f"    {schluessel}: {text}")
 
 
+def stationsendpunkt() -> None:
+    """Woher stammt ``daten/json/station/<id>.json``?
+
+    Diese Adresse gehört zu keiner der ausgewiesenen Ressourcen -- sie
+    steht in einem beschreibenden Text. Zehn Ressourcen tragen laut
+    Katalog "Jetzt -24h" oder "letzter Messwert"; wenn es doch eine
+    längere Reihe gibt, dann hier. Also wird der Text gesucht, in dem die
+    Adresse vorkommt, und im Zusammenhang gezeigt.
+    """
+    out("\n\n## 1c. Woher kommt station/<id>.json?")
+    url = ("https://www.data.gv.at/api/hub/search/search"
+           "?q=" + quote("hydrographische Daten Kärnten")
+           + "&filter=dataset&limit=8")
+    r = get(url)
+    if r is None or r.status_code != 200:
+        return
+
+    # Nicht im Baum suchen, sondern im Text: die Stelle, an der die Adresse
+    # steht, mit reichlich Zusammenhang drumherum. Was für ein Feld das ist,
+    # ist zweitrangig -- der Satz drumherum sagt, was der Endpunkt trägt.
+    text = r.text
+    marke = "daten/json/station"
+    stellen, ab = [], 0
+    while (i := text.find(marke, ab)) != -1:
+        stellen.append(i)
+        ab = i + len(marke)
+    out(f"  {len(stellen)} Fundstellen")
+    gezeigt = set()
+    for i in stellen[:8]:
+        von, bis = max(0, i - 900), min(len(text), i + 900)
+        stueck = " ".join(text[von:bis].split())
+        if stueck in gezeigt:
+            continue
+        gezeigt.add(stueck)
+        out("")
+        out(f"    …{stueck}…")
+
+
 def kandidaten(alle: bool = False) -> None:
     out("\n\n## 2. ktn.gv.at: Kandidaten, direkt versucht")
     out("(Ein Fehlschlag hier ist kein Urteil -- der Dienst sperrt Rechenzentren.")
@@ -244,6 +282,7 @@ def main(argv: list[str] | None = None) -> int:
     if "--nur-ktn" not in argv:
         katalog()
         beschreibungen()
+        stationsendpunkt()
     kandidaten(alle="--ktn" in argv or "--nur-ktn" in argv)
     out(f"\nFertig nach {time.monotonic() - _START:.0f} s.")
     return 0
