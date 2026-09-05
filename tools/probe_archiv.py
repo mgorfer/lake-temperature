@@ -159,8 +159,12 @@ def beschreibungen() -> None:
     also wird sie gelesen, statt an den Adressen herumzuraten.
     """
     out("\n\n## 1b. Der Eintrag im Volltext")
+    # Nach "hdkaernten" zu suchen bringt nichts -- der Katalog indiziert die
+    # Adressen nicht, nur den beschreibenden Text. Also dieselbe Anfrage,
+    # die die Adressen zutage gefördert hat, und dann selbst darin suchen.
     url = ("https://www.data.gv.at/api/hub/search/search"
-           "?q=hdkaernten&filter=dataset&limit=5")
+           "?q=" + quote("hydrographische Daten Kärnten")
+           + "&filter=dataset&limit=8")
     out(f"\n{url}")
     r = get(url)
     if r is None or r.status_code != 200:
