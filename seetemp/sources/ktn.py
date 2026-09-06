@@ -456,19 +456,17 @@ def station_snapshot_name(kennung: str, when: pd.Timestamp | None = None) -> str
     return f"station-{kennung}-{when:%Y%m%dT%H%M}.json"
 
 
-def daily_series(directory: str | Path = SNAPSHOT_DIR,
-                 config: dict | None = None) -> pd.DataFrame:
-    """Tagesreihe aus allen abgelegten Abrufen.
+def single_points(directory: str | Path = SNAPSHOT_DIR,
+                  config: dict | None = None) -> pd.DataFrame:
+    """Alle Einzelmessungen aus den abgelegten Abrufen, entdoppelt.
 
     Gelesen werden beide Fassungen, die der Dienst abgibt: die Sammeldatei
     über alle Seen (letzte 24 h) und die Datei je Messstelle (letzte 72 h).
     Legt man regelmässig ab, überlappen sie sich und ergänzen einander zu
-    einer lückenlosen Reihe -- die Einzelmessungen werden über
-    (See, Zeitpunkt) entdoppelt und zu Tagesmitteln zusammengefasst.
+    einer lückenlosen Reihe. Derselbe Zeitpunkt in mehreren Abrufen ist
+    eine Messung, nicht zwei -- entdoppelt wird über (See, Zeitpunkt).
 
-    Rückgabe: ``lake_key``, ``date``, ``temp_c``, ``messungen`` (wie viele
-    Einzelwerte in den Tag eingingen) -- letzteres, damit ein Tag mit zwei
-    Messungen nicht wie einer mit achtundvierzig aussieht.
+    Rückgabe: ``lake_key``, ``when`` (Kärntner Wanduhrzeit), ``temp_c``.
     """
     config = config or {}
     by_name = {_fold(k): v for k, v in (config.get("name_to_lake_key") or {}).items()}
@@ -483,7 +481,6 @@ def daily_series(directory: str | Path = SNAPSHOT_DIR,
             when = _stamp(entry.get("date"))
             value = _number(entry.get("value"))
             if when is not None and value is not None:
-                # Derselbe Zeitpunkt in mehreren Abrufen ist eine Messung.
                 punkte[(lake_key, when)] = value
 
     for path in sorted(Path(directory).glob("hdkaernten_see-*.json")):
@@ -512,12 +509,50 @@ def daily_series(directory: str | Path = SNAPSHOT_DIR,
         merke(lake_key, temperature_series(payload))
 
     if not punkte:
-        return pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])
-
-    frame = pd.DataFrame(
-        [{"lake_key": k, "when": w, "temp_c": v} for (k, w), v in punkte.items()]
+        return pd.DataFrame(columns=["lake_key", "when", "temp_c"])
+    return (
+        pd.DataFrame([{"lake_key": k, "when": w, "temp_c": v}
+                      for (k, w), v in punkte.items()])
+        .sort_values(["lake_key", "when"])
+        .reset_index(drop=True)
     )
-    frame["date"] = frame["when"].dt.normalize()
+
+
+def recent_points(directory: str | Path = SNAPSHOT_DIR, config: dict | None = None,
+                  hours: int = STATION_WINDOW_H) -> pd.DataFrame:
+    """Die Einzelmessungen der letzten ``hours`` Stunden.
+
+    Das ist das Fenster, das der Dienst je Messstelle abgibt: mehr als drei
+    Tage gibt es nicht, ein Archiv führt er nicht. Gezählt wird ab der
+    jüngsten Messung im Bestand, nicht ab der Uhr des Rechners -- sonst
+    schrumpfte das Fenster mit jeder Stunde, die ein Abruf altert, und ein
+    Tag ohne Abruf liesse das Bild leerlaufen.
+    """
+    punkte = single_points(directory, config)
+    if punkte.empty:
+        return punkte
+    juengste = punkte["when"].max()
+    return (
+        punkte[punkte["when"] >= juengste - pd.Timedelta(hours=hours)]
+        .reset_index(drop=True)
+    )
+
+
+def daily_series(directory: str | Path = SNAPSHOT_DIR,
+                 config: dict | None = None) -> pd.DataFrame:
+    """Tagesreihe aus allen abgelegten Abrufen.
+
+    Die Einzelmessungen aus :func:`single_points`, zu Tagesmitteln
+    zusammengefasst.
+
+    Rückgabe: ``lake_key``, ``date``, ``temp_c``, ``messungen`` (wie viele
+    Einzelwerte in den Tag eingingen) -- letzteres, damit ein Tag mit zwei
+    Messungen nicht wie einer mit achtundvierzig aussieht.
+    """
+    frame = single_points(directory, config)
+    if frame.empty:
+        return pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])
+    frame = frame.assign(date=frame["when"].dt.normalize())
     return (
         frame.groupby(["lake_key", "date"], as_index=False)
         .agg(temp_c=("temp_c", "mean"), messungen=("temp_c", "size"))

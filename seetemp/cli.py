@@ -20,6 +20,15 @@ DEFAULT_CONFIG = ROOT / "config" / "stations.json"
 MONTH_FILES = ["jaenner", "februar", "maerz", "april", "mai", "juni", "juli",
                "august", "september", "oktober", "november", "dezember"]
 
+#: Der See, der die gemeinsame Jahresachse des Monatsvergleichs setzt. Der
+#: Wörthersee hat die längste Reihe; sie ist der Ausschnitt, in dem sich alle
+#: übrigen Seen einordnen lassen.
+REFERENZSEE = "woerthersee"
+
+#: Für die Grafiken aus abgelegten Abrufen, wenn der Dienst selbst nicht
+#: erreichbar war und deshalb keinen Quellennamen mitgegeben hat.
+KTN_LABEL = "Hydrographischer Dienst Kärnten"
+
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -265,6 +274,27 @@ def run(argv: list[str] | None = None) -> int:
               f"{tage.min():%d.%m.} – {tage.max():%d.%m.} "
               f"({int(daily_now['messungen'].sum())} Einzelmessungen)")
 
+    # Die Übersicht des aktuellen Geschehens: alle Seen in Einzelmessungen,
+    # so weit zurück, wie der Dienst sie hergibt (drei Tage).
+    recent = pd.DataFrame()
+    recent_hours = 0
+    if args.current == "ktn":
+        from .sources import ktn
+
+        recent_hours = ktn.STATION_WINDOW_H
+        recent = ktn.recent_points(config=load_config(args.config).get("ktn", {}))
+        if not recent.empty:
+            recent = recent[recent["lake_key"].isin({l.key for l in selected})]
+        if recent.empty:
+            skipped.append(f"Übersicht der letzten {recent_hours} Stunden "
+                           "(noch keine abgelegten Abrufe unter data/aktuell/)")
+        else:
+            fenster = pd.DatetimeIndex(recent["when"])
+            stunden = (fenster.max() - fenster.min()).total_seconds() / 3600
+            print(f"Letzte {stunden:.0f} h:    {len(recent)} Einzelmessungen, "
+                  f"{recent['lake_key'].nunique()} Seen, "
+                  f"{fenster.min():%d.%m. %H:%M} – {fenster.max():%d.%m. %H:%M}")
+
     summary = climatology.season_summary(annotated, year)
     matrix = climatology.monthly_anomaly(annotated, year)
     year_rows = annotated[annotated["year"] == year]
@@ -277,6 +307,14 @@ def run(argv: list[str] | None = None) -> int:
         # Aus Monatsmitteln lassen sich keine einzelnen Badetage zählen.
         days = pd.DataFrame()
         skipped.append("Badetage-Bilanz (braucht Tageswerte, Quelle liefert Monatsmittel)")
+
+    # Startjahr des Monatsvergleichs: das erste Jahr, in dem der Referenzsee
+    # diesen Monat belegt hat. Alle Felder zeigen damit denselben Ausschnitt.
+    month_min = 15 if resolution == "daily" else 1
+    month_start = charts.month_start_year(annotated, args.month, REFERENZSEE, month_min)
+    if month_start:
+        print(f"{charts.MONTH_NAMES[args.month - 1]}-Achse:   ab {month_start} "
+              f"({lakes_mod.BY_KEY[REFERENZSEE].name})")
 
     themes = ["light", "dark"] if args.theme == "both" else [args.theme]
     written: list[Path] = []
@@ -302,9 +340,21 @@ def run(argv: list[str] | None = None) -> int:
                 annotated, clim, args.month,
                 # Bei Tageswerten zählt nur ein halbwegs belegter Monat; aus
                 # Monatsmitteln ist ein Wert je Jahr alles, was es gibt.
-                min_values=15 if resolution == "daily" else 1,
+                min_values=month_min,
+                start_year=month_start,
+                start_label=lakes_mod.BY_KEY[REFERENZSEE].name,
                 out=target / f"05_{MONTH_FILES[args.month - 1]}_je_jahr.png", **common),
         ] if p]
+
+        if not recent.empty:
+            path = charts.recent_overview(
+                recent, out=target / "00_letzte_72h.png",
+                hours=recent_hours,
+                measured_source=current_source or KTN_LABEL,
+                caveat=current_caveat, **common,
+            )
+            if path:
+                written.append(path)
 
         if not current.empty:
             path = charts.current_status(
@@ -344,6 +394,15 @@ def run(argv: list[str] | None = None) -> int:
         "month_file": MONTH_FILES[args.month - 1],
         "month_name": charts.MONTH_NAMES[args.month - 1],
         "current_year": heuer,
+        "month_start_year": month_start,
+        "recent": ({} if recent.empty else {
+            "hours": int(round((recent["when"].max()
+                                - recent["when"].min()).total_seconds() / 3600)),
+            "from": f"{recent['when'].min():%Y-%m-%d %H:%M}",
+            "until": f"{recent['when'].max():%Y-%m-%d %H:%M}",
+            "lakes": int(recent["lake_key"].nunique()),
+            "values": int(len(recent)),
+        }),
         "lakes": [
             {
                 "key": l.key, "name": l.name,

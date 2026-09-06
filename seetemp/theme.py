@@ -30,6 +30,7 @@ class Theme:
     neutral: str  # divergierende Mitte
     ink: str  # Linie der aktuellen Reihe
     band: str  # Streubereich des Bezugszeitraums
+    ramp: tuple[str, str, str]  # einfarbige Skala für Beträge, blass -> kräftig
     band_inner: float  # Deckkraft 10.-90. Perzentil
     band_outer: float  # Deckkraft Min/Max-Hülle
     fill_alpha: float  # Deckkraft der Abweichungsflächen
@@ -50,6 +51,7 @@ LIGHT = Theme(
     neutral="#f0efec",
     ink="#17171a",
     band="#d9d8d3",
+    ramp=("#5b8fd0", "#1f5fa8", "#0b2b50"),
     band_inner=0.75,
     band_outer=0.45,
     fill_alpha=0.30,
@@ -70,6 +72,7 @@ DARK = Theme(
     neutral="#383835",
     ink="#f2f1ec",
     band="#55554f",
+    ramp=("#3987e5", "#77b3f2", "#b9dbff"),
     band_inner=0.80,
     band_outer=0.42,
     fill_alpha=0.42,
@@ -123,3 +126,20 @@ def diverging_cmap(theme: Theme):
         [theme.cool, "#8fb8e8" if theme.name == "light" else "#2d5a8c", theme.neutral,
          "#e8a09a" if theme.name == "light" else "#8c4444", theme.warm],
     )
+
+
+def sequential_colors(theme: Theme, count: int) -> list[str]:
+    """``count`` Stufen der einfarbigen Skala, von blass nach kräftig.
+
+    Für Beträge gedacht, nicht für Zugehörigkeit: fünfzehn Seen mit fünfzehn
+    Farben auseinanderzuhalten gelingt niemandem. Die Farbe sagt hier nur, wie
+    warm der See ist -- wer welcher ist, steht als Beschriftung am Bild. Beide
+    Enden der Skala behalten mindestens 3:1 Kontrast zur Zeichenfläche; auf
+    dunklem Grund läuft sie deshalb umgekehrt, von gedämpft nach hell.
+    """
+    from matplotlib.colors import LinearSegmentedColormap, to_hex
+
+    if count <= 1:
+        return [theme.ramp[-1]]
+    scale = LinearSegmentedColormap.from_list(f"betrag_{theme.name}", list(theme.ramp))
+    return [to_hex(scale(i / (count - 1))) for i in range(count)]

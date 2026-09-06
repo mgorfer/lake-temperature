@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T21:57:01+00:00",
+  "generated_at": "2026-09-06T17:33:18+00:00",
   "source": "Demo-Modell (synthetisch)",
   "is_demo": true,
   "resolution": "daily",
@@ -11,6 +11,14 @@
   "month_file": "august",
   "month_name": "August",
   "current_year": 2026,
+  "month_start_year": 1991,
+  "recent": {
+    "hours": 71,
+    "from": "2026-09-03 19:15",
+    "until": "2026-09-06 18:00",
+    "lakes": 15,
+    "values": 2154
+  },
   "lakes": [
     {
       "key": "woerthersee",
@@ -111,162 +119,162 @@
   ],
   "normal_duenn": [],
   "data_from": "1991-01-01",
-  "data_until": "2026-09-05",
-  "values": 208512,
+  "data_until": "2026-09-06",
+  "values": 208528,
   "skipped": [],
   "current": [
     {
-      "lake_key": "woerthersee",
-      "name": "Wörthersee",
-      "date": "2026-09-05",
-      "temp_c": 25.3,
-      "temp_latest": 25.2,
-      "latest_at": "2026-09-05 17:15",
-      "normal_c": 23.8,
-      "anomaly_k": 1.5
-    },
-    {
       "lake_key": "klopeiner_see",
       "name": "Klopeiner See",
-      "date": "2026-09-05",
+      "date": "2026-09-06",
       "temp_c": 25.2,
-      "temp_latest": 25.1,
-      "latest_at": "2026-09-05 15:00",
+      "temp_latest": 26.0,
+      "latest_at": "2026-09-06 18:00",
       "normal_c": 23.5,
       "anomaly_k": 1.7
     },
     {
-      "lake_key": "keutschacher_see",
-      "name": "Keutschacher See",
-      "date": "2026-09-05",
+      "lake_key": "rauschele_see",
+      "name": "Rauschele See",
+      "date": "2026-09-06",
+      "temp_c": 25.0,
+      "temp_latest": 25.6,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 23.6,
+      "anomaly_k": 1.4
+    },
+    {
+      "lake_key": "woerthersee",
+      "name": "Wörthersee",
+      "date": "2026-09-06",
       "temp_c": 24.9,
-      "temp_latest": 24.7,
-      "latest_at": "2026-09-05 16:00",
-      "normal_c": 23.8,
-      "anomaly_k": 1.1
+      "temp_latest": 25.4,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 23.7,
+      "anomaly_k": 1.3
     },
     {
       "lake_key": "maltschacher_see",
       "name": "Maltschacher See",
-      "date": "2026-09-05",
-      "temp_c": 24.9,
-      "temp_latest": 24.7,
-      "latest_at": "2026-09-05 16:00",
+      "date": "2026-09-06",
+      "temp_c": 24.7,
+      "temp_latest": 25.3,
+      "latest_at": "2026-09-06 18:00",
       "normal_c": 23.0,
-      "anomaly_k": 1.9
+      "anomaly_k": 1.7
     },
     {
       "lake_key": "turnersee",
       "name": "Turnersee",
-      "date": "2026-09-05",
-      "temp_c": 24.9,
-      "temp_latest": 25.1,
-      "latest_at": "2026-09-05 15:00",
-      "normal_c": 23.9,
-      "anomaly_k": 1.0
-    },
-    {
-      "lake_key": "rauschele_see",
-      "name": "Rauschele See",
-      "date": "2026-09-05",
-      "temp_c": 24.8,
-      "temp_latest": 25.0,
-      "latest_at": "2026-09-05 15:00",
+      "date": "2026-09-06",
+      "temp_c": 24.7,
+      "temp_latest": 25.6,
+      "latest_at": "2026-09-06 18:00",
       "normal_c": 24.0,
-      "anomaly_k": 0.8
+      "anomaly_k": 0.7
     },
     {
-      "lake_key": "laengsee",
-      "name": "Längsee",
-      "date": "2026-09-05",
-      "temp_c": 24.4,
-      "temp_latest": 24.4,
-      "latest_at": "2026-09-05 16:30",
-      "normal_c": 23.0,
-      "anomaly_k": 1.4
+      "lake_key": "keutschacher_see",
+      "name": "Keutschacher See",
+      "date": "2026-09-06",
+      "temp_c": 24.6,
+      "temp_latest": 24.8,
+      "latest_at": "2026-09-06 16:00",
+      "normal_c": 23.9,
+      "anomaly_k": 0.7
     },
     {
       "lake_key": "millstaetter_see",
       "name": "Millstätter See",
-      "date": "2026-09-05",
-      "temp_c": 24.4,
+      "date": "2026-09-06",
+      "temp_c": 24.5,
       "temp_latest": 25.0,
-      "latest_at": "2026-09-05 15:00",
-      "normal_c": 22.3,
-      "anomaly_k": 2.0
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 22.2,
+      "anomaly_k": 2.4
+    },
+    {
+      "lake_key": "laengsee",
+      "name": "Längsee",
+      "date": "2026-09-06",
+      "temp_c": 24.3,
+      "temp_latest": 24.4,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 23.0,
+      "anomaly_k": 1.3
     },
     {
       "lake_key": "ossiacher_see",
       "name": "Ossiacher See",
-      "date": "2026-09-05",
-      "temp_c": 24.0,
-      "temp_latest": 24.2,
-      "latest_at": "2026-09-05 17:15",
-      "normal_c": 23.3,
-      "anomaly_k": 0.7
+      "date": "2026-09-06",
+      "temp_c": 24.2,
+      "temp_latest": 24.7,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 23.2,
+      "anomaly_k": 0.9
     },
     {
       "lake_key": "pressegger_see",
       "name": "Pressegger See",
-      "date": "2026-09-05",
+      "date": "2026-09-06",
       "temp_c": 23.9,
-      "temp_latest": 24.8,
-      "latest_at": "2026-09-05 17:15",
-      "normal_c": 23.1,
-      "anomaly_k": 0.8
-    },
-    {
-      "lake_key": "goesselsdorfer_see",
-      "name": "Gösselsdorfer See",
-      "date": "2026-09-05",
-      "temp_c": 23.6,
-      "temp_latest": 23.9,
-      "latest_at": "2026-09-05 16:00",
-      "normal_c": 24.5,
-      "anomaly_k": -1.0
+      "temp_latest": 25.1,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 23.0,
+      "anomaly_k": 0.9
     },
     {
       "lake_key": "faaker_see",
       "name": "Faaker See",
-      "date": "2026-09-05",
-      "temp_c": 23.5,
-      "temp_latest": 24.0,
-      "latest_at": "2026-09-05 17:15",
-      "normal_c": 23.0,
-      "anomaly_k": 0.5
+      "date": "2026-09-06",
+      "temp_c": 23.9,
+      "temp_latest": 24.3,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 22.8,
+      "anomaly_k": 1.1
+    },
+    {
+      "lake_key": "goesselsdorfer_see",
+      "name": "Gösselsdorfer See",
+      "date": "2026-09-06",
+      "temp_c": 23.3,
+      "temp_latest": 23.7,
+      "latest_at": "2026-09-06 16:00",
+      "normal_c": 24.6,
+      "anomaly_k": -1.3
     },
     {
       "lake_key": "weissensee",
       "name": "Weißensee",
-      "date": "2026-09-05",
-      "temp_c": 23.1,
-      "temp_latest": 23.3,
-      "latest_at": "2026-09-05 17:15",
-      "normal_c": 19.5,
-      "anomaly_k": 3.6
+      "date": "2026-09-06",
+      "temp_c": 23.0,
+      "temp_latest": 23.4,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 19.3,
+      "anomaly_k": 3.7
     },
     {
       "lake_key": "brennsee",
       "name": "Feldsee (Brennsee)",
-      "date": "2026-09-05",
-      "temp_c": 23.0,
-      "temp_latest": 23.1,
-      "latest_at": "2026-09-05 15:00",
-      "normal_c": 21.5,
-      "anomaly_k": 1.5
+      "date": "2026-09-06",
+      "temp_c": 22.9,
+      "temp_latest": 23.2,
+      "latest_at": "2026-09-06 18:00",
+      "normal_c": 21.7,
+      "anomaly_k": 1.3
     },
     {
       "lake_key": "afritzer_see",
       "name": "Afritzer See",
-      "date": "2026-09-05",
-      "temp_c": 21.8,
-      "temp_latest": 22.3,
-      "latest_at": "2026-09-05 15:00",
+      "date": "2026-09-06",
+      "temp_c": 21.9,
+      "temp_latest": 22.0,
+      "latest_at": "2026-09-06 18:00",
       "normal_c": 21.7,
-      "anomaly_k": 0.2
+      "anomaly_k": 0.1
     }
   ],
-  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (7 h alt)",
+  "current_source": "Hydrographischer Dienst Kärnten — abgelegter Abruf (2 h alt)",
   "current_caveat": "Achtung - ungeprüfte Rohdaten!",
   "notes": [
     "Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.",
@@ -274,6 +282,7 @@
   ],
   "files": [
     "dark/00_aktuell.png",
+    "dark/00_letzte_72h.png",
     "dark/01_uebersicht_abweichung_2026.png",
     "dark/02_monatsmatrix_2026.png",
     "dark/03_badetage_2026.png",
@@ -311,6 +320,7 @@
     "dark/seen/woerthersee_2026.png",
     "dark/seen/woerthersee_heuer.png",
     "light/00_aktuell.png",
+    "light/00_letzte_72h.png",
     "light/01_uebersicht_abweichung_2026.png",
     "light/02_monatsmatrix_2026.png",
     "light/03_badetage_2026.png",

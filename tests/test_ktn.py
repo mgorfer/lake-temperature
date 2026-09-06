@@ -348,3 +348,56 @@ class Tagesreihe(unittest.TestCase):
 
     def test_missing_csv_is_not_an_error(self):
         self.assertTrue(ktn.read_daily("/nirgends/tagesreihe.csv").empty)
+
+
+class LetzteStunden(unittest.TestCase):
+    """Das Fenster, das der Dienst je Messstelle abgibt: 72 Stunden."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        (self.tmp / "station").mkdir()
+
+    def station(self, kennung: str, punkte: list[tuple[str, float]]) -> None:
+        payload = {"werte": {"wassertemperatur": [
+            {"date": stamp, "value": value} for stamp, value in punkte]}}
+        (self.tmp / "station" / f"station-{kennung}-20260906T1800.json").write_text(
+            json.dumps(payload), encoding="utf-8")
+
+    def test_reads_the_single_measurements(self):
+        self.station("2001056", [("2026-09-06T06:00:00+01:00", 21.4),
+                                 ("2026-09-06T06:15:00+01:00", 21.5)])
+        punkte = ktn.recent_points(self.tmp, {"id_to_lake_key": {"2001056": "woerthersee"}})
+        self.assertEqual(list(punkte["temp_c"]), [21.4, 21.5])
+        self.assertEqual(set(punkte["lake_key"]), {"woerthersee"})
+
+    def test_window_counts_from_the_newest_reading(self):
+        """Sonst schrumpfte das Bild mit jeder Stunde, die ein Abruf altert."""
+        self.station("2001056", [("2026-09-01T12:00:00+01:00", 20.0),   # zu alt
+                                 ("2026-09-05T12:00:00+01:00", 21.0),
+                                 ("2026-09-06T12:00:00+01:00", 22.0)])
+        punkte = ktn.recent_points(self.tmp, {"id_to_lake_key": {"2001056": "woerthersee"}},
+                                   hours=48)
+        self.assertEqual(list(punkte["temp_c"]), [21.0, 22.0])
+
+    def test_the_same_reading_from_two_snapshots_is_one_measurement(self):
+        stamp = "2026-09-06T12:00:00+01:00"
+        self.station("2001056", [(stamp, 22.0)])
+        (self.tmp / "hdkaernten_see-20260906T1800.json").write_text(json.dumps(
+            {"features": [{"properties": {
+                "gewaesser": "Wörthersee", "hzbnr": 212985,
+                "werte": {"wassertemperatur": [{"date": stamp, "value": 22.0}]}}}]}
+        ), encoding="utf-8")
+        config = {"id_to_lake_key": {"2001056": "woerthersee"},
+                  "hzb_to_lake_key": {"woerthersee": "212985"}}
+        self.assertEqual(len(ktn.recent_points(self.tmp, config)), 1)
+
+    def test_no_snapshots_no_points(self):
+        self.assertTrue(ktn.recent_points(self.tmp / "leer", {}).empty)
+
+    def test_the_daily_series_rests_on_the_same_points(self):
+        self.station("2001056", [("2026-09-05T23:00:00+01:00", 20.0),
+                                 ("2026-09-06T01:00:00+01:00", 22.0)])
+        config = {"id_to_lake_key": {"2001056": "woerthersee"}}
+        tage = ktn.daily_series(self.tmp, config)
+        self.assertEqual(len(tage), 2)          # Kärntner Kalendertag, nicht UTC
+        self.assertEqual(list(tage["messungen"]), [1, 1])

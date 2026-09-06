@@ -24,6 +24,12 @@ def render(run: dict) -> str:
         f"{len(run.get('lakes', []))} Seen",
         f"- {len(run.get('files', []))} PNG-Dateien erzeugt",
     ]
+    recent = run.get("recent") or {}
+    if recent:
+        lines.insert(-1, f"- Letzte {recent.get('hours', '?')} h: "
+                         f"{recent.get('values', '?')} Einzelmessungen aus "
+                         f"{recent.get('lakes', '?')} Seen "
+                         f"(bis {recent.get('until', '?')})")
     lines += [f"- Übersprungen: {item}" for item in run.get("skipped", [])]
     notes = run.get("notes", [])
     if notes:
