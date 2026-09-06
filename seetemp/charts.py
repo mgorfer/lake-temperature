@@ -537,8 +537,34 @@ def current_status(current: pd.DataFrame, clim, th, source, is_demo, out: Path,
 
 # -------------------------------------- 5: Ein Monat über die ganze Reihe
 
+def month_series(annotated: pd.DataFrame, month: int, min_values: int = 1) -> pd.DataFrame:
+    """Das Mittel eines Kalendermonats je See und Jahr.
+
+    ``min_values`` verwirft dünn belegte Monate: aus vier Tageswerten ein
+    Monatsmittel zu bilden hiesse, einen Kälteeinbruch zum Monat zu erklären.
+    Aus Monatsmitteln ist ein Wert je Jahr dagegen alles, was es gibt.
+    """
+    subset = annotated[(annotated["month"] == month) & annotated["temp_c"].notna()]
+    if subset.empty:
+        return pd.DataFrame(columns=["lake_key", "year", "temp_c", "werte"])
+    reihe = (
+        subset.groupby(["lake_key", "year"], as_index=False)
+        .agg(temp_c=("temp_c", "mean"), werte=("temp_c", "size"))
+    )
+    return reihe[reihe["werte"] >= min_values]
+
+
+def month_start_year(annotated: pd.DataFrame, month: int, lake_key: str,
+                     min_values: int = 1) -> int | None:
+    """Erstes Jahr, in dem ein bestimmter See diesen Monat belegt hat."""
+    reihe = month_series(annotated, month, min_values)
+    teil = reihe[reihe["lake_key"] == lake_key]
+    return int(teil["year"].min()) if not teil.empty else None
+
+
 def month_history(annotated: pd.DataFrame, clim, month: int, th, source, is_demo,
-                  out: Path, min_values: int = 1):
+                  out: Path, min_values: int = 1, start_year: int | None = None,
+                  start_label: str = ""):
     """Ein Kalendermonat über alle Jahre der Aufzeichnung, je See ein Feld.
 
     Die Linie ist das Monatsmittel des jeweiligen Jahres, die gestrichelte
@@ -548,15 +574,21 @@ def month_history(annotated: pd.DataFrame, clim, month: int, th, source, is_demo
 
     Der Titel jedes Feldes nennt die lineare Steigung über die vorhandenen
     Jahre. Das ist eine Ausgleichsgerade, keine Aussage über Signifikanz.
+
+    ``start_year`` setzt den Beginn der gemeinsamen Jahresachse -- gedacht
+    für den See mit der längsten Reihe, damit alle Felder denselben
+    Ausschnitt zeigen. Frühere Werte anderer Seen fallen dann heraus; wie
+    viele, sagt der Untertitel, damit nichts stillschweigend verschwindet.
     """
-    subset = annotated[(annotated["month"] == month) & annotated["temp_c"].notna()]
-    if subset.empty:
+    reihe = month_series(annotated, month, min_values)
+    if reihe.empty:
         return None
-    reihe = (
-        subset.groupby(["lake_key", "year"], as_index=False)
-        .agg(temp_c=("temp_c", "mean"), werte=("temp_c", "size"))
-    )
-    reihe = reihe[reihe["werte"] >= min_values]
+    frueher = 0
+    if start_year is not None:
+        frueher = int((reihe["year"] < start_year).sum())
+        reihe = reihe[reihe["year"] >= start_year]
+        if reihe.empty:
+            return None
     keys = sorted(reihe["lake_key"].unique(), key=lambda k: BY_KEY[k].name)
     if not keys:
         return None
@@ -610,6 +642,10 @@ def month_history(annotated: pd.DataFrame, clim, month: int, th, source, is_demo
         de_axis(ax, "y", digits=0)
         ax.margins(x=0.02)
 
+    if start_year is not None:
+        # sharex: ein Feld setzt die Achse für alle.
+        axes[0].set_xlim(start_year - 0.8, int(reihe["year"].max()) + 0.8)
+
     for ax in axes[len(keys):]:
         ax.set_visible(False)
 
@@ -635,11 +671,18 @@ def month_history(annotated: pd.DataFrame, clim, month: int, th, source, is_demo
                bbox_to_anchor=(0.012, 1 - 1.45 / height), ncol=3,
                labelcolor=th.text_secondary, handlelength=2.2, columnspacing=1.8,
                borderpad=0.0, handletextpad=0.6)
+    achse = f"Die Achse beginnt mit {von}"
+    if start_year is not None and start_label:
+        achse = f"Die Achse beginnt mit dem ersten {MONTH_NAMES[month - 1]} " \
+                f"am {start_label} ({start_year})"
+        if frueher:
+            achse += f"; {frueher} früher gemessene Monatsmittel anderer Seen " \
+                     "bleiben aussen vor"
     _titleblock(
         fig, th, f"Jeder {MONTH_NAMES[month - 1]} der Aufzeichnung — {von} bis {bis}",
         f"Monatsmittel je Jahr gegen den Normalwert {clim.label}. Die Reihen "
-        "beginnen unterschiedlich früh;\ndie Gerade ist ein linearer Ausgleich über "
-        "die jeweils vorhandenen Jahre, keine Signifikanzaussage.",
+        f"beginnen unterschiedlich früh. {achse}.\nDie Gerade ist ein linearer "
+        "Ausgleich über die jeweils vorhandenen Jahre, keine Signifikanzaussage.",
     )
     _footer(fig, th, f"Quelle: {source}")
     _watermark(fig, th, is_demo)
@@ -759,4 +802,161 @@ def current_year_daily(daily: pd.DataFrame, clim, lake_key: str, year: int, th,
     _footer(fig, th, ((caveat + " · ") if caveat else "")
             + f"Normalwert: {source} · Die Reihe wächst mit jedem abgelegten Abruf.")
     _watermark(fig, th, is_demo)
+    return _save(fig, out)
+
+
+# ---------------------------- 7: Alle Seen, die letzten 72 Stunden
+
+#: Wochentage für die Zeitachse -- kurz, damit drei Tage nebeneinander passen.
+WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+def _spread(werte: np.ndarray, abstand: float, unten: float, oben: float) -> np.ndarray:
+    """Beschriftungen auseinanderschieben, ohne ihre Reihenfolge zu ändern.
+
+    Zwei Seen können auf ein Zehntelgrad gleich warm sein; ihre Namen lägen
+    dann übereinander. Geschoben wird nur so weit wie nötig und nur in der
+    Reihenfolge der Werte -- sonst zeigte der Fühler des einen Namens auf die
+    Linie des anderen.
+    """
+    ziel = np.array(werte, dtype=float)
+    reihe = np.argsort(ziel)
+    gelegt = ziel[reihe]
+    for i in range(1, len(gelegt)):                      # von unten nach oben
+        gelegt[i] = max(gelegt[i], gelegt[i - 1] + abstand)
+    ueberstand = gelegt[-1] - oben
+    if ueberstand > 0:                                   # oben angestossen
+        gelegt -= ueberstand
+        for i in range(len(gelegt) - 2, -1, -1):
+            gelegt[i] = min(gelegt[i], gelegt[i + 1] - abstand)
+    gelegt = np.maximum(gelegt, unten)
+    ergebnis = np.empty_like(gelegt)
+    ergebnis[reihe] = gelegt
+    return ergebnis
+
+
+def recent_overview(points: pd.DataFrame, th, source, is_demo, out: Path,
+                    hours: int = 72, measured_source: str = "", caveat: str = ""):
+    """Alle Seen nebeneinander, die letzten Stunden in Einzelmessungen.
+
+    Das ist das Bild für die Frage, die man im Sommer tatsächlich stellt:
+    wo ist es gerade warm? Drei Tage sind alles, was der Dienst hergibt --
+    dafür im Viertelstundentakt, also mit dem Tagesgang darin: nachts kühlt
+    die Oberfläche ab, nachmittags steht die Spitze.
+
+    Fünfzehn Seen vertragen keine fünfzehn Farben. Die Farbe folgt deshalb
+    der Temperatur (dieselbe Skala für alle), und wer welcher See ist, steht
+    als Name am rechten Rand neben seiner eigenen Linie.
+
+    Kein Demo-Wasserzeichen: hier steht kein Normalwert im Bild, jede Zahl
+    ist gemessen. Läuft die übrige Auswertung auf Demodaten, sagt das die
+    Fusszeile -- aber diese Messwerte sind davon nicht betroffen.
+    """
+    if points is None or points.empty:
+        return None
+    data = points[points["lake_key"].isin(BY_KEY)].sort_values("when")
+    if data.empty:
+        return None
+    keys = list(data["lake_key"].unique())
+
+    ende = pd.Timestamp(data["when"].max())
+    beginn = pd.Timestamp(data["when"].min())
+    spanne = (ende - beginn).total_seconds() / 3600
+
+    fig = plt.figure(figsize=(9.6, 6.4))
+    ax = _axes(fig, 0.062, 0.775, header_in=1.66, footer_in=0.70)
+    _despine(ax, th)
+
+    # Nacht als blasses Feld: der Tagesgang der Seen liest sich damit von
+    # selbst, ohne dass jede Delle erklärt werden müsste.
+    nacht = None
+    tag = beginn.normalize() - pd.Timedelta(days=1)
+    while tag <= ende:
+        von = max(tag + pd.Timedelta(hours=20), beginn)
+        bis = min(tag + pd.Timedelta(days=1, hours=6), ende)
+        if von < bis:
+            nacht = ax.axvspan(von, bis, color=th.panel, zorder=0, linewidth=0)
+        tag += pd.Timedelta(days=1)
+
+    letzte = {k: float(data[data["lake_key"] == k]["temp_c"].iloc[-1]) for k in keys}
+    ordnung = sorted(keys, key=lambda k: letzte[k])
+    farbe = dict(zip(ordnung, theme_mod.sequential_colors(th, len(ordnung))))
+
+    for key in keys:
+        teil = data[data["lake_key"] == key]
+        ax.plot(teil["when"], teil["temp_c"], color=farbe[key], linewidth=1.8,
+                solid_joinstyle="round", zorder=3)
+        ax.scatter([teil["when"].iloc[-1]], [teil["temp_c"].iloc[-1]], s=30,
+                   color=farbe[key], edgecolor=th.surface, linewidth=1.4, zorder=5)
+
+    hoch, tief = data["temp_c"].max(), data["temp_c"].min()
+    luft = max(0.6, (hoch - tief) * 0.06)
+    ax.set_ylim(tief - luft, hoch + luft)
+    ax.set_xlim(beginn, ende + pd.Timedelta(minutes=30))
+    ax.set_ylabel("Wassertemperatur (°C)")
+    de_axis(ax, "y", digits=0)
+
+    # Zeitachse: Marken alle sechs Stunden, beschriftet Mitternacht und Mittag.
+    marken, beschriftung = [], []
+    marke = beginn.ceil("6h")
+    while marke <= ende:
+        marken.append(marke)
+        if marke.hour == 0:
+            beschriftung.append(f"{WEEKDAYS[marke.weekday()]}\n{marke:%d.%m.}")
+        elif marke.hour == 12:
+            beschriftung.append("12 Uhr")
+        else:
+            beschriftung.append("")
+        marke += pd.Timedelta(hours=6)
+    ax.set_xticks(marken)
+    ax.set_xticklabels(beschriftung, fontsize=8.5)
+    ax.grid(True, axis="x", color=th.grid, linewidth=0.7)
+
+    # Namen am rechten Rand, auseinandergeschoben, mit Fühler zur Linie.
+    unten, oben = ax.get_ylim()
+    abstand = (oben - unten) / 26
+    ziel = _spread(np.array([letzte[k] for k in keys]), abstand, unten, oben)
+    rechts = ax.get_xlim()[1]
+    schritt = (rechts - ax.get_xlim()[0])
+    for key, y in zip(keys, ziel):
+        wert = letzte[key]
+        ax.annotate(
+            "", xy=(rechts + schritt * 0.012, y), xytext=(ende, wert),
+            xycoords=("data", "data"), textcoords=("data", "data"),
+            arrowprops=dict(arrowstyle="-", color=farbe[key], linewidth=0.8,
+                            shrinkA=2, shrinkB=0),
+            annotation_clip=False, zorder=4,
+        )
+        ax.annotate(
+            f"{BY_KEY[key].name}   {num(wert)} °C", (rechts + schritt * 0.018, y),
+            xycoords=("data", "data"), va="center", ha="left", fontsize=8.8,
+            color=th.text, annotation_clip=False, zorder=6,
+        )
+
+    handles = [
+        Line2D([], [], color=th.ramp[1], linewidth=1.8, label="Messreihe je See"),
+        Line2D([], [], marker="o", linestyle="none", markersize=6,
+               markerfacecolor=th.ramp[1], markeredgecolor=th.surface,
+               markeredgewidth=1.4, label="jüngster Wert"),
+    ]
+    if nacht is not None:
+        handles.append(Patch(facecolor=th.panel, label="Nacht (20–6 Uhr)"))
+    fig.legend(handles=handles, loc="lower left",
+               bbox_to_anchor=(0.012, 1 - 1.22 / fig.get_size_inches()[1]), ncol=3,
+               labelcolor=th.text_secondary, handlelength=1.8, columnspacing=1.8,
+               borderpad=0.0, handletextpad=0.6)
+
+    stunden = int(round(spanne))
+    _titleblock(
+        fig, th, f"Alle Seen — die letzten {stunden} Stunden",
+        f"Einzelmessungen von {long_date(beginn)}, {beginn:%H:%M} bis "
+        f"{long_date(ende)}, {ende:%H:%M} — {len(data)} Werte aus {len(keys)} Seen.\n"
+        f"Die Farbe folgt allein der Temperatur; die Namen stehen am rechten Rand. "
+        f"Messwerte: {measured_source or source}",
+    )
+    _footer(fig, th, ((caveat + " · ") if caveat else "")
+            + f"Mehr als {hours} Stunden gibt der Dienst nicht her — ein Archiv "
+              "führt er nicht."
+            + (" · Gemessene Werte; die Normalwerte der übrigen Grafiken sind "
+               "Demodaten." if is_demo else ""))
     return _save(fig, out)

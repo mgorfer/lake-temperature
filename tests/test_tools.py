@@ -105,6 +105,62 @@ class GalleryTest(unittest.TestCase):
         self.assertIn("prefers-color-scheme", markup)
 
 
+class ReihenfolgeTest(unittest.TestCase):
+    """Vorne das aktuelle Geschehen, hinten die amtliche Reihe bis 2023."""
+
+    RUN = {
+        **RUN,
+        "month_file": "august", "month_name": "August",
+        "data_until": "2023-12-01", "current_year": 2026,
+        "recent": {"hours": 71, "from": "2026-09-03 19:15",
+                   "until": "2026-09-06 18:00", "lakes": 15, "values": 2154},
+    }
+
+    def build(self):
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "light" / "seen").mkdir(parents=True)
+        for name in ("00_letzte_72h.png", "00_aktuell.png", "05_august_je_jahr.png",
+                     "01_uebersicht_abweichung_2026.png",
+                     "04_saisonabweichung_zeitreihe.png"):
+            (tmp / "light" / name).write_bytes(b"\x89PNG")
+        for name in ("woerthersee_2026.png", "woerthersee_heuer.png"):
+            (tmp / "light" / "seen" / name).write_bytes(b"\x89PNG")
+        return build_gallery.render(tmp, self.RUN)
+
+    def stelle(self, markup, datei):
+        stelle = markup.find(datei)
+        self.assertNotEqual(stelle, -1, f"{datei} fehlt auf der Seite")
+        return stelle
+
+    def test_the_last_hours_come_first(self):
+        markup = self.build()
+        self.assertLess(self.stelle(markup, "00_letzte_72h.png"),
+                        self.stelle(markup, "00_aktuell.png"))
+        self.assertIn("Die letzten 71 Stunden", markup)
+
+    def test_the_month_comparison_follows(self):
+        markup = self.build()
+        self.assertLess(self.stelle(markup, "00_letzte_72h.png"),
+                        self.stelle(markup, "05_august_je_jahr.png"))
+        self.assertLess(self.stelle(markup, "05_august_je_jahr.png"),
+                        self.stelle(markup, "01_uebersicht_abweichung_2026.png"))
+
+    def test_the_official_series_is_last(self):
+        markup = self.build()
+        for datei in ("00_letzte_72h.png", "05_august_je_jahr.png",
+                      "seen/woerthersee_heuer.png"):
+            self.assertLess(self.stelle(markup, datei),
+                            self.stelle(markup, "04_saisonabweichung_zeitreihe.png"))
+        self.assertLess(self.stelle(markup, "04_saisonabweichung_zeitreihe.png"),
+                        self.stelle(markup, "seen/woerthersee_2026.png"))
+        self.assertIn("Die amtliche Reihe bis 2023", markup)
+
+    def test_the_run_details_sit_at_the_foot(self):
+        markup = self.build()
+        self.assertLess(self.stelle(markup, "00_letzte_72h.png"),
+                        self.stelle(markup, "<dt>Datenstand</dt>"))
+
+
 class SummaryTest(unittest.TestCase):
     def test_names_source_resolution_and_skips(self):
         text = summary.render(RUN)

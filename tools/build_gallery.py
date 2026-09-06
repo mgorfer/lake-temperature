@@ -18,12 +18,28 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Reihenfolge und Beschriftung der Übersichtsgrafiken.
-# Der dritte Eintrag ist die Dateivorlage: {year} und {month_file} werden
-# eingesetzt, ebenso {month_name} in Titel und Bildunterschrift.
-OVERVIEW = [
-    ("00_aktuell", "Heute", "00_aktuell.png",
+# Reihenfolge und Beschriftung der Übersichtsgrafiken, in drei Abschnitten:
+# zuerst das aktuelle Geschehen, dann der Blick über die Jahre, zuletzt die
+# amtliche lange Reihe -- die endet mit dem letzten Jahrbuch und ist deshalb
+# das Nachschlagewerk, nicht die Titelseite.
+#
+# Der dritte Eintrag ist die Dateivorlage: {year}, {month_file} und {hours}
+# werden eingesetzt, ebenso {month_name} in Titel und Bildunterschrift.
+JETZT = [
+    ("00_letzte_72h", "Die letzten {hours} Stunden", "00_letzte_72h.png",
+     "Alle Seen in Einzelmessungen -- wo es gerade warm ist und wie der "
+     "Tagesgang verläuft. Mehr als drei Tage gibt der Dienst nicht her."),
+    ("00_aktuell", "Heute gegen den Normalwert", "00_aktuell.png",
      "Gemessener Wert je See gegenüber seinem Normalwert."),
+]
+
+MONATSVERGLEICH = [
+    ("05_monat_je_jahr", "Jeder {month_name} der Aufzeichnung",
+     "05_{month_file}_je_jahr.png",
+     "Das {month_name}-Mittel jedes Jahres gegen den Normalwert desselben Monats."),
+]
+
+LANGE_REIHE = [
     ("01_uebersicht_abweichung", "Alle Seen im Vergleich", "01_uebersicht_abweichung_{year}.png",
      "Mittlere Abweichung der Badesaison vom langjährigen Normalwert."),
     ("02_monatsmatrix", "Monat für Monat", "02_monatsmatrix_{year}.png",
@@ -33,10 +49,8 @@ OVERVIEW = [
     ("04_saisonabweichung_zeitreihe", "Jeder Sommer seit Reihenbeginn",
      "04_saisonabweichung_zeitreihe.png",
      "Ein Balken je Jahr und See -- der lange Blick auf die Entwicklung."),
-    ("05_monat_je_jahr", "Jeder {month_name} der Aufzeichnung",
-     "05_{month_file}_je_jahr.png",
-     "Das {month_name}-Mittel jedes Jahres gegen den Normalwert desselben Monats."),
 ]
+
 
 STYLE = """
 :root {
@@ -129,31 +143,42 @@ def find(root: Path, relative: str) -> str | None:
     return relative if (root / relative).is_file() else None
 
 
-def collect(root: Path, run: dict) -> tuple[list, list, list]:
+def collect(root: Path, run: dict) -> dict:
+    """Sucht zu jedem Abschnitt die Bilder, die tatsächlich vorliegen."""
     year = run.get("year", "")
     felder = {
         "year": year,
         "month_file": run.get("month_file", ""),
         "month_name": run.get("month_name", ""),
+        "hours": (run.get("recent") or {}).get("hours", 72),
     }
-    overview = []
-    for _prefix, title, template, caption in OVERVIEW:
-        stem = template.format(**felder)
-        light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
-        if light or dark:
-            overview.append((title.format(**felder), caption.format(**felder), light, dark))
 
-    lakes, heuer = [], []
-    for lake in run.get("lakes", []):
-        stem = f"seen/{lake['key']}_{year}.png"
-        light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
-        if light or dark:
-            lakes.append((lake["name"], light, dark))
-        stem = f"seen/{lake['key']}_heuer.png"
-        light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
-        if light or dark:
-            heuer.append((lake["name"], light, dark))
-    return overview, lakes, heuer
+    def gruppe(eintraege: list) -> list:
+        gefunden = []
+        for prefix, title, template, caption in eintraege:
+            stem = template.format(**felder)
+            light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
+            if light or dark:
+                gefunden.append((prefix, title.format(**felder),
+                                 caption.format(**felder), light, dark))
+        return gefunden
+
+    def seen(vorlage: str) -> list:
+        gefunden = []
+        for lake in run.get("lakes", []):
+            stem = f"seen/{vorlage.format(key=lake['key'], year=year)}"
+            light, dark = find(root, f"light/{stem}"), find(root, f"dark/{stem}")
+            if light or dark:
+                gefunden.append((lake["name"], light, dark))
+        return gefunden
+
+    return {
+        "jetzt": gruppe(JETZT),
+        "monat": gruppe(MONATSVERGLEICH),
+        "reihe": gruppe(LANGE_REIHE),
+        "heuer": seen("{key}_heuer.png"),
+        "lakes": seen("{key}_{year}.png"),
+    }
 
 
 def current_table(run: dict) -> str:
@@ -224,19 +249,27 @@ def coverage_table(run: dict) -> str:
 
 def render(root: Path, run: dict) -> str:
     esc = lambda v: html.escape(str(v))
-    overview, lakes, heuer = collect(root, run)
+    bilder = collect(root, run)
     year = run.get("year", "")
     generated = datetime.fromisoformat(run["generated_at"]).strftime("%d.%m.%Y, %H:%M UTC")
     aufloesung = "Tageswerte" if run.get("resolution") == "daily" else "Monatsmittel"
     werte = f"{run.get('values', 0):,}".replace(",", ".")
+    reihe_bis = str(run.get("data_until", ""))[:4]
 
     banner = ""
     if run.get("is_demo"):
+        # Die Werte der letzten Stunden kommen vom Landesdienst, nicht aus dem
+        # Modell. Sie mitzuverdammen wäre so falsch wie sie zu beschönigen.
+        gemessen = ""
+        if run.get("recent") or run.get("current"):
+            gemessen = (" Die Werte der letzten Stunden ganz oben sind davon "
+                        "ausgenommen: sie sind gemessen.")
         banner = (
-            '<div class="warn"><strong>Demodaten — keine Messwerte.</strong>'
-            "Diese Auswertung beruht auf einem synthetischen Jahresgangmodell und "
-            "sagt nichts über die tatsächlichen Seen aus. Für echte Werte den Lauf "
-            "mit der Quelle <code>ehyd</code> starten.</div>"
+            '<div class="warn"><strong>Demodaten — keine langjährigen Messwerte.'
+            "</strong>Die Normalwerte und der Vergleich mit ihnen beruhen auf einem "
+            "synthetischen Jahresgangmodell und sagen nichts über die tatsächlichen "
+            f"Seen aus.{gemessen} Für echte Werte den Lauf mit der Quelle "
+            "<code>ehyd</code> starten.</div>"
         )
 
     skipped = "".join(
@@ -249,14 +282,64 @@ def render(root: Path, run: dict) -> str:
         "<!doctype html>",
         '<html lang="de"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        f"<title>Kärntner Seen {esc(year)} — Wassertemperatur</title>",
+        "<title>Kärntner Seen — Wassertemperatur</title>",
         f"<style>{STYLE}</style></head><body><main>",
         "<header>",
-        f"<h1>Kärntner Seen {esc(year)}</h1>",
-        '<p class="lede">Wassertemperatur im Vergleich zum langjährigen Mittel '
-        f'{esc(run.get("reference", ""))}.</p>',
+        "<h1>Kärntner Seen</h1>",
+        '<p class="lede">Wie warm die Seen gerade sind — und wie das gegenüber dem '
+        f'langjährigen Mittel {esc(run.get("reference", ""))} dasteht.</p>',
         "</header>",
         banner,
+        '<p class="hint">Antippen öffnet ein Bild in voller Auflösung.</p>',
+    ]
+
+    # Zuerst das aktuelle Geschehen -- danach fragt, wer die Seite aufruft.
+    for prefix, title, caption, light, dark in bilder["jetzt"]:
+        parts += [f"<h2>{esc(title)}</h2>", f'<p class="caption">{esc(caption)}</p>',
+                  picture(light, dark, title)]
+        if prefix == "00_letzte_72h":
+            parts.append(current_table(run))
+
+    # Dann der Blick über die Jahre: ein Monat, jedes Jahr der Aufzeichnung.
+    for _prefix, title, caption, light, dark in bilder["monat"]:
+        parts += [f"<h2>{esc(title)}</h2>", f'<p class="caption">{esc(caption)}</p>',
+                  picture(light, dark, title)]
+
+    # Das laufende Jahr je See -- der Übergang von heute zur langen Reihe.
+    if bilder["heuer"]:
+        jahr = run.get("current_year") or ""
+        parts += [f'<h2 class="lakes">{esc(jahr)} in Tageswerten</h2>',
+                  '<p class="caption">Was heuer gemessen wurde, Tag für Tag gegen '
+                  "den Monatsnormalwert. Die Reihe wächst mit jedem abgelegten "
+                  "Abruf.</p>"]
+        for name, light, dark in bilder["heuer"]:
+            parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
+                      picture(light, dark, name)]
+
+    # Zuletzt die amtliche lange Reihe. Sie endet mit dem letzten Jahrbuch,
+    # taugt also zum Nachschlagen, nicht zur Auskunft über heute.
+    if bilder["reihe"] or bilder["lakes"]:
+        parts += ["<h2>Die amtliche Reihe"
+                  + (f" bis {esc(reihe_bis)}" if reihe_bis else "") + "</h2>",
+                  '<p class="caption">Ab hier die langjährigen Messreihen: sie enden '
+                  f"mit dem letzten Jahrbuch ({esc(run.get('data_until', ''))}), "
+                  f"Vergleichsjahr ist {esc(year)}. Das laufende Jahr steht nicht in "
+                  "ihnen — es steht oben.</p>"]
+
+    for _prefix, title, caption, light, dark in bilder["reihe"]:
+        parts += [f"<h2>{esc(title)}</h2>", f'<p class="caption">{esc(caption)}</p>',
+                  picture(light, dark, title)]
+
+    if bilder["lakes"]:
+        parts += [f'<h2 class="lakes">Jahresgang je See {esc(year)}</h2>',
+                  '<p class="caption">Der Verlauf des Jahres gegen den Normalwert, '
+                  'das Band zeigt die Bandbreite des Bezugszeitraums.</p>']
+        for name, light, dark in bilder["lakes"]:
+            parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
+                      picture(light, dark, name)]
+
+    parts.append(coverage_table(run))
+    parts += [
         '<div class="meta"><dl>',
         f"<dt>Quelle</dt><dd>{esc(run.get('source', ''))}</dd>",
         f"<dt>Auflösung</dt><dd>{aufloesung}</dd>",
@@ -266,35 +349,6 @@ def render(root: Path, run: dict) -> str:
         f"({werte} Werte ab {esc(run.get('data_from', ''))})</dd>",
         f"<dt>Erzeugt</dt><dd>{esc(generated)}</dd>",
         f"</dl>{notes_block}</div>",
-        '<p class="hint">Antippen öffnet ein Bild in voller Auflösung.</p>',
-    ]
-
-    for title, caption, light, dark in overview:
-        parts += [f"<h2>{esc(title)}</h2>", f'<p class="caption">{esc(caption)}</p>',
-                  picture(light, dark, title)]
-        if title == "Heute":
-            parts.append(current_table(run))
-
-    if heuer:
-        jahr = run.get("current_year") or ""
-        parts += [f'<h2 class="lakes">{esc(jahr)} in Tageswerten</h2>',
-                  '<p class="caption">Die amtliche lange Reihe endet mit dem letzten '
-                  "Jahrbuch. Was heuer gemessen wurde, steht hier — Tag für Tag gegen "
-                  "den Monatsnormalwert. Die Reihe wächst mit jedem abgelegten Abruf.</p>"]
-        for name, light, dark in heuer:
-            parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
-                      picture(light, dark, name)]
-
-    if lakes:
-        parts += ['<h2 class="lakes">Jahresgang je See</h2>',
-                  '<p class="caption">Der Verlauf des Jahres gegen den Normalwert, '
-                  'das Band zeigt die Bandbreite des Bezugszeitraums.</p>']
-        for name, light, dark in lakes:
-            parts += [f'<p class="caption" style="margin-top:14px">{esc(name)}</p>',
-                      picture(light, dark, name)]
-
-    parts.append(coverage_table(run))
-    parts += [
         "<footer>",
         "Erzeugt mit <a href=\"https://github.com/mgorfer/lake-temperature\">seetemp</a>. ",
         "Die Seite folgt der Hell/Dunkel-Einstellung des Geräts. ",

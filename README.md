@@ -20,6 +20,7 @@ Je Farbschema (`output/light/`, `output/dark/`):
 
 | Datei | Inhalt |
 |---|---|
+| `00_letzte_72h.png` | Alle Seen in Einzelmessungen der letzten 72 Stunden (nur mit `--current ktn`) |
 | `00_aktuell.png` | Aktuelle Werte je See gegen ihren Normalwert (nur mit `--current ktn`) |
 | `01_uebersicht_abweichung_<Jahr>.png` | Alle Seen, mittlere Abweichung der Badesaison vom Normalwert |
 | `02_monatsmatrix_<Jahr>.png` | Matrix See × Monat der Abweichungen |
@@ -28,6 +29,21 @@ Je Farbschema (`output/light/`, `output/dark/`):
 | `05_<monat>_je_jahr.png` | Ein Kalendermonat über alle Jahre der Aufzeichnung, je See ein Feld (`--month`, Vorgabe August) |
 | `seen/<see>_<Jahr>.png` | Jahresgang eines Sees mit Normalwert, Perzentilband und Min/Max-Hülle |
 | `seen/<see>_heuer.png` | Das laufende Jahr in Tageswerten gegen den Monatsnormalwert (nur mit `--current ktn`) |
+
+Die Reihenfolge folgt dem Interesse: **ganz vorne das aktuelle Geschehen.**
+`00_letzte_72h.png` legt alle Seen in Einzelmessungen auf eine Achse — wo es
+gerade warm ist und wie der Tagesgang läuft, drei Tage weit zurück. Fünfzehn
+Seen vertragen keine fünfzehn Farben: die Farbe folgt allein der Temperatur,
+und wer welcher See ist, steht als Name am rechten Rand neben seiner Linie.
+Dann `00_aktuell.png`, dann der Blick über die Jahre
+(`05_<monat>_je_jahr.png`) — und erst am Ende der Seite die amtliche lange
+Reihe, die mit dem letzten Jahrbuch endet.
+
+Die gemeinsame Jahresachse des Monatsvergleichs beginnt mit dem ersten Jahr,
+in dem der **Wörthersee** diesen Monat belegt hat — die längste Reihe setzt
+den Ausschnitt, in dem sich alle übrigen Seen einordnen. Reicht ein anderer
+See noch weiter zurück, fallen seine früheren Werte heraus; wie viele, sagt
+der Untertitel der Grafik, damit nichts stillschweigend verschwindet.
 
 Die amtliche Reihe endet mit dem letzten Jahrbuch — eHYD führt die
 Wassertemperatur derzeit bis 2023. Das laufende Jahr steht deshalb nicht in
@@ -99,7 +115,9 @@ rechnet die Auswertung und veröffentlicht sie als Seite:
 **<https://mgorfer.github.io/lake-temperature/>**
 
 Eine Seite in einer Spalte, Bilder in voller Breite, Antippen öffnet die
-Originalauflösung — gedacht als Lesezeichen am Handy. Liegen beide
+Originalauflösung — gedacht als Lesezeichen am Handy. Oben die letzten 72
+Stunden samt Zahlentabelle, unten die lange Reihe; wer die Seite aufruft,
+will meist zuerst wissen, wie warm es *jetzt* ist. Liegen beide
 Farbschemata vor, wählt der Browser über `prefers-color-scheme` selbst; die
 Seite folgt also der Systemeinstellung, ohne Schalter und ohne JavaScript.
 
@@ -262,6 +280,11 @@ Nur das lässt sich mit einem Normalwert vergleichen, der selbst ein Mittel
 Der jüngste Einzelwert bleibt erhalten — er beantwortet die andere Frage,
 nämlich wie warm es *gerade* ist.
 
+Die Einzelmessungen selbst gehen nicht verloren: aus ihnen entsteht
+`00_letzte_72h.png`, die Übersicht ganz vorne. Gezählt wird das Fenster ab
+der jüngsten Messung im Bestand, nicht ab der Uhr des Rechners — sonst
+schrumpfte das Bild mit jeder Stunde, die ein Abruf altert.
+
 Daraus entsteht `00_aktuell.png` mit drei Grössen auf **einer** Achse: der
 Balken ist das 24-Stunden-Mittel, die Marke sitzt auf dem Normalwert, der
 Punkt auf dem jüngsten Einzelwert. Der Unterschied ist farbig — warm, wenn es
@@ -378,7 +401,7 @@ können — nicht dazu, Aussagen über echte Seen zu treffen.
 python -m unittest discover -s tests
 ```
 
-55 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
+99 Tests: Schaltjahr-Ausrichtung, zyklisches Fenster, Abweichungsrechnung,
 Monatsauflösung, Beschneidung des angebrochenen Jahres, Reproduzierbarkeit des
 Demomodells, eHYD-Parser und Dateierkennung , die Unterscheidung von toter
 URL und fehlender Reihe sowie die Übersichtsseite (Hell/Dunkel-Umschaltung,
@@ -389,6 +412,12 @@ HZB-Nummer mit Namensrückfall, das 24-Stunden-Mittel, ISO-Zeitstempel ohne
 Tag-zuerst-Verdrehung, Mitternachtswerte ohne Datumssprung, Felderkennung,
 Umlaut-Umschrift, Meldung bei unbekanntem Schema, Seen ohne lange Reihe sowie die abgelegten
 Abrufe samt ehrlicher Altersangabe und die Belegung der Normalwerte.
+
+Dazu die Übersicht der letzten 72 Stunden: das Fenster ab der jüngsten
+Messung statt ab der Rechneruhr, dieselbe Messung aus zwei Abrufen als eine,
+fünfzehn Seen ohne ausgehende Farben, das Auseinanderschieben der
+Beschriftungen ohne Vertauschung — und die Reihenfolge der Seite: vorne die
+letzten Stunden, hinten die amtliche Reihe.
 
 ## Aufbau
 
