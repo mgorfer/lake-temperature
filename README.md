@@ -194,6 +194,40 @@ Neue Pakete braucht ein Pull in der Regel nicht. Ändert sich
 nehmen — pandas und matplotlib kommen aus dem Termux-Repo, siehe
 [docs/ANDROID.md](docs/ANDROID.md).
 
+### Von vorne: neu klonen
+
+Ist das Projektverzeichnis weg (gelöscht, oder es soll einfach frisch
+sein), genügt ein Klon — die Einrichtung von Termux bleibt davon
+unberührt:
+
+```bash
+cd ~
+git clone https://github.com/mgorfer/lake-temperature
+cd lake-temperature
+git config pull.rebase true
+./phone.sh --source ehyd --push
+```
+
+Der Klon landet von selbst auf dem richtigen Zweig: das Projekt hat kein
+`main`, sondern `claude/kaerntner-seen-temperatur-app-6pgtdh`, und der ist
+der Vorgabezweig des Repos. `git branch --show-current` bestätigt es.
+
+Pakete, `termux-setup-storage` und `gh auth login` überleben das Löschen
+des Ordners — die liegen im Termux-Home, nicht im Projekt. Fragt Git
+dennoch nach Benutzername und Passwort, fehlt nur die Anmeldung:
+`gh auth login`.
+
+**Datenvolumen.** Ein voller Klon zieht rund 60 MB, weil die Geschichte
+jede neu gerechnete Fassung der PNGs unter `output/` mitträgt. Wer das
+unterwegs nicht will, nimmt nur den aktuellen Stand — 17 MB statt 60:
+
+```bash
+git clone --depth 1 https://github.com/mgorfer/lake-temperature
+```
+
+Rechnen, `git pull --rebase` und `--push` gehen damit genauso; es fehlt
+allein die Geschichte. `git fetch --unshallow` holt sie später nach.
+
 ## Verwendung
 
 ```bash
