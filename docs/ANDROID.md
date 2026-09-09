@@ -113,10 +113,15 @@ erster Stelle, weil sein Name als erster sortiert.
 ### Beim nächsten Mal
 
 ```bash
-cd lake-temperature && git pull && ./phone.sh --source ehyd --push
+cd lake-temperature && git pull --rebase && ./phone.sh --source ehyd --push
 ```
 
-`git pull` nur, wenn sich am Programm etwas geändert hat.
+`--rebase`, weil das Handy selbst Commits anlegt (die eingecheckten
+Messwerte): die werden oben aufgesetzt statt jedes Mal zu einem Merge
+verwoben. Mit `git config pull.rebase true` genügt einmalig eingestellt
+danach `git pull`. Was zu tun ist, wenn der Pull sich beschwert — Bilder
+im Projektverzeichnis, Konflikt in der Tagesreihe, Notausgang —, steht im
+[README unter „Neu pullen"](../README.md#neu-pullen--den-programmstand-am-handy-nachziehen).
 
 ### Versionen im Termux-Repo (Stand September 2026)
 
