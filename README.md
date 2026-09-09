@@ -127,6 +127,73 @@ Jeder Schritt meldet sich mit Uhrzeit und steht in `phone.log`; nichts, was
 von aussen abhängt, läuft ohne Zeitlimit. Bleibt etwas aus, sagt das
 Protokoll, bei welchem Schritt Schluss war.
 
+### Neu pullen — den Programmstand am Handy nachziehen
+
+Das Handy ist nicht nur Rechner, sondern auch Datenlieferant: `--push` legt
+dort Commits an. Deshalb wird **umgezogen, nicht überschrieben** —
+`--rebase` setzt die eigenen Messwert-Commits oben auf, statt jedes Mal
+einen Merge zu bauen:
+
+```bash
+cd lake-temperature
+git checkout claude/kaerntner-seen-temperatur-app-6pgtdh   # nur, falls ein anderer Zweig ausgecheckt ist
+git pull --rebase
+```
+
+Einmal eingestellt, genügt danach `git pull`:
+
+```bash
+git config pull.rebase true
+```
+
+Immer **vor** dem Lauf pullen, nicht danach — dann liegt gar kein
+Konfliktfall an. `git status` sagt jederzeit, wo das Handy steht.
+
+**„Your local changes would be overwritten".** Vor `termux-setup-storage`
+schreibt `phone.sh` die Bilder ins Projektverzeichnis, und `output/` liegt
+im Git. Die Bilder dort sind jederzeit neu zu rechnen, also weg damit:
+
+```bash
+git checkout -- output && git pull --rebase
+```
+
+**Konflikt in `data/aktuell/tagesreihe.csv`.** Kommt nur vor, wenn ein Push
+am Handy einmal fehlgeschlagen ist: dann haben beide Seiten Tage angehängt.
+Die Reihe ist kein Original, sondern eine Fortschreibung — sie lässt sich
+neu bauen. Den Stand von GitHub nehmen und das Werkzeug darüberlaufen
+lassen; es faltet die Rohabrufe, die noch daliegen, wieder ein:
+
+```bash
+git checkout origin/claude/kaerntner-seen-temperatur-app-6pgtdh -- data/aktuell/tagesreihe.csv
+python tools/snapshot_ktn.py     # schreibt die Reihe neu: CSV + Rohabrufe
+git add data/aktuell && git rebase --continue
+```
+
+Nur Tage, die allein in der Handy-Fassung standen **und** deren Rohabrufe
+schon aufgeräumt waren, gehen dabei verloren — beides zugleich ist selten,
+weil `--push` gleich nach dem Lauf eincheckt.
+
+Sagt Git danach, der Commit sei nun leer (der Stand von GitHub enthielt
+schon alles): `git rebase --skip`. Wird es unübersichtlich, führt
+`git rebase --abort` zurück auf den Stand vor dem Pull — verloren ist dabei
+nichts.
+
+**Notausgang.** Wenn der Programmstand vom Handy egal ist und nichts
+Ungepushtes daraufliegt:
+
+```bash
+git fetch origin && git reset --hard origin/claude/kaerntner-seen-temperatur-app-6pgtdh
+```
+
+Das verwirft eigene Commits endgültig — erst `git log origin/claude/kaerntner-seen-temperatur-app-6pgtdh..HEAD`
+ansehen, ob welche daliegen. Nicht eingecheckte Rohabrufe unter
+`data/aktuell/` bleiben liegen, die räumt `git reset` nicht weg.
+
+Neue Pakete braucht ein Pull in der Regel nicht. Ändert sich
+`requirements.txt`, unter Termux **nicht** `pip install -r requirements.txt`
+nehmen — pandas und matplotlib kommen aus dem Termux-Repo, siehe
+[docs/ANDROID.md](docs/ANDROID.md).
+
 ## Verwendung
 
 ```bash
