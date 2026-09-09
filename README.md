@@ -81,6 +81,52 @@ Am Android-Handy geht das auch — siehe [docs/ANDROID.md](docs/ANDROID.md);
 `./phone.sh` legt die Bilder dort direkt in die Galerie. Wer gar nichts
 installieren will, nimmt die [automatisch veröffentlichte Seite](#automatisch-auf-github-pages).
 
+## Am Handy: ein Befehl
+
+Der einzige Befehl, der im Alltag gebraucht wird — im Projektverzeichnis,
+unter Termux (Einrichtung einmalig, siehe [docs/ANDROID.md](docs/ANDROID.md)):
+
+```bash
+cd lake-temperature && git pull && ./phone.sh --source ehyd --push
+```
+
+Das ist der ganze Ablauf in einem Zug:
+
+1. **Messwerte holen** — `tools/snapshot_ktn.py` ruft beide Fassungen des
+   Landesdienstes ab: die Sammeldatei über alle Seen (24 h) und die Datei je
+   Messstelle (72 h). Das geht *nur* vom Handy: Rechenzentren antwortet der
+   Dienst nicht, einem österreichischen Anschluss schon.
+2. **Tagesreihe fortschreiben** in `data/aktuell/tagesreihe.csv`.
+3. **Amtliche lange Reihen** von eHYD holen, Normalwerte und Abweichungen
+   rechnen.
+4. **PNGs schreiben** — am Handy nach
+   `~/storage/shared/Pictures/Seetemperaturen`, und die Galerie wird
+   benachrichtigt.
+5. **Einchecken und pushen** — womit der Workflow auf GitHub mit den frischen
+   Werten rechnet und die [Seite](#automatisch-auf-github-pages) neu baut.
+
+`--current ktn` braucht es nicht: am Handy ist das die Vorgabe. Ohne `--push`
+entfällt nur Schritt 5 — dann bleiben die Messwerte lokal und die
+veröffentlichte Seite rechnet weiter mit dem letzten abgelegten Abruf.
+
+Die Übersicht der letzten 72 Stunden entsteht dabei von selbst. In der
+Galerie steht sie an erster Stelle, weil `00_letzte_72h.png` als erster
+Dateiname sortiert; die vollständige Reihenfolge der Seite (erst jetzt, dann
+die lange Reihe) zeigt die veröffentlichte Seite nach dem Push.
+
+| Aufruf | Wofür |
+|---|---|
+| `./phone.sh --source ehyd --push` | der Alltagsfall: holen, rechnen, einchecken |
+| `./phone.sh --source ehyd` | rechnen, aber nichts einchecken |
+| `./phone.sh` | Demodaten, ohne Netz — nur zum Ausprobieren |
+| `./phone.sh --source ehyd --lakes woerthersee faaker_see` | schneller, weil weniger Seen |
+| `./phone.sh --source ehyd --current none` | ohne die aktuellen Werte (dann auch ohne die 72-Stunden-Übersicht) |
+| `./phone.sh --erkunden --push` | nur nachsehen, was der Dienst hergibt |
+
+Jeder Schritt meldet sich mit Uhrzeit und steht in `phone.log`; nichts, was
+von aussen abhängt, läuft ohne Zeitlimit. Bleibt etwas aus, sagt das
+Protokoll, bei welchem Schritt Schluss war.
+
 ## Verwendung
 
 ```bash

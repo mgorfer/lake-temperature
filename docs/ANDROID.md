@@ -83,8 +83,10 @@ cd lake-temperature && ./phone.sh --source ehyd --push
 Das macht in einem Zug:
 
 1. holt die **aktuellen Wassertemperaturen** beim Hydrographischen Dienst
-   Kärnten (geht am Handy, weil dein Anschluss österreichisch ist),
-2. legt sie unter `data/aktuell` ab,
+   Kärnten — beide Fassungen: die Sammeldatei über alle Seen (24 h) und die
+   Datei je Messstelle (72 h). Geht am Handy, weil dein Anschluss
+   österreichisch ist,
+2. legt sie unter `data/aktuell` ab und schreibt die Tagesreihe fort,
 3. holt die **amtlichen langen Reihen** von eHYD,
 4. rechnet Normalwerte und Abweichungen,
 5. schreibt die PNGs nach `~/storage/shared/Pictures/Seetemperaturen` und
@@ -93,6 +95,10 @@ Das macht in einem Zug:
    GitHub Pages mit deinen frischen Werten rechnet.
 
 Ohne `--push` entfällt nur Schritt 6.
+
+Aus den 72-Stunden-Dateien entsteht `00_letzte_72h.png` — alle Seen in
+Einzelmessungen der letzten drei Tage. In der Galerie steht das Bild an
+erster Stelle, weil sein Name als erster sortiert.
 
 ### Varianten
 
