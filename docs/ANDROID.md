@@ -97,8 +97,9 @@ Das macht in einem Zug:
 Ohne `--push` entfällt nur Schritt 6.
 
 Aus den 72-Stunden-Dateien entsteht `00_letzte_72h.png` — alle Seen in
-Einzelmessungen der letzten drei Tage. In der Galerie steht das Bild an
-erster Stelle, weil sein Name als erster sortiert.
+Einzelmessungen der letzten drei Tage. Darüber steht `00_verlauf.png`: der
+ganze abgelegte Bestand, Tagesmittel je See mit den Einzelmessungen der
+jüngsten Tage darüber. In der Galerie stehen beide Bilder ganz oben.
 
 ### Varianten
 

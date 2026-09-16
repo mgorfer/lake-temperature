@@ -960,3 +960,237 @@ def recent_overview(points: pd.DataFrame, th, source, is_demo, out: Path,
             + (" · Gemessene Werte; die Normalwerte der übrigen Grafiken sind "
                "Demodaten." if is_demo else ""))
     return _save(fig, out)
+
+
+# ----------------------------- 8: Alle Seen, der ganze Bestand
+
+#: Ab dieser Lücke wird die Tageslinie unterbrochen statt durchgezogen. Zwei
+#: fehlende Tage sind ein Loch in der Reihe -- eine Gerade darüber behauptete
+#: Messwerte, die es nicht gibt.
+DAILY_GAP_D = 2
+#: Dasselbe für die Einzelmessungen. Der Dienst misst im Viertelstundentakt;
+#: drei Stunden Stille heissen fehlender Abruf, nicht ruhiges Wasser.
+POINT_GAP_H = 3
+
+
+def _break_gaps(x, y, luecke: pd.Timedelta):
+    """Reihe an Lücken auftrennen: ``NaN`` statt durchgezogener Geraden.
+
+    Matplotlib verbindet, was man ihm gibt. Ohne diesen Schnitt zöge die
+    Linie quer über jeden Tag, an dem kein Abruf abgelegt wurde -- und sähe
+    dabei aus wie eine Messung.
+    """
+    x = np.asarray(x)
+    y = np.asarray(y, dtype=float)
+    if len(x) < 2:
+        return x, y
+    stellen = np.nonzero(np.diff(x) > luecke.to_timedelta64())[0] + 1
+    if not len(stellen):
+        return x, y
+    return np.insert(x, stellen, x[stellen - 1]), np.insert(y, stellen, np.nan)
+
+
+def _zeitachse(ax, th, beginn: pd.Timestamp, ende: pd.Timestamp) -> None:
+    """Marken passend zur Spanne: Stunden, Tage, Wochen oder Monate.
+
+    Die Reihe wächst mit jedem Abruf. Ein festes Sechs-Stunden-Raster, das
+    bei drei Tagen stimmt, steht bei drei Monaten als schwarzer Balken da --
+    das Raster muss also mitwachsen.
+    """
+    tage = (ende - beginn) / pd.Timedelta(days=1)
+    marken, beschriftung = [], []
+    if tage <= 4:
+        marke = beginn.ceil("6h")
+        while marke <= ende:
+            marken.append(marke)
+            if marke.hour == 0:
+                beschriftung.append(f"{WEEKDAYS[marke.weekday()]}\n{marke:%d.%m.}")
+            elif marke.hour == 12:
+                beschriftung.append("12 Uhr")
+            else:
+                beschriftung.append("")
+            marke += pd.Timedelta(hours=6)
+    elif tage <= 24:
+        # Jeder Tag ein Strich; beschriftet nur jeder zweite, sobald es eng wird.
+        schritt = 1 if tage <= 12 else 2
+        marke, i = beginn.ceil("D"), 0
+        while marke <= ende:
+            marken.append(marke)
+            beschriftung.append(f"{WEEKDAYS[marke.weekday()]}\n{marke:%d.%m.}"
+                                if i % schritt == 0 else "")
+            marke += pd.Timedelta(days=1)
+            i += 1
+    elif tage <= 120:
+        marke = beginn.ceil("D")
+        marke += pd.Timedelta(days=(7 - marke.weekday()) % 7)   # auf Montag
+        while marke <= ende:
+            marken.append(marke)
+            beschriftung.append(f"{marke:%d.%m.}")
+            marke += pd.Timedelta(days=7)
+    else:
+        # Monatsmarken, bei mehreren Jahren nur jeder n-te Monat: rund ein
+        # Dutzend Striche bleiben lesbar, vierzig sind ein schwarzer Balken.
+        schritt = max(1, int(math.ceil(tage / 30.4 / 14)))
+        marke = beginn.normalize() + pd.offsets.MonthBegin(0)
+        while marke <= ende:
+            marken.append(marke)
+            beschriftung.append(f"{MONTH_LABELS[marke.month - 1]}\n{marke.year}")
+            marke += pd.offsets.MonthBegin(schritt)
+    if not marken:                                   # sehr kurze Reihe
+        marken, beschriftung = [beginn, ende], [f"{beginn:%d.%m.}", f"{ende:%d.%m.}"]
+    ax.set_xticks(marken)
+    ax.set_xticklabels(beschriftung, fontsize=8.5)
+    ax.grid(True, axis="x", color=th.grid, linewidth=0.7)
+
+
+def history_overview(daily: pd.DataFrame, points: pd.DataFrame, th, source, is_demo,
+                     out: Path, measured_source: str = "", caveat: str = ""):
+    """Alle Seen über den ganzen Bestand -- Tagesmittel plus Tagesgang.
+
+    Das Bild der letzten Stunden beantwortet "wo ist es gerade warm?". Diese
+    Grafik stellt die andere Frage: was haben wir überhaupt gemessen? Sie
+    zeigt deshalb alles, was da ist, und das in zwei Auflösungen:
+
+    * die fortgeschriebene **Tagesreihe** als Rückgrat je See. Sie ist der
+      bleibende Bestand -- was einmal gemessen wurde, steht in ihr und
+      wächst mit jedem abgelegten Abruf.
+    * darüber, blasser, die **Einzelmessungen** der jüngsten Tage. Nur für
+      sie liegen die Rohabrufe noch vor (ältere werden entfernt, sonst
+      wüchse das Projekt um Megabyte je Woche), und nur in ihnen steht der
+      Tagesgang.
+
+    Zwei Auflösungen in einem Bild sind eine Zumutung, wenn man sie
+    verschweigt. Sie stehen deshalb getrennt in der Legende, und die Linien
+    brechen an jeder Lücke ab, statt sie zu überbrücken.
+
+    Wie beim Bild der letzten Stunden folgt die Farbe allein der Temperatur
+    -- fünfzehn Seen vertragen keine fünfzehn Farben -- und wer welcher See
+    ist, steht am rechten Rand.
+    """
+    if daily is None or daily.empty:
+        return None
+    reihe = daily[daily["lake_key"].isin(BY_KEY)].sort_values(["lake_key", "date"])
+    if reihe.empty:
+        return None
+    fein = pd.DataFrame(columns=["lake_key", "when", "temp_c"])
+    if points is not None and not points.empty:
+        fein = points[points["lake_key"].isin(BY_KEY)].sort_values(["lake_key", "when"])
+
+    # Ein Tagesmittel gilt für den ganzen Tag; gezeichnet wird es zur
+    # Tagesmitte, sonst läge es eine halbe Tagesbreite neben den
+    # Einzelmessungen, aus denen es entstanden ist.
+    reihe = reihe.assign(
+        mitte=pd.DatetimeIndex(reihe["date"]) + pd.Timedelta(hours=12))
+
+    keys = list(reihe["lake_key"].unique())
+    beginn = min([reihe["mitte"].min()] + ([fein["when"].min()] if not fein.empty else []))
+    ende = max([reihe["mitte"].max()] + ([fein["when"].max()] if not fein.empty else []))
+    beginn, ende = pd.Timestamp(beginn), pd.Timestamp(ende)
+    if beginn == ende:                         # ein einziger Tag im Bestand
+        beginn -= pd.Timedelta(hours=6)
+        ende += pd.Timedelta(hours=6)
+
+    # Höherer Kopf als beim Bild der letzten Stunden: der Untertitel braucht
+    # eine Zeile mehr, weil zwei Auflösungen erklärt werden wollen.
+    fig = plt.figure(figsize=(9.6, 6.6))
+    ax = _axes(fig, 0.062, 0.775, header_in=1.82, footer_in=0.76)
+    _despine(ax, th)
+
+    # Der jüngste bekannte Wert je See -- er trägt die Farbe und die
+    # Beschriftung am rechten Rand. Er kann aus einer Einzelmessung kommen
+    # (wenn sie neuer ist als das letzte volle Tagesmittel) oder aus der
+    # Tagesreihe.
+    letzte: dict[str, float] = {}
+    rand: dict[str, pd.Timestamp] = {}
+    for key in keys:
+        tage = reihe[reihe["lake_key"] == key]
+        wann, wert = tage["mitte"].iloc[-1], float(tage["temp_c"].iloc[-1])
+        teil = fein[fein["lake_key"] == key] if not fein.empty else fein
+        if not teil.empty and teil["when"].iloc[-1] > wann:
+            wann, wert = teil["when"].iloc[-1], float(teil["temp_c"].iloc[-1])
+        letzte[key], rand[key] = wert, pd.Timestamp(wann)
+
+    ordnung = sorted(keys, key=lambda k: letzte[k])
+    farbe = dict(zip(ordnung, theme_mod.sequential_colors(th, len(ordnung))))
+
+    for key in keys:
+        if not fein.empty:
+            teil = fein[fein["lake_key"] == key]
+            if not teil.empty:
+                x, y = _break_gaps(teil["when"], teil["temp_c"],
+                                   pd.Timedelta(hours=POINT_GAP_H))
+                ax.plot(x, y, color=farbe[key], linewidth=0.9, alpha=0.45, zorder=2)
+        tage = reihe[reihe["lake_key"] == key]
+        x, y = _break_gaps(tage["mitte"], tage["temp_c"], pd.Timedelta(days=DAILY_GAP_D))
+        ax.plot(x, y, color=farbe[key], linewidth=1.8, solid_joinstyle="round", zorder=3)
+        ax.scatter([rand[key]], [letzte[key]], s=30, color=farbe[key],
+                   edgecolor=th.surface, linewidth=1.4, zorder=5)
+
+    alle = list(reihe["temp_c"]) + ([] if fein.empty else list(fein["temp_c"]))
+    hoch, tief = max(alle), min(alle)
+    luft = max(0.6, (hoch - tief) * 0.06)
+    ax.set_ylim(tief - luft, hoch + luft)
+    ax.set_xlim(beginn, ende + (ende - beginn) * 0.01)
+    ax.set_ylabel("Wassertemperatur (°C)")
+    de_axis(ax, "y", digits=0)
+    _zeitachse(ax, th, beginn, ende)
+
+    # Namen am rechten Rand, auseinandergeschoben, mit Fühler zur Linie.
+    unten, oben = ax.get_ylim()
+    abstand = (oben - unten) / 26
+    ziel = _spread(np.array([letzte[k] for k in keys]), abstand, unten, oben)
+    links, rechts = ax.get_xlim()
+    schritt = rechts - links
+    for key, y in zip(keys, ziel):
+        ax.annotate(
+            "", xy=(rechts + schritt * 0.012, y), xytext=(rand[key], letzte[key]),
+            xycoords=("data", "data"), textcoords=("data", "data"),
+            arrowprops=dict(arrowstyle="-", color=farbe[key], linewidth=0.8,
+                            shrinkA=2, shrinkB=0),
+            annotation_clip=False, zorder=4,
+        )
+        ax.annotate(
+            f"{BY_KEY[key].name}   {num(letzte[key])} °C",
+            (rechts + schritt * 0.018, y), xycoords=("data", "data"),
+            va="center", ha="left", fontsize=8.8, color=th.text,
+            annotation_clip=False, zorder=6,
+        )
+
+    handles = [Line2D([], [], color=th.ramp[1], linewidth=1.8, label="Tagesmittel je See")]
+    if not fein.empty:
+        handles.append(Line2D([], [], color=th.ramp[1], linewidth=0.9, alpha=0.45,
+                              label="Einzelmessungen (Tagesgang)"))
+    handles.append(
+        Line2D([], [], marker="o", linestyle="none", markersize=6,
+               markerfacecolor=th.ramp[1], markeredgecolor=th.surface,
+               markeredgewidth=1.4, label="jüngster Wert"))
+    fig.legend(handles=handles, loc="lower left",
+               bbox_to_anchor=(0.012, 1 - 1.46 / fig.get_size_inches()[1]), ncol=3,
+               labelcolor=th.text_secondary, handlelength=1.8, columnspacing=1.8,
+               borderpad=0.0, handletextpad=0.6)
+
+    # Der Zeilenumbruch ist kein Schönheitsfehler: gespeichert wird mit
+    # "tight", eine überlange Zeile zöge also die ganze Grafik in die Breite.
+    tage_n = int(pd.DatetimeIndex(reihe["date"]).nunique())
+    messungen = int(reihe["messungen"].sum()) if "messungen" in reihe else 0
+    fein_text = ""
+    if not fein.empty:
+        fein_von = pd.Timestamp(fein["when"].min())
+        fein_text = (f"Blass darüber der Tagesgang: Einzelmessungen ab "
+                     f"{fein_von:%d.%m.}, {fein_von:%H:%M} — so weit reichen die "
+                     "abgelegten Rohabrufe zurück.\n")
+    _titleblock(
+        fig, th, "Alle Seen — der ganze Bestand",
+        f"{tage_n} Tag{'e' if tage_n != 1 else ''} aus {messungen} Einzelmessungen, "
+        f"{len(keys)} Seen — {long_date(beginn)} bis {long_date(ende)}.\n"
+        f"{fein_text}"
+        f"Die Farbe folgt allein der Temperatur; die Namen stehen rechts. "
+        f"Messwerte: {measured_source or source}",
+    )
+    _footer(fig, th, ((caveat + " · ") if caveat else "")
+            + "Die Tagesreihe wächst mit jedem Abruf und bleibt; die Rohabrufe "
+              "mit dem Tagesgang werden nach einer Weile entfernt.\n"
+            + "Lücken sind ausgelassene Abrufe und bleiben als Unterbrechung stehen."
+            + (" · Gemessene Werte; die Normalwerte der übrigen Grafiken sind "
+               "Demodaten." if is_demo else ""))
+    return _save(fig, out)

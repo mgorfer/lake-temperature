@@ -26,6 +26,10 @@ from pathlib import Path
 # Der dritte Eintrag ist die Dateivorlage: {year}, {month_file} und {hours}
 # werden eingesetzt, ebenso {month_name} in Titel und Bildunterschrift.
 JETZT = [
+    ("00_verlauf", "Alles, was gemessen wurde", "00_verlauf.png",
+     "Jeder Tag, den wir haben: das Tagesmittel je See über den ganzen "
+     "Bestand, dazu -- blasser -- die Einzelmessungen der jüngsten Tage. "
+     "Die Reihe wächst mit jedem abgelegten Abruf."),
     ("00_letzte_72h", "Die letzten {hours} Stunden", "00_letzte_72h.png",
      "Alle Seen in Einzelmessungen -- wo es gerade warm ist und wie der "
      "Tagesgang verläuft. Mehr als drei Tage gibt der Dienst nicht her."),

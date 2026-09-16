@@ -119,7 +119,8 @@ class ReihenfolgeTest(unittest.TestCase):
     def build(self):
         tmp = Path(tempfile.mkdtemp())
         (tmp / "light" / "seen").mkdir(parents=True)
-        for name in ("00_letzte_72h.png", "00_aktuell.png", "05_august_je_jahr.png",
+        for name in ("00_verlauf.png", "00_letzte_72h.png", "00_aktuell.png",
+                     "05_august_je_jahr.png",
                      "01_uebersicht_abweichung_2026.png",
                      "04_saisonabweichung_zeitreihe.png"):
             (tmp / "light" / name).write_bytes(b"\x89PNG")
@@ -131,6 +132,12 @@ class ReihenfolgeTest(unittest.TestCase):
         stelle = markup.find(datei)
         self.assertNotEqual(stelle, -1, f"{datei} fehlt auf der Seite")
         return stelle
+
+    def test_the_whole_record_comes_first(self):
+        """Ganz oben der Bestand, darunter der Ausschnitt der letzten Stunden."""
+        markup = self.build()
+        self.assertLess(self.stelle(markup, "00_verlauf.png"),
+                        self.stelle(markup, "00_letzte_72h.png"))
 
     def test_the_last_hours_come_first(self):
         markup = self.build()
@@ -147,7 +154,7 @@ class ReihenfolgeTest(unittest.TestCase):
 
     def test_the_official_series_is_last(self):
         markup = self.build()
-        for datei in ("00_letzte_72h.png", "05_august_je_jahr.png",
+        for datei in ("00_verlauf.png", "00_letzte_72h.png", "05_august_je_jahr.png",
                       "seen/woerthersee_heuer.png"):
             self.assertLess(self.stelle(markup, datei),
                             self.stelle(markup, "04_saisonabweichung_zeitreihe.png"))
@@ -157,7 +164,7 @@ class ReihenfolgeTest(unittest.TestCase):
 
     def test_the_run_details_sit_at_the_foot(self):
         markup = self.build()
-        self.assertLess(self.stelle(markup, "00_letzte_72h.png"),
+        self.assertLess(self.stelle(markup, "00_verlauf.png"),
                         self.stelle(markup, "<dt>Datenstand</dt>"))
 
 
