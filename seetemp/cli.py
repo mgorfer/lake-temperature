@@ -252,37 +252,54 @@ def run(argv: list[str] | None = None) -> int:
     # geschieht, steht allein in den abgelegten Abrufen -- die tragen wir
     # hier zu einer Tagesreihe zusammen.
     daily_now = pd.DataFrame()
+    daily_alles = pd.DataFrame()
     heuer = None
     if args.current == "ktn":
         from .sources import ktn
 
         # Die fortgeschriebene Reihe plus alles, was in den Rohabrufen
         # noch dazukommt -- geschrieben wird hier nichts.
-        daily_now = ktn.daily_table(config=load_config(args.config).get("ktn", {}))
-        if not daily_now.empty:
-            daily_now = daily_now[daily_now["lake_key"].isin({l.key for l in selected})]
+        daily_alles = ktn.daily_table(config=load_config(args.config).get("ktn", {}))
+        if not daily_alles.empty:
+            daily_alles = daily_alles[
+                daily_alles["lake_key"].isin({l.key for l in selected})]
+        daily_now = daily_alles
     if daily_now.empty:
         if args.current == "ktn":
             skipped.append("Tageswerte des laufenden Jahres "
                            "(noch keine abgelegten Abrufe unter data/aktuell/)")
     else:
         heuer = int(pd.DatetimeIndex(daily_now["date"]).year.max())
+        # Die Einzelgrafiken je See zeigen das laufende Jahr; die Übersicht
+        # ganz oben bekommt weiter unten den ganzen Bestand (daily_alles).
         daily_now = daily_now[pd.DatetimeIndex(daily_now["date"]).year == heuer]
         tage = pd.DatetimeIndex(daily_now["date"])
         print(f"Tageswerte {heuer}:  {len(daily_now)} Tageswerte, "
               f"{daily_now['lake_key'].nunique()} Seen, "
               f"{tage.min():%d.%m.} – {tage.max():%d.%m.} "
               f"({int(daily_now['messungen'].sum())} Einzelmessungen)")
+        ganz = pd.DatetimeIndex(daily_alles["date"])
+        print(f"Ganzer Bestand:  {ganz.nunique()} Tage, "
+              f"{ganz.min():%d.%m.%Y} – {ganz.max():%d.%m.%Y}")
 
-    # Die Übersicht des aktuellen Geschehens: alle Seen in Einzelmessungen,
-    # so weit zurück, wie der Dienst sie hergibt (drei Tage).
+    # Die Einzelmessungen: einmal vollständig (für die Bestandsgrafik ganz
+    # oben) und einmal auf die letzten drei Tage beschnitten -- so weit
+    # zurück, wie der Dienst je Messstelle abgibt.
     recent = pd.DataFrame()
+    punkte = pd.DataFrame()
     recent_hours = 0
     if args.current == "ktn":
         from .sources import ktn
 
         recent_hours = ktn.STATION_WINDOW_H
-        recent = ktn.recent_points(config=load_config(args.config).get("ktn", {}))
+        ktn_config = load_config(args.config).get("ktn", {})
+        # Zweimal derselbe Bestand, zwei Ausschnitte: alle Einzelmessungen,
+        # die noch als Rohabruf vorliegen -- und daraus das Fenster der
+        # letzten 72 Stunden für die Grafik darunter.
+        punkte = ktn.single_points(config=ktn_config)
+        if not punkte.empty:
+            punkte = punkte[punkte["lake_key"].isin({l.key for l in selected})]
+        recent = ktn.recent_points(config=ktn_config)
         if not recent.empty:
             recent = recent[recent["lake_key"].isin({l.key for l in selected})]
         if recent.empty:
@@ -346,6 +363,18 @@ def run(argv: list[str] | None = None) -> int:
                 out=target / f"05_{MONTH_FILES[args.month - 1]}_je_jahr.png", **common),
         ] if p]
 
+        # Ganz oben auf der Seite: alles, was wir haben. Erst darunter der
+        # Ausschnitt der letzten Stunden -- die Frage "wo ist es gerade
+        # warm?" bleibt damit beantwortet, ohne den Bestand zu verschweigen.
+        if not daily_alles.empty:
+            path = charts.history_overview(
+                daily_alles, punkte, out=target / "00_verlauf.png",
+                measured_source=current_source or KTN_LABEL,
+                caveat=current_caveat, **common,
+            )
+            if path:
+                written.append(path)
+
         if not recent.empty:
             path = charts.recent_overview(
                 recent, out=target / "00_letzte_72h.png",
@@ -395,6 +424,13 @@ def run(argv: list[str] | None = None) -> int:
         "month_name": charts.MONTH_NAMES[args.month - 1],
         "current_year": heuer,
         "month_start_year": month_start,
+        "history": ({} if daily_alles.empty else {
+            "days": int(pd.DatetimeIndex(daily_alles["date"]).nunique()),
+            "from": f"{daily_alles['date'].min():%Y-%m-%d}",
+            "until": f"{daily_alles['date'].max():%Y-%m-%d}",
+            "lakes": int(daily_alles["lake_key"].nunique()),
+            "values": int(daily_alles["messungen"].sum()),
+        }),
         "recent": ({} if recent.empty else {
             "hours": int(round((recent["when"].max()
                                 - recent["when"].min()).total_seconds() / 3600)),

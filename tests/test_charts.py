@@ -250,3 +250,102 @@ class MonthStartYear(unittest.TestCase):
             self.annotated, self.clim, 8, th=TH, source="Prüfdaten", is_demo=False,
             out=self.dir / "leer.png", start_year=2100,
         ))
+
+
+def tagesreihe(days: int = 30, keys=KEYS, start: str = "2026-08-18") -> pd.DataFrame:
+    """Fortgeschriebene Tagesreihe, wie ``ktn.daily_table`` sie liefert."""
+    dates = pd.date_range(start, periods=days, freq="D")
+    rows = []
+    for i, key in enumerate(keys):
+        temp = 22.0 + i * 1.3 - np.linspace(0, 2.5, days)
+        rows.append(pd.DataFrame({"lake_key": key, "date": dates, "temp_c": temp,
+                                  "messungen": 96}))
+    return pd.concat(rows, ignore_index=True)
+
+
+class HistoryOverview(unittest.TestCase):
+    """Die Grafik ganz oben: alles, was abgelegt wurde -- nicht nur 72 Stunden."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+
+    def render(self, daily, fein=None, name="verlauf.png"):
+        return charts.history_overview(
+            daily, pd.DataFrame() if fein is None else fein, th=TH,
+            source="Prüfdaten", is_demo=False, out=self.dir / name,
+            measured_source="Messdienst", caveat="ungeprüfte Rohdaten",
+        )
+
+    def test_the_whole_record_is_drawn(self):
+        path = self.render(tagesreihe(), points())
+        self.assertIsNotNone(path)
+        self.assertGreater(path.stat().st_size, 10_000)
+
+    def test_daily_series_alone_is_enough(self):
+        """Sind die Rohabrufe längst entfernt, bleibt die Tagesreihe."""
+        self.assertIsNotNone(self.render(tagesreihe()))
+
+    def test_without_a_daily_series_there_is_no_picture(self):
+        leer = pd.DataFrame(columns=["lake_key", "date", "temp_c", "messungen"])
+        self.assertIsNone(self.render(leer, points()))
+
+    def test_unknown_lake_keys_are_skipped(self):
+        fremd = tagesreihe().assign(lake_key="loch_ness")
+        self.assertIsNone(self.render(fremd))
+
+    def test_a_single_day_still_draws(self):
+        """Der erste Lauf hat einen Tag -- das darf keine leere Achse ergeben."""
+        self.assertIsNotNone(self.render(tagesreihe(days=1)))
+
+    def test_a_long_record_still_draws(self):
+        """Ein Jahr Reihe: die Zeitachse muss auf Monatsmarken umschalten."""
+        self.assertIsNotNone(self.render(tagesreihe(days=400, start="2025-08-01")))
+
+    def test_many_lakes_do_not_run_out_of_colours(self):
+        alle = list(charts.BY_KEY)[:15]
+        self.assertIsNotNone(self.render(tagesreihe(days=8, keys=alle)))
+
+
+class BreakGaps(unittest.TestCase):
+    """Fehlende Abrufe bleiben Lücken -- eine Gerade darüber wäre erfunden."""
+
+    def test_a_gap_becomes_a_break(self):
+        x = pd.to_datetime(["2026-09-01", "2026-09-02", "2026-09-06", "2026-09-07"])
+        gx, gy = charts._break_gaps(x, [1.0, 2.0, 3.0, 4.0], pd.Timedelta(days=2))
+        self.assertEqual(len(gx), 5)
+        self.assertEqual(int(np.isnan(gy).sum()), 1)
+        self.assertEqual(list(gy[~np.isnan(gy)]), [1.0, 2.0, 3.0, 4.0])
+
+    def test_a_closed_series_stays_closed(self):
+        x = pd.to_datetime(["2026-09-01", "2026-09-02", "2026-09-03"])
+        gx, gy = charts._break_gaps(x, [1.0, 2.0, 3.0], pd.Timedelta(days=2))
+        self.assertEqual(len(gx), 3)
+        self.assertFalse(np.isnan(gy).any())
+
+    def test_a_single_value_survives(self):
+        gx, gy = charts._break_gaps(pd.to_datetime(["2026-09-01"]), [1.0],
+                                    pd.Timedelta(days=2))
+        self.assertEqual(len(gx), 1)
+
+
+class Zeitachse(unittest.TestCase):
+    """Das Raster muss mit der Reihe wachsen, sonst wird es zum Balken."""
+
+    def marks(self, tage: float):
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        beginn = pd.Timestamp("2026-03-01 07:00")
+        ende = beginn + pd.Timedelta(days=tage)
+        ax.set_xlim(beginn, ende)
+        charts._zeitachse(ax, TH, beginn, ende)
+        anzahl = len(ax.get_xticks())
+        plt.close(fig)
+        return anzahl
+
+    def test_the_grid_never_grows_without_bound(self):
+        for tage in (0.5, 3, 10, 20, 90, 400, 1200):
+            with self.subTest(tage=tage):
+                self.assertGreaterEqual(self.marks(tage), 2)
+                self.assertLessEqual(self.marks(tage), 30)

@@ -20,6 +20,7 @@ Je Farbschema (`output/light/`, `output/dark/`):
 
 | Datei | Inhalt |
 |---|---|
+| `00_verlauf.png` | Alle Seen über den ganzen abgelegten Bestand: Tagesmittel, darüber die Einzelmessungen (nur mit `--current ktn`) |
 | `00_letzte_72h.png` | Alle Seen in Einzelmessungen der letzten 72 Stunden (nur mit `--current ktn`) |
 | `00_aktuell.png` | Aktuelle Werte je See gegen ihren Normalwert (nur mit `--current ktn`) |
 | `01_uebersicht_abweichung_<Jahr>.png` | Alle Seen, mittlere Abweichung der Badesaison vom Normalwert |
@@ -31,10 +32,19 @@ Je Farbschema (`output/light/`, `output/dark/`):
 | `seen/<see>_heuer.png` | Das laufende Jahr in Tageswerten gegen den Monatsnormalwert (nur mit `--current ktn`) |
 
 Die Reihenfolge folgt dem Interesse: **ganz vorne das aktuelle Geschehen.**
-`00_letzte_72h.png` legt alle Seen in Einzelmessungen auf eine Achse — wo es
-gerade warm ist und wie der Tagesgang läuft, drei Tage weit zurück. Fünfzehn
-Seen vertragen keine fünfzehn Farben: die Farbe folgt allein der Temperatur,
-und wer welcher See ist, steht als Name am rechten Rand neben seiner Linie.
+`00_verlauf.png` zeigt alles, was abgelegt wurde: je See das Tagesmittel über
+den ganzen Bestand, blass darüber die Einzelmessungen der jüngsten Tage. Zwei
+Auflösungen in einem Bild, getrennt in der Legende — die Tagesreihe bleibt,
+die Rohabrufe werden nach einer Weile entfernt, und nur in ihnen steht der
+Tagesgang. Lücken bleiben Lücken: die Linie bricht ab, statt einen
+ausgelassenen Abruf zu überbrücken.
+
+Darunter `00_letzte_72h.png`, der Ausschnitt für die Frage, die man im Sommer
+tatsächlich stellt — wo ist es gerade warm, und wie läuft der Tagesgang, drei
+Tage weit zurück. Fünfzehn Seen vertragen keine fünfzehn Farben: in beiden
+Bildern folgt die Farbe allein der Temperatur, und wer welcher See ist, steht
+als Name am rechten Rand neben seiner Linie.
+
 Dann `00_aktuell.png`, dann der Blick über die Jahre
 (`05_<monat>_je_jahr.png`) — und erst am Ende der Seite die amtliche lange
 Reihe, die mit dem letzten Jahrbuch endet.
@@ -109,10 +119,10 @@ Das ist der ganze Ablauf in einem Zug:
 entfällt nur Schritt 5 — dann bleiben die Messwerte lokal und die
 veröffentlichte Seite rechnet weiter mit dem letzten abgelegten Abruf.
 
-Die Übersicht der letzten 72 Stunden entsteht dabei von selbst. In der
-Galerie steht sie an erster Stelle, weil `00_letzte_72h.png` als erster
-Dateiname sortiert; die vollständige Reihenfolge der Seite (erst jetzt, dann
-die lange Reihe) zeigt die veröffentlichte Seite nach dem Push.
+Die Übersicht des Bestands und die der letzten 72 Stunden entstehen dabei von
+selbst; in der Galerie stehen sie ganz oben. Die vollständige Reihenfolge der
+Seite (erst jetzt, dann die lange Reihe) zeigt die veröffentlichte Seite nach
+dem Push.
 
 | Aufruf | Wofür |
 |---|---|
@@ -427,10 +437,16 @@ Nur das lässt sich mit einem Normalwert vergleichen, der selbst ein Mittel
 Der jüngste Einzelwert bleibt erhalten — er beantwortet die andere Frage,
 nämlich wie warm es *gerade* ist.
 
-Die Einzelmessungen selbst gehen nicht verloren: aus ihnen entsteht
-`00_letzte_72h.png`, die Übersicht ganz vorne. Gezählt wird das Fenster ab
-der jüngsten Messung im Bestand, nicht ab der Uhr des Rechners — sonst
+Die Einzelmessungen selbst gehen nicht verloren: aus ihnen entstehen
+`00_verlauf.png` (alles, was abgelegt ist) und `00_letzte_72h.png`, die
+beiden Übersichten ganz vorne. Beim 72-Stunden-Bild wird das Fenster ab der
+jüngsten Messung im Bestand gezählt, nicht ab der Uhr des Rechners — sonst
 schrumpfte das Bild mit jeder Stunde, die ein Abruf altert.
+
+Was länger zurückliegt, steht in der fortgeschriebenen Tagesreihe
+(`data/aktuell/tagesreihe.csv`): die Rohabrufe werden nach einer Weile
+entfernt, die Tage bleiben. `00_verlauf.png` zeichnet deshalb beides — die
+Tagesreihe als Rückgrat, die noch vorhandenen Einzelmessungen darüber.
 
 Daraus entsteht `00_aktuell.png` mit drei Grössen auf **einer** Achse: der
 Balken ist das 24-Stunden-Mittel, die Marke sitzt auf dem Normalwert, der
