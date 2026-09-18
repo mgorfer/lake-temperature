@@ -168,6 +168,143 @@ class ReihenfolgeTest(unittest.TestCase):
                         self.stelle(markup, "<dt>Datenstand</dt>"))
 
 
+AKTUELL = {
+    "stand": "2026-09-18T16:45+02:00", "stand_lokal": "2026-09-18T16:45",
+    "quelle": "Hydrographischer Dienst Kärnten — abgelegter Abruf (2 h alt)",
+    "hinweis": "Achtung - ungeprüfte Rohdaten!", "normal_demo": False,
+    "bezug": "1991–2020", "schwelle_c": 22.0, "fenster_h": 72, "t0": "2026-09-15T16:45",
+    "seen": [
+        {"key": "woerthersee", "name": "Wörthersee", "jetzt": 23.1,
+         "jetzt_um": "2026-09-18T16:45", "mittel_24h": 22.9, "normal": 22.5,
+         "abweichung": 0.4, "trend_24h": 0.3, "min_72h": 21.9, "max_72h": 23.4,
+         "punkte": [[0, 22.0], [60, 22.4], [120, 23.1]],
+         "tage": [["2026-09-17", 22.6, 48], ["2026-09-18", 22.9, 40]]},
+        {"key": "turnersee", "name": "Turnersee", "jetzt": 17.2,
+         "jetzt_um": "2026-09-18T16:00", "mittel_24h": 17.5, "normal": None,
+         "abweichung": None, "trend_24h": None, "min_72h": None, "max_72h": None,
+         "punkte": [], "tage": []},
+    ],
+}
+
+
+class KartenTest(unittest.TestCase):
+    """Der Abschnitt "Jetzt": Karten aus aktuell.json, ohne JavaScript fertig."""
+
+    def build(self, aktuell=AKTUELL, run=None, heuer=True):
+        run = run or {**RUN, "current_year": 2026,
+                      "current": [{"lake_key": "woerthersee", "name": "Wörthersee",
+                                   "date": "2026-09-18", "temp_c": 22.9, "temp_latest": 23.1,
+                                   "latest_at": "2026-09-18 16:45", "normal_c": 22.5,
+                                   "anomaly_k": 0.4}]}
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "light" / "seen").mkdir(parents=True)
+        for name in ("00_verlauf.png", "00_letzte_72h.png", "00_aktuell.png"):
+            (tmp / "light" / name).write_bytes(b"\x89PNG")
+        if heuer:
+            (tmp / "light" / "seen" / "woerthersee_heuer.png").write_bytes(b"\x89PNG")
+        (tmp / "light" / "seen" / "woerthersee_2026.png").write_bytes(b"\x89PNG")
+        if aktuell is not None:
+            (tmp / "aktuell.json").write_text(json.dumps(aktuell), encoding="utf-8")
+        return build_gallery.render(tmp, run)
+
+    def test_a_card_per_lake_with_the_latest_value(self):
+        markup = self.build()
+        self.assertIn('id="see-woerthersee"', markup)
+        self.assertIn('id="see-turnersee"', markup)
+        self.assertIn('<span class="big">23,1<span class="unit">°C</span></span>', markup)
+        self.assertIn("badewarm", markup)
+        self.assertIn("kalt", markup)                # Turnersee mit 17,2 °C
+        self.assertIn("+0,4 K", markup)
+        self.assertIn("kein Normalwert", markup)     # Turnersee ohne lange Reihe
+        self.assertIn("Fr 16:45", markup)
+
+    def test_sparkline_only_where_there_are_readings(self):
+        markup = self.build()
+        woerther = markup[markup.index('id="see-woerthersee"'):markup.index('id="see-turnersee"')]
+        turner = markup[markup.index('id="see-turnersee"'):]
+        self.assertIn('class="spark"', woerther)
+        self.assertNotIn('class="spark"', turner)
+        self.assertIn("keine Einzelmessungen", turner)
+
+    def test_numbers_travel_along_for_the_browser(self):
+        markup = self.build()
+        self.assertIn('id="aktuell-daten"', markup)
+        self.assertIn('href="aktuell.json"', markup)
+        self.assertIn('id="chart"', markup)
+
+    def test_a_lake_name_cannot_close_the_script_block(self):
+        boese = {**AKTUELL, "seen": [{**AKTUELL["seen"][0], "name": "See</script><b>x"}]}
+        markup = self.build(boese)
+        block = markup[markup.index('id="aktuell-daten"'):]
+        block = block[:block.index("</script>")]
+        self.assertIn("<\\/script>", block)
+        self.assertNotIn("<b>x", block[:block.index("<\\/")])
+
+    def test_without_the_numbers_the_table_stays(self):
+        markup = self.build(aktuell=None)
+        self.assertNotIn('id="karten"', markup)
+        self.assertNotIn('id="chart"', markup)
+        self.assertIn("<table>", markup)
+        self.assertIn("22,9 °C", markup)
+
+    def test_cards_link_to_the_lake_section_only_if_it_exists(self):
+        self.assertIn('href="#heuer-woerthersee"', self.build())
+        self.assertNotIn('href="#heuer-woerthersee"', self.build(heuer=False))
+
+    def test_stat_tiles_name_the_extremes(self):
+        markup = self.build()
+        kacheln = markup[markup.index('class="stats"'):markup.index('class="cards"')]
+        self.assertIn("Wärmster See", kacheln)
+        self.assertIn("Kältester See", kacheln)
+        self.assertIn("1 von 2", kacheln)     # badewarm: nur der Wörthersee
+        self.assertIn("1 von 1", kacheln)     # wärmer als normal: nur einer hat einen
+
+    def test_the_build_time_age_is_not_repeated_above_the_cards(self):
+        markup = self.build()
+        stand = markup[markup.index('class="stand"'):markup.index('class="stats"')]
+        self.assertIn("abgelegter Abruf", stand)
+        self.assertNotIn("2 h alt", stand)          # rechnet der Browser live
+        self.assertIn("2 h alt", markup)            # in der Tabelle bleibt es stehen
+
+    def test_lake_pictures_are_collapsible_and_reachable(self):
+        markup = self.build()
+        self.assertIn('<details class="lake" id="heuer-woerthersee">', markup)
+        self.assertIn('href="#heuer-woerthersee"', markup)
+        self.assertIn('<details class="lake" id="archiv-woerthersee">', markup)
+        self.assertIn('href="#archiv-woerthersee"', markup)
+
+    def test_topbar_lists_only_sections_that_exist(self):
+        markup = self.build()
+        self.assertIn('href="#jetzt"', markup)
+        self.assertIn('href="#heuer"', markup)
+        self.assertNotIn('href="#heuer"', self.build(heuer=False))
+
+    def test_markup_still_parses(self):
+        counter = Counter()
+        counter.feed(self.build())
+        self.assertGreaterEqual(counter.tags.get("details", 0), 3)
+
+
+class BausteineTest(unittest.TestCase):
+    def test_einordnung(self):
+        self.assertEqual(build_gallery.einordnung(22.0, 22.0), ("b-warm", "badewarm"))
+        self.assertEqual(build_gallery.einordnung(18.0, 22.0), ("b-frisch", "frisch"))
+        self.assertEqual(build_gallery.einordnung(17.9, 22.0), ("b-kalt", "kalt"))
+        self.assertEqual(build_gallery.einordnung(None, 22.0), ("", ""))
+
+    def test_sparkline_breaks_at_a_gap(self):
+        durchgehend = build_gallery.sparkline([[0, 20.0], [60, 20.5], [120, 21.0]])
+        self.assertEqual(durchgehend.count("M"), 2)      # Fläche und Linie je ein M
+        mit_luecke = build_gallery.sparkline([[0, 20.0], [60, 20.5], [600, 21.0]])
+        self.assertEqual(mit_luecke.count("M"), 3)       # die Linie setzt neu an
+        self.assertEqual(build_gallery.sparkline([[0, 20.0]]), "")
+
+    def test_num_uses_comma_and_real_minus(self):
+        self.assertEqual(build_gallery.num(-1.25), "\u22121,2")
+        self.assertEqual(build_gallery.num(0.4, signed=True), "+0,4")
+        self.assertEqual(build_gallery.num(-0.04, signed=True), "±0,0")
+
+
 class SummaryTest(unittest.TestCase):
     def test_names_source_resolution_and_skips(self):
         text = summary.render(RUN)

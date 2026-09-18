@@ -2,35 +2,101 @@
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kärntner Seen — Wassertemperatur</title>
+<meta name="description" content="Wie warm die Kärntner Seen gerade sind — und wie das gegenüber dem langjährigen Mittel dasteht.">
 <style>
 :root {
   color-scheme: light dark;
-  --bg: #fcfcfb; --card: #ffffff; --line: #e6e5e1;
+  --bg: #fcfcfb; --card: #ffffff; --panel: #f4f3ef; --line: #e6e5e1;
   --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8983;
-  --accent: #2a78d6; --warn-bg: #fdf3e7; --warn-line: #eda100; --warn-ink: #6b4a05;
+  --accent: #2a78d6; --accent-ink: #ffffff;
+  --warn-bg: #fdf3e7; --warn-line: #eda100; --warn-ink: #6b4a05;
+  --warm: #b3312f; --cool: #1f5fa8;
+  --ramp-0: #5b8fd0; --ramp-1: #1f5fa8; --ramp-2: #0b2b50;
+  --b-warm-bg: #fbe3dc; --b-warm-ink: #8a2c1f;
+  --b-frisch-bg: #dfeafa; --b-frisch-ink: #1d4f8c;
+  --b-kalt-bg: #e9e8e3; --b-kalt-ink: #4d4c48;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 18px rgba(0,0,0,.05);
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1a1a19; --card: #242422; --line: #333330;
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a19; --card: #242422; --panel: #2c2c29; --line: #333330;
     --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e85;
-    --accent: #3987e5; --warn-bg: #2e2716; --warn-line: #c98500; --warn-ink: #f0d9a8;
+    --accent: #3987e5; --accent-ink: #ffffff;
+    --warn-bg: #2e2716; --warn-line: #c98500; --warn-ink: #f0d9a8;
+    --warm: #ef8b8b; --cool: #6aa6ef;
+    --ramp-0: #3987e5; --ramp-1: #77b3f2; --ramp-2: #b9dbff;
+    --b-warm-bg: #4a2420; --b-warm-ink: #f5b8ad;
+    --b-frisch-bg: #1f3350; --b-frisch-ink: #a9cbf5;
+    --b-kalt-bg: #33332f; --b-kalt-ink: #c3c2b7;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1a1a19; --card: #242422; --panel: #2c2c29; --line: #333330;
+  --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e85;
+  --accent: #3987e5; --accent-ink: #ffffff;
+  --warn-bg: #2e2716; --warn-line: #c98500; --warn-ink: #f0d9a8;
+  --warm: #ef8b8b; --cool: #6aa6ef;
+  --ramp-0: #3987e5; --ramp-1: #77b3f2; --ramp-2: #b9dbff;
+  --b-warm-bg: #4a2420; --b-warm-ink: #f5b8ad;
+  --b-frisch-bg: #1f3350; --b-frisch-ink: #a9cbf5;
+  --b-kalt-bg: #33332f; --b-kalt-ink: #c3c2b7;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+}
+:root[data-theme="light"] { color-scheme: light; }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body {
-  margin: 0; padding: 0 16px 64px;
+  margin: 0; padding: 0 0 64px;
   background: var(--bg); color: var(--ink);
   font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
-main { max-width: 900px; margin: 0 auto; }
-header { padding: 28px 0 8px; }
+main { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+[id] { scroll-margin-top: 64px; }
 h1 { margin: 0 0 6px; font-size: 1.55rem; line-height: 1.2; letter-spacing: -0.01em; }
-h2 { margin: 40px 0 2px; font-size: 1.1rem; letter-spacing: -0.005em; }
-h2:first-of-type { margin-top: 28px; }
+h2 { margin: 0 0 2px; font-size: 1.2rem; letter-spacing: -0.005em; }
+h3 { margin: 22px 0 2px; font-size: 1rem; }
+section { margin-top: 44px; }
 p { margin: 0 0 4px; }
 .lede { color: var(--ink-2); }
 .caption { color: var(--ink-3); font-size: 0.9rem; margin-bottom: 10px; }
+a { color: var(--accent); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+button { font: inherit; color: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Was nur mit JavaScript Sinn hat, bleibt ohne unsichtbar -- mit Nachdruck,
+   weil spätere Regeln (.controls, .chart) sonst das display zurückholen. */
+html:not(.js) .js-only { display: none !important; }
+html.js .no-js { display: none; }
+
+/* Kopfleiste: bleibt oben, führt zu den Abschnitten */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) { .topbar { background: var(--bg); } }
+.topbar .inner { max-width: 900px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 8px; height: 48px; }
+.brand { font-weight: 700; color: var(--ink); text-decoration: none; white-space: nowrap; letter-spacing: -0.01em; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; -webkit-overflow-scrolling: touch; margin-left: 6px; padding-right: 24px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a {
+  color: var(--ink-2); text-decoration: none; font-size: 0.9rem; padding: 6px 10px;
+  border-radius: 999px; white-space: nowrap;
+}
+.tabs a:hover { color: var(--ink); background: var(--panel); }
+.tabs a[aria-current="true"] { color: var(--accent-ink); background: var(--accent); }
+.theme {
+  margin-left: auto; border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 5px 10px; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+}
+header.intro { padding: 26px 0 4px; }
+
 .meta {
   margin: 16px 0 0; padding: 14px 16px;
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
@@ -51,13 +117,10 @@ img {
   width: 100%; height: auto; display: block;
   background: var(--card); border: 1px solid var(--line); border-radius: 10px;
 }
-.lakes { margin-top: 8px; }
 footer {
   margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line);
   color: var(--ink-3); font-size: 0.85rem;
 }
-a { color: var(--accent); }
-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
 .hint { color: var(--ink-3); font-size: 0.85rem; margin: 14px 0 0; }
 ul.notes { margin: 6px 0 0; padding-left: 20px; color: var(--ink-3); font-size: 0.85rem; }
 table { border-collapse: collapse; width: 100%; font-size: 0.92rem; margin: 4px 0 8px; }
@@ -65,121 +128,797 @@ th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--lin
 th { color: var(--ink-3); font-weight: 600; }
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tbody tr:last-child td { border-bottom: none; }
-.warm { color: #b3312f; } .cool { color: #1f5fa8; }
+.warm { color: var(--warm); } .cool { color: var(--cool); }
 tr.thin td { color: var(--ink-3); }
 tr.thin td:first-child::after { content: " *"; color: var(--warn-line); }
-@media (prefers-color-scheme: dark) { .warm { color: #ef8b8b; } .cool { color: #6aa6ef; } }
-</style></head><body><main>
-<header>
+
+/* Aufklappbares */
+details { border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin: 10px 0; }
+details > summary {
+  cursor: pointer; padding: 12px 14px; font-weight: 600; list-style: none;
+  display: flex; align-items: center; gap: 10px;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: ""; width: 8px; height: 8px; flex: none;
+  border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3);
+  transform: rotate(-45deg); transition: transform .15s; margin-left: 2px;
+}
+details[open] > summary::before { transform: rotate(45deg); }
+details > summary .sum-val { margin-left: auto; font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+details > summary .sum-val .warm, details > summary .sum-val .cool { font-size: 0.85em; margin-left: 6px; }
+details > .body { padding: 0 14px 14px; }
+details > .body > figure:first-child, details > .body > h3:first-child { margin-top: 4px; }
+details.lake img { border: none; border-radius: 8px; }
+
+/* Stand und Alter */
+.stand { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; color: var(--ink-3); font-size: 0.9rem; margin-bottom: 12px; }
+.stand .alter { font-weight: 600; color: var(--ink-2); }
+.stand .alter.stale { color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 6px; padding: 1px 8px; }
+
+/* Kennzahlen */
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0 16px; }
+@media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.stat .k { display: block; color: var(--ink-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; }
+.stat .v { display: block; font-size: 1.1rem; font-weight: 700; line-height: 1.2; margin: 3px 0 2px; overflow-wrap: anywhere; }
+.stat .s { display: block; color: var(--ink-2); font-size: 0.85rem; }
+
+/* Suchen, sortieren, Favoriten */
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.controls .search { flex: 1 1 160px; }
+.controls input[type="search"] {
+  width: 100%; font: inherit; padding: 8px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: var(--card); padding: 2px; }
+.seg button {
+  border: 0; background: transparent; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+  font-size: 0.85rem; color: var(--ink-2); white-space: nowrap;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.toggle {
+  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 6px 12px; font-size: 0.85rem; cursor: pointer; color: var(--ink-2); white-space: nowrap;
+}
+.toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Karten */
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 10px;
+  box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.card.is-fav { border-color: var(--accent); }
+.card[hidden] { display: none; }
+.card-top { display: flex; align-items: flex-start; gap: 6px; }
+.card h3 { margin: 0; font-size: 0.95rem; line-height: 1.25; flex: 1; }
+.fav {
+  border: 0; background: transparent; cursor: pointer; padding: 0 2px; line-height: 1;
+  font-size: 1.15rem; color: var(--ink-3); margin: -2px -4px 0 0;
+}
+.fav[aria-pressed="true"] { color: var(--warn-line); }
+.card-now { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.big { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.big .unit { font-size: 0.95rem; font-weight: 500; color: var(--ink-2); margin-left: 1px; }
+.badge { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+.b-warm { background: var(--b-warm-bg); color: var(--b-warm-ink); }
+.b-frisch { background: var(--b-frisch-bg); color: var(--b-frisch-ink); }
+.b-kalt { background: var(--b-kalt-bg); color: var(--b-kalt-ink); }
+.spark-link { display: block; text-decoration: none; }
+.spark { width: 100%; height: 40px; display: block; overflow: visible; }
+.spark path { fill: none; stroke: var(--ramp-1); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.spark .area { fill: var(--ramp-1); opacity: .10; stroke: none; }
+.spark circle { fill: var(--ramp-1); stroke: var(--card); stroke-width: 1.5; }
+.spark-leer { height: 40px; color: var(--ink-3); font-size: 0.78rem; display: flex; align-items: center; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; margin: 2px 0 0; }
+.facts div { min-width: 0; }
+.facts dt { color: var(--ink-3); font-size: 0.74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts dd { margin: 0; font-size: 0.9rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts dd.up::before { content: "\2197\00a0"; } .facts dd.down::before { content: "\2198\00a0"; } .facts dd.flat::before { content: "\2192\00a0"; }
+.facts dd.demo { color: var(--ink-3); }
+.card .more { font-size: 0.85rem; margin-top: 2px; text-decoration: none; }
+.card .more:hover { text-decoration: underline; }
+.legende { color: var(--ink-3); font-size: 0.82rem; margin: 10px 0 0; }
+.legende .badge { vertical-align: 1px; margin-right: 2px; }
+
+/* Verlauf: das Diagramm */
+.chart { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 8px; margin: 10px 0; }
+.chart-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 8px; }
+.chart-note { color: var(--ink-3); font-size: 0.82rem; }
+.chart-box { position: relative; }
+.chart-box svg { width: 100%; display: block; touch-action: pan-y; font-size: 11px; }
+.chart-box svg text { fill: var(--ink-3); }
+.chart-box svg .grid line { stroke: var(--line); stroke-width: 1; }
+.chart-box svg .nacht { fill: var(--panel); }
+.chart-box svg .linie { fill: none; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.chart-box svg .linie.aktiv { stroke-width: 3; }
+.chart-box svg .linie.blass { opacity: .22; }
+.chart-box svg .ende { stroke: var(--card); stroke-width: 1.4; }
+.chart-box svg .ende.blass { opacity: .22; }
+.chart-box svg .normal { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-box svg .normal-text { fill: var(--ink-2); font-size: 10.5px; }
+.chart-box svg .name { fill: var(--ink); font-weight: 600; font-size: 12px; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; }
+.chart-box svg .cursor line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-box svg .cursor circle { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: var(--ink); color: var(--bg); font-size: 0.8rem; line-height: 1.35;
+  padding: 6px 9px; border-radius: 8px; box-shadow: var(--shadow); white-space: nowrap;
+}
+.tip strong { display: block; font-size: 0.85rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chips button {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer;
+  border-radius: 999px; padding: 3px 9px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px;
+}
+.chips button .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chips button .val { font-variant-numeric: tabular-nums; opacity: .8; }
+
+/* Sprungleiste zu den Seen */
+.lake-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.lake-nav a {
+  text-decoration: none; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 10px; font-size: 0.8rem;
+}
+.lake-nav a:hover { color: var(--ink); }
+.nach-oben {
+  position: fixed; right: 14px; bottom: 14px; z-index: 15;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  border-radius: 999px; width: 40px; height: 40px; cursor: pointer; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.nach-oben.sichtbar { opacity: 1; pointer-events: auto; }
+</style></head><body>
+<nav class="topbar" aria-label="Seitenbereiche"><div class="inner"><a class="brand" href="#top">Kärntner Seen</a><div class="tabs"><a href="#jetzt">Jetzt</a><a href="#verlauf">Verlauf</a><a href="#normal">Normal</a><a href="#heuer">Heuer</a><a href="#archiv">Archiv</a></div><button type="button" class="theme js-only" id="theme">◐ Auto</button></div></nav>
+<main id="top">
+<header class="intro">
 <h1>Kärntner Seen</h1>
 <p class="lede">Wie warm die Seen gerade sind — und wie das gegenüber dem langjährigen Mittel 1991–2020 dasteht.</p>
 </header>
-<div class="warn"><strong>Demodaten — keine langjährigen Messwerte.</strong>Die Normalwerte und der Vergleich mit ihnen beruhen auf einem synthetischen Jahresgangmodell und sagen nichts über die tatsächlichen Seen aus. Die Werte der letzten Stunden ganz oben sind davon ausgenommen: sie sind gemessen. Für echte Werte den Lauf mit der Quelle <code>ehyd</code> starten.</div>
-<p class="hint">Antippen öffnet ein Bild in voller Auflösung.</p>
-<h2>Alles, was gemessen wurde</h2>
+<div class="warn"><strong>Demodaten — keine langjährigen Messwerte.</strong>Die Normalwerte und der Vergleich mit ihnen beruhen auf einem synthetischen Jahresgangmodell und sagen nichts über die tatsächlichen Seen aus. Die Messwerte der letzten Tage ganz oben sind davon ausgenommen: sie sind gemessen. Für echte Werte den Lauf mit der Quelle <code>ehyd</code> starten.</div>
+<script type="application/json" id="aktuell-daten">{"stand":"2026-09-18T16:45+02:00","stand_lokal":"2026-09-18T16:45","quelle":"Hydrographischer Dienst Kärnten — abgelegter Abruf (3 h alt)","hinweis":"Achtung - ungeprüfte Rohdaten!","normal_demo":true,"bezug":"1991–2020","schwelle_c":22.0,"fenster_h":72,"t0":"2026-09-15T16:45","seen":[{"key":"woerthersee","name":"Wörthersee","jetzt":22.8,"jetzt_um":"2026-09-18T16:45","mittel_24h":22.5,"normal":22.5,"abweichung":0.0,"trend_24h":-0.6,"min_72h":22.2,"max_72h":23.9,"punkte":[[45,23.5],[60,23.6],[75,23.6],[90,23.5],[165,23.5],[180,23.4],[210,23.4],[225,23.3],[270,23.3],[285,23.2],[390,23.2],[405,23.1],[465,23.1],[480,23.0],[540,23.0],[555,22.9],[660,22.9],[675,22.8],[810,22.8],[825,22.7],[990,22.7],[1005,22.8],[1035,22.8],[1065,23.0],[1095,23.0],[1110,23.1],[1125,23.2],[1140,23.3],[1155,23.3],[1170,23.4],[1200,23.4],[1215,23.6],[1230,23.7],[1245,23.8],[1260,23.7],[1275,23.8],[1290,23.7],[1335,23.7],[1350,23.8],[1365,23.7],[1425,23.7],[1440,23.9],[1500,23.9],[1515,23.8],[1560,23.8],[1575,23.7],[1620,23.7],[1635,23.6],[1680,23.6],[1695,23.5],[1755,23.5],[1770,23.4],[1815,23.4],[1830,23.3],[1875,23.3],[1890,23.2],[1920,23.2],[1935,23.1],[1965,23.1],[1980,23.0],[2010,23.0],[2025,22.9],[2145,22.9],[2160,22.8],[2205,22.8],[2220,22.9],[2235,22.8],[2295,22.8],[2310,22.7],[2325,22.6],[2340,22.6],[2355,22.5],[2370,22.7],[2400,22.7],[2415,22.8],[2430,22.7],[2670,22.7],[2685,22.6],[2700,22.7],[2715,22.6],[2730,22.7],[2745,22.7],[2760,22.6],[2805,22.6],[2820,22.7],[2835,22.6],[3075,22.6],[3090,22.5],[3135,22.5],[3150,22.6],[3165,22.5],[3300,22.5],[3315,22.4],[3330,22.5],[3345,22.4],[3360,22.5],[3375,22.5],[3390,22.4],[3600,22.4],[3615,22.3],[3660,22.3],[3675,22.4],[3690,22.3],[3855,22.3],[3870,22.2],[3885,22.3],[4005,22.3],[4020,22.4],[4035,22.4],[4050,22.5],[4065,22.5],[4095,22.7],[4170,22.7],[4185,22.8],[4320,22.8]],"tage":[["2026-09-03",24.99,11],["2026-09-04",25.3,56],["2026-09-05",25.05,32],["2026-09-06",25.01,48],["2026-09-07",25.17,57],["2026-09-08",25.02,53],["2026-09-09",24.53,44],["2026-09-10",23.99,43],["2026-09-11",23.42,49],["2026-09-12",23.36,53],["2026-09-13",23.12,49],["2026-09-14",23.34,45],["2026-09-15",23.1,48],["2026-09-16",23.37,42],["2026-09-17",22.76,38],["2026-09-18",22.45,23]]},{"key":"klopeiner_see","name":"Klopeiner See","jetzt":22.5,"jetzt_um":"2026-09-18T15:00","mittel_24h":21.9,"normal":22.4,"abweichung":-0.5,"trend_24h":-0.7,"min_72h":21.7,"max_72h":23.7,"punkte":[[45,23.3],[60,23.2],[90,23.2],[105,23.1],[135,23.1],[165,22.9],[180,22.9],[195,22.8],[210,22.8],[225,22.7],[270,22.7],[285,22.6],[315,22.6],[330,22.5],[375,22.5],[390,22.4],[450,22.4],[465,22.3],[495,22.3],[510,22.2],[705,22.2],[720,22.1],[735,22.1],[750,22.2],[765,22.1],[945,22.1],[960,22.2],[975,22.2],[990,22.3],[1065,22.3],[1125,22.7],[1140,22.8],[1155,23.0],[1170,23.0],[1185,23.2],[1200,23.3],[1215,23.4],[1230,23.3],[1245,23.4],[1290,23.4],[1320,23.6],[1395,23.6],[1410,23.7],[1455,23.7],[1485,23.5],[1500,23.2],[1530,22.8],[1590,22.8],[1605,22.7],[1635,22.7],[1650,22.6],[1695,22.6],[1710,22.5],[1755,22.5],[1770,22.4],[1830,22.4],[1845,22.3],[1920,22.3],[1935,22.2],[2265,22.2],[2280,22.1],[2355,22.1],[2370,21.9],[2400,22.1],[2790,22.1],[2805,22.0],[3105,22.0],[3120,21.9],[3225,21.9],[3240,21.8],[3300,21.8],[3315,21.9],[3330,21.8],[3345,21.9],[3390,21.9],[3405,21.8],[3690,21.8],[3705,21.7],[3855,21.7],[3870,21.8],[3885,21.8],[3900,21.7],[3915,21.8],[4005,21.8],[4020,21.9],[4050,21.9],[4065,22.0],[4095,22.0],[4110,22.1],[4125,22.1],[4140,22.2],[4155,22.2],[4170,22.3],[4185,22.3],[4215,22.5]],"tage":[["2026-09-03",25.25,10],["2026-09-04",25.35,61],["2026-09-05",24.89,41],["2026-09-06",25.25,54],["2026-09-07",25.02,59],["2026-09-08",24.98,46],["2026-09-09",24.47,35],["2026-09-10",23.81,33],["2026-09-11",23.12,18],["2026-09-12",23.06,48],["2026-09-13",22.8,48],["2026-09-14",22.84,37],["2026-09-15",22.76,53],["2026-09-16",22.73,41],["2026-09-17",22.03,14],["2026-09-18",21.95,24]]},{"key":"millstaetter_see","name":"Millstätter See","jetzt":22.4,"jetzt_um":"2026-09-18T15:00","mittel_24h":21.7,"normal":21.3,"abweichung":0.4,"trend_24h":-0.8,"min_72h":21.3,"max_72h":23.8,"punkte":[[0,23.4],[15,23.3],[60,23.3],[75,23.2],[120,22.9],[150,22.9],[165,22.8],[180,22.7],[195,22.7],[210,22.6],[240,22.6],[255,22.5],[270,22.5],[285,22.4],[315,22.4],[330,22.3],[360,22.3],[375,22.2],[390,22.2],[405,22.1],[435,22.1],[450,22.0],[495,22.0],[510,21.9],[525,21.9],[540,21.8],[795,21.8],[810,21.7],[855,21.7],[870,21.8],[960,21.8],[975,21.9],[1005,22.1],[1035,22.1],[1050,22.3],[1095,22.3],[1110,22.5],[1125,22.5],[1140,22.6],[1155,22.6],[1170,22.7],[1185,22.8],[1200,23.1],[1230,23.1],[1245,23.4],[1260,23.6],[1275,23.5],[1290,23.7],[1305,23.8],[1320,23.7],[1335,23.7],[1350,23.8],[1365,23.7],[1410,23.7],[1425,23.6],[1440,23.3],[1455,23.2],[1470,23.2],[1485,23.3],[1500,23.3],[1515,23.4],[1530,23.3],[1575,23.3],[1590,22.9],[1680,22.9],[1695,22.8],[1710,22.8],[1725,22.7],[1740,22.6],[1755,22.7],[1770,22.7],[1785,22.6],[1830,22.6],[1845,22.5],[1875,22.5],[1890,22.4],[1935,22.4],[1950,22.3],[1965,22.3],[1980,22.2],[1995,22.2],[2010,22.1],[2070,22.1],[2085,22.0],[2175,22.0],[2190,21.9],[2220,21.9],[2235,22.0],[2355,22.0],[2370,21.9],[2415,21.9],[2430,22.0],[2445,21.9],[2520,21.9],[2535,21.8],[2670,21.8],[2685,21.9],[2700,21.8],[2820,21.8],[2835,21.7],[2925,21.7],[2940,21.6],[2985,21.6],[3000,21.5],[3105,21.5],[3120,21.4],[3135,21.4],[3150,21.5],[3225,21.5],[3240,21.4],[3525,21.4],[3540,21.3],[3555,21.3],[3570,21.4],[3645,21.4],[3660,21.3],[3765,21.3],[3780,21.4],[3795,21.3],[3855,21.3],[3870,21.5],[3915,21.5],[3930,21.7],[3975,21.7],[3990,21.8],[4035,21.8],[4050,22.0],[4080,22.2],[4095,22.4],[4110,22.5],[4125,22.7],[4155,22.7],[4185,22.5],[4200,22.5],[4215,22.4]],"tage":[["2026-09-03",24.27,12],["2026-09-04",24.59,68],["2026-09-05",24.26,55],["2026-09-06",24.59,55],["2026-09-07",24.59,56],["2026-09-08",24.34,60],["2026-09-09",23.59,50],["2026-09-10",22.97,64],["2026-09-11",22.56,56],["2026-09-12",22.67,62],["2026-09-13",22.63,56],["2026-09-14",22.65,51],["2026-09-15",22.53,62],["2026-09-16",22.77,54],["2026-09-17",21.88,36],["2026-09-18",21.81,25]]},{"key":"keutschacher_see","name":"Keutschacher See","jetzt":22.2,"jetzt_um":"2026-09-18T16:00","mittel_24h":21.8,"normal":22.3,"abweichung":-0.5,"trend_24h":-0.6,"min_72h":21.5,"max_72h":23.3,"punkte":[[0,22.5],[105,22.5],[120,22.6],[135,22.6],[150,22.5],[225,22.5],[240,22.4],[360,22.4],[375,22.3],[465,22.3],[480,22.2],[615,22.2],[630,22.1],[765,22.1],[780,22.0],[915,22.0],[930,22.0],[945,22.1],[960,22.1],[975,22.2],[1035,22.2],[1050,22.3],[1095,22.3],[1110,22.4],[1140,22.4],[1155,22.5],[1170,22.7],[1185,22.8],[1200,22.8],[1230,23.2],[1245,23.3],[1275,23.3],[1290,23.0],[1305,22.8],[1320,22.7],[1365,22.7],[1380,22.6],[1395,22.6],[1410,22.7],[1500,22.7],[1515,22.6],[1560,22.6],[1575,22.7],[1725,22.7],[1740,22.6],[1785,22.6],[1800,22.5],[1845,22.5],[1860,22.4],[1920,22.4],[1935,22.3],[1995,22.3],[2010,22.2],[2130,22.2],[2145,22.1],[2280,22.1],[2295,22.0],[2595,22.0],[2610,21.9],[2985,21.9],[3000,21.8],[3210,21.8],[3225,21.7],[3465,21.7],[3480,21.6],[3765,21.6],[3780,21.5],[3795,21.5],[3810,21.6],[3870,21.6],[3885,21.7],[3975,21.7],[3990,21.8],[4065,21.8],[4080,21.9],[4125,21.9],[4140,22.0],[4230,22.0],[4245,22.2],[4260,22.1],[4275,22.2]],"tage":[["2026-09-03",24.87,7],["2026-09-04",25.01,52],["2026-09-05",24.64,46],["2026-09-06",24.67,35],["2026-09-07",24.75,51],["2026-09-08",24.83,45],["2026-09-09",24.38,25],["2026-09-10",23.55,30],["2026-09-11",22.86,27],["2026-09-12",22.85,40],["2026-09-13",22.58,36],["2026-09-14",22.66,34],["2026-09-15",22.46,40],["2026-09-16",22.51,40],["2026-09-17",22.05,14],["2026-09-18",21.8,18]]},{"key":"maltschacher_see","name":"Maltschacher See","jetzt":22.1,"jetzt_um":"2026-09-18T16:00","mittel_24h":21.5,"normal":21.9,"abweichung":-0.4,"trend_24h":-0.9,"min_72h":21.0,"max_72h":23.5,"punkte":[[0,23.2],[15,22.9],[30,22.8],[45,22.8],[60,23.0],[75,22.9],[90,22.7],[120,22.5],[135,22.6],[150,22.5],[165,22.6],[180,22.5],[210,22.7],[225,22.6],[240,22.6],[255,22.7],[270,22.6],[315,22.6],[330,22.5],[360,22.5],[375,22.4],[420,22.4],[435,22.3],[450,22.3],[465,22.2],[495,22.2],[510,22.1],[540,22.1],[555,22.0],[570,22.0],[585,21.9],[645,21.9],[660,21.8],[720,21.8],[735,21.7],[840,21.7],[855,21.6],[930,21.6],[945,21.7],[960,21.7],[975,21.8],[990,21.8],[1020,22.0],[1035,22.0],[1065,22.2],[1080,22.4],[1095,22.2],[1125,22.4],[1140,22.2],[1155,22.3],[1170,22.4],[1185,22.4],[1200,22.8],[1215,23.3],[1230,22.7],[1245,22.5],[1260,22.7],[1275,22.7],[1290,22.8],[1305,23.3],[1320,23.0],[1335,22.9],[1350,23.0],[1365,23.5],[1380,23.3],[1410,22.7],[1425,22.5],[1440,22.5],[1455,22.4],[1470,22.5],[1485,22.7],[1515,22.5],[1530,22.6],[1545,22.6],[1560,22.7],[1605,22.7],[1620,22.8],[1635,22.8],[1650,22.9],[1665,22.8],[1695,22.8],[1710,22.7],[1725,22.7],[1740,22.8],[1755,22.7],[1770,22.7],[1785,22.6],[1815,22.6],[1830,22.5],[1875,22.5],[1890,22.4],[1920,22.4],[1935,22.3],[1995,22.3],[2010,22.2],[2055,22.2],[2070,22.1],[2100,22.1],[2115,22.0],[2190,22.0],[2205,21.9],[2265,21.9],[2295,21.7],[2355,21.7],[2370,21.6],[2670,21.6],[2685,21.5],[2940,21.5],[2955,21.4],[3150,21.4],[3165,21.3],[3360,21.3],[3375,21.2],[3390,21.2],[3405,21.3],[3420,21.3],[3435,21.2],[3600,21.2],[3615,21.1],[3720,21.1],[3735,21.0],[3795,21.0],[3810,21.1],[3855,21.1],[3870,21.2],[3915,21.2],[3930,21.3],[3960,21.3],[3990,21.5],[4035,21.5],[4050,21.6],[4080,21.6],[4095,21.7],[4110,21.8],[4125,22.2],[4140,22.2],[4170,22.0],[4185,21.8],[4200,22.0],[4215,22.3],[4230,22.4],[4245,22.2],[4260,22.2],[4275,22.1]],"tage":[["2026-09-03",24.9,8],["2026-09-04",25.14,53],["2026-09-05",24.7,50],["2026-09-06",24.8,47],["2026-09-07",24.96,61],["2026-09-08",24.83,53],["2026-09-09",24.3,47],["2026-09-10",23.46,28],["2026-09-11",22.72,37],["2026-09-12",22.74,46],["2026-09-13",22.44,51],["2026-09-14",22.48,54],["2026-09-15",22.61,60],["2026-09-16",22.43,67],["2026-09-17",21.91,22],["2026-09-18",21.55,33]]},{"key":"faaker_see","name":"Faaker See","jetzt":21.9,"jetzt_um":"2026-09-18T16:45","mittel_24h":21.4,"normal":21.7,"abweichung":-0.4,"trend_24h":-0.5,"min_72h":20.7,"max_72h":22.9,"punkte":[[0,22.4],[90,22.4],[105,22.3],[180,22.3],[195,22.2],[285,22.2],[300,22.1],[375,22.1],[390,22.0],[450,22.0],[465,21.9],[525,21.9],[540,21.8],[570,21.8],[585,21.7],[630,21.7],[645,21.6],[690,21.6],[705,21.5],[750,21.5],[765,21.4],[885,21.4],[900,21.5],[975,21.5],[990,21.6],[1020,21.6],[1035,21.7],[1050,21.7],[1065,21.8],[1110,22.1],[1140,22.1],[1155,22.2],[1170,22.3],[1215,22.6],[1230,22.6],[1245,22.7],[1260,22.8],[1275,22.7],[1305,22.7],[1320,22.8],[1335,22.7],[1350,22.8],[1395,22.8],[1410,22.9],[1440,22.9],[1455,22.8],[1485,22.8],[1500,22.7],[1545,22.7],[1560,22.6],[1635,22.6],[1650,22.5],[1680,22.5],[1695,22.4],[1740,22.4],[1755,22.3],[1785,22.3],[1800,22.2],[1830,22.2],[1845,22.1],[1860,22.1],[1875,22.0],[1890,22.0],[1920,21.8],[1935,21.7],[1980,21.7],[1995,21.6],[2025,21.6],[2040,21.5],[2100,21.5],[2115,21.4],[2160,21.4],[2175,21.3],[2295,21.3],[2310,21.2],[2520,21.2],[2535,21.1],[2550,21.1],[2565,21.2],[2580,21.1],[2865,21.1],[2880,21.0],[3090,21.0],[3105,20.9],[3375,20.9],[3390,20.8],[3735,20.8],[3750,20.7],[3780,20.7],[3795,20.8],[3855,20.8],[3870,20.9],[3885,20.9],[3900,21.0],[3915,21.0],[3945,21.2],[3960,21.3],[3975,21.3],[3990,21.4],[4020,21.4],[4050,21.6],[4065,21.8],[4080,21.8],[4095,22.0],[4125,22.2],[4215,22.2],[4230,22.1],[4275,22.1],[4290,22.0],[4305,22.0],[4320,21.9]],"tage":[["2026-09-03",24.05,6],["2026-09-04",23.83,47],["2026-09-05",23.59,30],["2026-09-06",23.93,34],["2026-09-07",24.11,59],["2026-09-08",23.88,37],["2026-09-09",23.44,37],["2026-09-10",22.6,28],["2026-09-11",21.9,26],["2026-09-12",22.12,44],["2026-09-13",21.95,42],["2026-09-14",22.09,46],["2026-09-15",21.99,37],["2026-09-16",22.19,52],["2026-09-17",21.38,23],["2026-09-18",21.39,27]]},{"key":"laengsee","name":"Längsee","jetzt":21.9,"jetzt_um":"2026-09-18T16:30","mittel_24h":21.6,"normal":21.7,"abweichung":-0.1,"trend_24h":-0.4,"min_72h":21.2,"max_72h":22.4,"punkte":[[0,22.4],[15,22.3],[45,22.3],[60,22.2],[105,22.2],[120,22.1],[165,22.1],[180,22.0],[210,22.0],[225,21.9],[240,22.0],[360,22.0],[375,21.9],[435,21.9],[450,21.8],[585,21.8],[600,21.7],[720,21.7],[735,21.6],[945,21.6],[960,21.7],[975,21.7],[975,21.8],[990,21.8],[1005,21.9],[1020,21.8],[1035,22.0],[1050,21.9],[1065,22.0],[1080,22.0],[1095,22.1],[1140,22.1],[1155,22.2],[1185,22.2],[1200,22.3],[1230,22.3],[1245,22.4],[1260,22.4],[1275,22.3],[1290,22.3],[1305,22.2],[1350,22.2],[1365,22.3],[1425,22.3],[1440,22.2],[1470,22.2],[1485,22.1],[1530,22.1],[1545,22.0],[1590,22.0],[1605,21.9],[1695,21.9],[1710,22.0],[1755,22.0],[1785,22.2],[1830,22.2],[1845,22.1],[1935,22.1],[1950,22.0],[2040,22.0],[2055,21.9],[2190,21.9],[2205,21.8],[2295,21.8],[2310,21.7],[2385,21.7],[2400,21.6],[2805,21.6],[2820,21.5],[3060,21.5],[3075,21.4],[3300,21.4],[3315,21.3],[3540,21.3],[3555,21.2],[3990,21.2],[4005,21.3],[4020,21.3],[4065,21.6],[4080,21.6],[4095,21.7],[4110,21.8],[4125,21.9],[4215,21.9],[4215,21.8],[4245,21.8],[4260,21.9],[4305,21.9]],"tage":[["2026-09-03",24.65,6],["2026-09-04",24.48,51],["2026-09-05",24.3,26],["2026-09-06",24.29,40],["2026-09-07",24.77,51],["2026-09-08",24.38,44],["2026-09-09",23.93,32],["2026-09-10",23.2,29],["2026-09-11",22.59,29],["2026-09-12",22.39,39],["2026-09-13",22.47,50],["2026-09-14",22.51,38],["2026-09-15",22.06,42],["2026-09-16",22.03,44],["2026-09-17",21.73,15],["2026-09-18",21.59,16]]},{"key":"ossiacher_see","name":"Ossiacher See","jetzt":21.8,"jetzt_um":"2026-09-18T16:45","mittel_24h":21.4,"normal":22.1,"abweichung":-0.7,"trend_24h":-0.7,"min_72h":21.1,"max_72h":22.6,"punkte":[[0,22.5],[15,22.4],[30,22.5],[45,22.4],[120,22.4],[135,22.3],[180,22.3],[195,22.2],[255,22.2],[270,22.1],[315,22.1],[330,22.2],[375,22.2],[390,22.1],[435,22.1],[450,22.0],[465,22.1],[480,22.1],[495,22.0],[735,22.0],[750,21.9],[930,21.9],[945,21.8],[960,21.9],[990,21.9],[1005,22.0],[1050,22.0],[1065,22.1],[1110,22.1],[1125,22.2],[1170,22.2],[1185,22.3],[1200,22.3],[1215,22.4],[1230,22.4],[1245,22.3],[1305,22.3],[1320,22.5],[1335,22.4],[1365,22.4],[1380,22.5],[1395,22.4],[1410,22.4],[1440,22.6],[1575,22.6],[1590,22.5],[1665,22.5],[1680,22.4],[1800,22.4],[1815,22.3],[1950,22.3],[1965,22.2],[2055,22.2],[2070,22.1],[2220,22.1],[2235,22.0],[2280,22.0],[2295,21.9],[2325,21.9],[2340,21.8],[2355,21.8],[2370,21.9],[2385,21.9],[2400,21.8],[2610,21.8],[2625,21.7],[2805,21.7],[2820,21.6],[2985,21.6],[3000,21.5],[3120,21.5],[3135,21.4],[3225,21.4],[3240,21.3],[3255,21.4],[3270,21.3],[3285,21.4],[3300,21.3],[3465,21.3],[3480,21.2],[3495,21.2],[3510,21.3],[3525,21.2],[3570,21.2],[3585,21.1],[3645,21.1],[3660,21.2],[3690,21.2],[3705,21.1],[3780,21.1],[3795,21.2],[3810,21.2],[3825,21.3],[3840,21.2],[3915,21.2],[3930,21.3],[3945,21.4],[3960,21.4],[3975,21.5],[3990,21.5],[4005,21.6],[4080,21.6],[4095,21.7],[4125,21.7],[4140,21.6],[4155,21.7],[4170,21.6],[4185,21.7],[4275,21.7],[4290,21.8],[4320,21.8]],"tage":[["2026-09-03",25.04,11],["2026-09-04",24.95,58],["2026-09-05",23.76,51],["2026-09-06",24.27,45],["2026-09-07",24.59,50],["2026-09-08",24.62,44],["2026-09-09",24.31,36],["2026-09-10",23.14,41],["2026-09-11",22.41,31],["2026-09-12",22.13,42],["2026-09-13",22.08,48],["2026-09-14",22.32,25],["2026-09-15",22.1,37],["2026-09-16",22.23,36],["2026-09-17",21.74,28],["2026-09-18",21.39,33]]},{"key":"turnersee","name":"Turnersee","jetzt":21.8,"jetzt_um":"2026-09-18T15:00","mittel_24h":21.2,"normal":22.6,"abweichung":-1.3,"trend_24h":-1.1,"min_72h":20.9,"max_72h":23.9,"punkte":[[30,23.3],[45,23.2],[120,23.2],[135,23.1],[150,23.1],[165,23.0],[180,23.0],[195,22.9],[225,22.9],[240,22.8],[255,22.8],[270,22.7],[285,22.7],[300,22.6],[315,22.6],[330,22.5],[345,22.5],[360,22.4],[375,22.4],[390,22.3],[420,22.3],[435,22.2],[465,22.2],[480,22.1],[510,22.1],[525,22.0],[540,22.0],[555,21.9],[570,21.9],[585,21.8],[615,21.8],[630,21.7],[660,21.7],[675,21.6],[690,21.6],[705,21.5],[735,21.5],[750,21.4],[870,21.4],[885,21.5],[900,21.5],[915,21.6],[930,21.6],[945,21.7],[960,21.7],[975,21.8],[990,21.9],[1005,21.9],[1020,22.0],[1035,22.0],[1065,22.2],[1080,22.2],[1095,22.3],[1155,22.7],[1170,22.7],[1185,22.8],[1215,22.8],[1230,22.9],[1245,22.9],[1290,23.2],[1335,23.2],[1350,23.3],[1365,23.4],[1380,23.6],[1395,23.7],[1410,23.8],[1440,23.8],[1455,23.9],[1515,23.9],[1530,23.8],[1560,23.8],[1575,23.7],[1635,23.3],[1650,23.2],[1695,22.9],[1710,22.9],[1725,22.8],[1740,22.8],[1755,22.7],[1770,22.8],[1785,22.7],[1800,22.7],[1815,22.6],[1830,22.6],[1845,22.5],[1860,22.5],[1875,22.4],[1890,22.4],[1905,22.3],[1920,22.3],[1935,22.2],[1950,22.2],[1965,22.1],[1980,22.1],[1995,22.0],[2010,22.0],[2025,21.9],[2070,21.9],[2085,21.8],[2115,21.8],[2130,21.7],[2190,21.7],[2205,21.6],[2340,21.6],[2370,21.4],[2385,21.4],[2400,21.3],[2490,21.3],[2505,21.4],[2535,21.4],[2550,21.5],[2595,21.5],[2610,21.4],[2715,21.4],[2730,21.3],[2745,21.3],[2760,21.4],[2790,21.4],[2805,21.3],[2955,21.3],[2970,21.2],[3135,21.2],[3150,21.1],[3270,21.1],[3285,21.0],[3525,21.0],[3540,20.9],[3870,20.9],[3885,21.0],[3915,21.0],[3930,21.1],[3975,21.1],[3990,21.2],[4020,21.2],[4035,21.3],[4050,21.4],[4125,21.4],[4140,21.5],[4155,21.5],[4170,21.6],[4185,21.6],[4200,21.7],[4215,21.8]],"tage":[["2026-09-03",24.85,10],["2026-09-04",24.95,68],["2026-09-05",24.66,61],["2026-09-06",24.85,55],["2026-09-07",24.87,65],["2026-09-08",24.65,62],["2026-09-09",24.13,46],["2026-09-10",22.97,40],["2026-09-11",22.43,39],["2026-09-12",22.68,57],["2026-09-13",22.31,65],["2026-09-14",22.41,55],["2026-09-15",22.4,64],["2026-09-16",22.48,65],["2026-09-17",21.63,39],["2026-09-18",21.29,18]]},{"key":"rauschele_see","name":"Rauschele See","jetzt":21.7,"jetzt_um":"2026-09-18T15:00","mittel_24h":21.2,"normal":22.1,"abweichung":-1.0,"trend_24h":-1.1,"min_72h":20.8,"max_72h":23.7,"punkte":[[0,23.3],[15,23.3],[30,23.2],[45,23.3],[60,23.1],[75,23.0],[90,23.0],[120,22.8],[135,22.7],[165,22.5],[180,22.5],[195,22.4],[225,22.4],[240,22.3],[255,22.3],[270,22.2],[285,22.2],[300,22.1],[315,22.1],[330,22.0],[375,22.0],[390,21.9],[420,21.9],[435,21.8],[480,21.8],[495,21.7],[555,21.7],[570,21.6],[660,21.6],[675,21.5],[765,21.5],[780,21.4],[810,21.4],[825,21.5],[840,21.5],[855,21.4],[885,21.4],[900,21.5],[915,21.5],[945,21.7],[960,21.7],[975,21.8],[990,21.9],[1005,21.9],[1020,22.1],[1035,22.2],[1050,22.3],[1065,22.3],[1080,22.5],[1095,22.5],[1125,22.7],[1140,22.8],[1155,23.0],[1170,23.1],[1185,23.1],[1200,23.3],[1230,23.5],[1245,23.5],[1260,23.4],[1290,23.6],[1305,23.5],[1320,23.6],[1335,23.6],[1350,23.7],[1365,23.7],[1380,23.6],[1395,23.3],[1425,23.5],[1440,23.3],[1500,23.3],[1515,23.1],[1530,23.0],[1545,22.8],[1560,22.7],[1605,22.7],[1620,22.6],[1635,22.6],[1650,22.5],[1665,22.5],[1680,22.4],[1695,22.4],[1710,22.3],[1725,22.3],[1740,22.2],[1755,22.2],[1770,22.1],[1800,22.1],[1815,22.0],[1830,22.0],[1845,21.9],[1890,21.9],[1905,21.8],[1950,21.8],[1965,21.7],[2025,21.7],[2040,21.6],[2055,21.6],[2070,21.5],[2280,21.5],[2295,21.4],[2580,21.4],[2595,21.3],[2610,21.4],[2625,21.4],[2640,21.3],[2835,21.3],[2850,21.2],[3015,21.2],[3030,21.1],[3210,21.1],[3225,21.0],[3465,21.0],[3480,20.9],[3675,20.9],[3690,20.8],[3870,20.8],[3900,21.0],[3915,20.9],[3960,20.9],[3975,21.1],[3990,21.1],[4005,21.0],[4020,21.2],[4035,21.2],[4050,21.5],[4065,21.5],[4080,21.4],[4095,21.4],[4110,21.5],[4170,21.5],[4185,21.6],[4200,21.6],[4215,21.7]],"tage":[["2026-09-03",24.78,13],["2026-09-04",24.91,57],["2026-09-05",24.77,51],["2026-09-06",25.07,67],["2026-09-07",25.11,65],["2026-09-08",25.06,67],["2026-09-09",24.11,41],["2026-09-10",23.18,30],["2026-09-11",22.49,34],["2026-09-12",22.69,51],["2026-09-13",22.42,59],["2026-09-14",22.46,57],["2026-09-15",22.41,58],["2026-09-16",22.44,67],["2026-09-17",21.44,21],["2026-09-18",21.2,22]]},{"key":"pressegger_see","name":"Pressegger See","jetzt":21.1,"jetzt_um":"2026-09-18T16:45","mittel_24h":19.7,"normal":22.0,"abweichung":-2.3,"trend_24h":-0.9,"min_72h":18.6,"max_72h":22.8,"punkte":[[0,22.2],[15,22.1],[30,22.1],[45,22.0],[60,22.0],[75,21.9],[90,21.9],[105,21.7],[120,21.7],[150,21.5],[165,21.5],[180,21.4],[195,21.4],[210,21.3],[225,21.3],[240,21.2],[255,21.1],[270,21.1],[285,21.0],[300,21.0],[330,20.8],[345,20.7],[360,20.7],[375,20.6],[390,20.6],[405,20.5],[420,20.5],[450,20.3],[465,20.3],[480,20.2],[495,20.2],[510,20.1],[525,20.1],[555,19.9],[570,19.9],[585,19.8],[630,19.8],[645,19.7],[660,19.7],[675,19.6],[780,19.6],[795,19.5],[855,19.5],[870,19.6],[900,19.6],[915,19.7],[930,19.8],[990,20.2],[1005,20.3],[1065,20.7],[1080,21.0],[1095,21.0],[1110,21.2],[1125,21.4],[1140,21.5],[1155,21.7],[1170,21.7],[1185,21.8],[1215,22.0],[1230,22.2],[1245,22.6],[1260,22.7],[1275,22.7],[1290,22.8],[1305,22.7],[1320,22.7],[1335,22.6],[1365,22.6],[1380,22.5],[1410,22.5],[1425,22.6],[1440,22.5],[1455,22.5],[1485,22.3],[1500,22.2],[1515,22.1],[1530,22.1],[1560,21.9],[1575,21.9],[1590,21.8],[1605,21.7],[1635,21.5],[1650,21.3],[1665,21.3],[1680,21.1],[1695,21.1],[1725,20.9],[1755,20.9],[1770,20.8],[1785,20.8],[1800,20.7],[1815,20.6],[1830,20.6],[1860,20.4],[1905,20.4],[1920,20.3],[1935,20.2],[1995,20.2],[2025,20.0],[2055,20.0],[2070,19.9],[2100,19.9],[2115,19.8],[2130,19.9],[2175,19.9],[2190,19.8],[2235,19.8],[2250,19.7],[2295,19.7],[2310,19.6],[2385,19.6],[2400,19.7],[2520,19.7],[2535,19.6],[2760,19.6],[2775,19.5],[2970,19.5],[2985,19.4],[3030,19.4],[3045,19.3],[3075,19.3],[3090,19.2],[3105,19.1],[3165,19.1],[3180,19.0],[3270,19.0],[3285,18.9],[3360,18.9],[3375,18.8],[3480,18.8],[3495,18.7],[3510,18.7],[3525,18.8],[3540,18.8],[3555,18.7],[3630,18.7],[3645,18.6],[3705,18.6],[3720,18.7],[3810,18.7],[3825,18.8],[3840,18.8],[3855,18.9],[3870,18.9],[3885,19.0],[3900,19.0],[3930,19.2],[3945,19.3],[3960,19.6],[3975,19.8],[3990,20.1],[4020,20.1],[4035,20.2],[4050,20.4],[4065,20.5],[4080,20.7],[4095,20.8],[4110,20.8],[4125,20.9],[4140,21.1],[4155,21.4],[4200,21.4],[4215,21.3],[4230,21.3],[4245,21.4],[4275,21.4],[4290,21.3],[4305,21.3],[4320,21.1]],"tage":[["2026-09-03",24.12,17],["2026-09-04",23.69,81],["2026-09-05",23.97,67],["2026-09-06",23.94,73],["2026-09-07",24.01,61],["2026-09-08",24.24,66],["2026-09-09",22.87,60],["2026-09-10",21.33,57],["2026-09-11",20.64,58],["2026-09-12",20.88,64],["2026-09-13",20.93,62],["2026-09-14",20.97,69],["2026-09-15",20.86,74],["2026-09-16",21.13,67],["2026-09-17",19.64,33],["2026-09-18",19.82,42]]},{"key":"weissensee","name":"Weißensee","jetzt":20.8,"jetzt_um":"2026-09-18T16:45","mittel_24h":20.4,"normal":18.4,"abweichung":2.1,"trend_24h":-0.5,"min_72h":20.0,"max_72h":21.7,"punkte":[[15,21.5],[75,21.3],[285,21.1],[315,21.0],[555,20.7],[795,20.5],[1035,20.6],[1035,21.0],[1050,21.0],[1065,21.1],[1080,21.1],[1095,21.3],[1110,21.3],[1125,20.8],[1215,21.2],[1260,21.0],[1275,21.3],[1305,21.5],[1380,21.6],[1425,21.4],[1440,21.7],[1500,21.7],[1515,21.6],[1710,21.3],[1755,21.2],[1815,21.0],[1995,20.8],[2235,20.6],[2460,20.4],[2475,20.5],[2715,20.4],[2955,20.4],[3195,20.2],[3675,20.0],[3915,20.0],[3930,20.1],[3945,20.0],[4080,20.2],[4155,20.3],[4155,20.8],[4230,20.8],[4245,20.7],[4260,20.8],[4275,20.9],[4290,20.8],[4320,20.8]],"tage":[["2026-09-03",23.1,1],["2026-09-04",23.19,16],["2026-09-05",23.02,22],["2026-09-06",23.03,18],["2026-09-07",23.39,29],["2026-09-08",23.16,21],["2026-09-09",22.39,10],["2026-09-10",21.63,26],["2026-09-11",21.2,16],["2026-09-12",21.25,10],["2026-09-13",21.24,18],["2026-09-14",21.12,18],["2026-09-15",21.05,15],["2026-09-16",21.18,22],["2026-09-17",20.47,7],["2026-09-18",20.48,13]]},{"key":"brennsee","name":"Feldsee (Brennsee)","jetzt":20.5,"jetzt_um":"2026-09-18T15:00","mittel_24h":20.2,"normal":20.4,"abweichung":-0.1,"trend_24h":-0.9,"min_72h":19.9,"max_72h":22.1,"punkte":[[15,21.5],[45,21.3],[60,21.3],[75,21.2],[135,21.2],[150,21.1],[195,21.1],[210,21.0],[285,21.0],[300,20.9],[315,21.0],[330,20.9],[390,20.9],[405,20.8],[525,20.8],[540,20.7],[600,20.7],[615,20.6],[720,20.6],[735,20.5],[780,20.5],[795,20.4],[810,20.5],[825,20.4],[930,20.4],[945,20.5],[975,20.5],[990,20.6],[1020,20.6],[1035,20.7],[1050,20.8],[1110,20.8],[1125,20.9],[1140,21.1],[1170,21.1],[1185,21.2],[1200,21.1],[1215,21.7],[1230,21.7],[1245,21.8],[1260,21.7],[1290,21.5],[1305,21.9],[1335,22.1],[1350,22.1],[1365,21.9],[1380,21.8],[1395,21.7],[1410,21.6],[1515,21.6],[1530,21.5],[1605,21.5],[1620,21.4],[1710,21.4],[1725,21.3],[1770,21.3],[1785,21.2],[1815,21.2],[1830,21.1],[1875,21.1],[1890,21.0],[1920,21.0],[1935,20.9],[2010,20.9],[2025,20.8],[2085,20.8],[2100,20.7],[2160,20.7],[2175,20.6],[2250,20.6],[2265,20.5],[2355,20.5],[2370,20.4],[2700,20.4],[2715,20.3],[2940,20.3],[2955,20.2],[3180,20.2],[3195,20.1],[3210,20.2],[3225,20.2],[3240,20.1],[3495,20.1],[3510,20.0],[3810,20.0],[3825,19.9],[3840,20.0],[3870,20.0],[3885,20.1],[3900,20.1],[3915,20.2],[3930,20.2],[3945,20.3],[3960,20.3],[3975,20.4],[3990,20.3],[4080,20.3],[4095,20.5],[4110,20.5],[4125,20.6],[4140,20.5],[4215,20.5]],"tage":[["2026-09-03",23.32,9],["2026-09-04",23.04,47],["2026-09-05",22.9,42],["2026-09-06",22.95,40],["2026-09-07",23.27,58],["2026-09-08",22.93,64],["2026-09-09",22.51,31],["2026-09-10",21.81,24],["2026-09-11",21.25,23],["2026-09-12",21.23,44],["2026-09-13",21.14,41],["2026-09-14",20.99,35],["2026-09-15",20.94,49],["2026-09-16",21.13,45],["2026-09-17",20.54,23],["2026-09-18",20.24,20]]},{"key":"afritzer_see","name":"Afritzer See","jetzt":20.1,"jetzt_um":"2026-09-18T15:00","mittel_24h":19.5,"normal":20.6,"abweichung":-1.1,"trend_24h":-0.2,"min_72h":18.9,"max_72h":21.4,"punkte":[[0,20.3],[15,20.2],[30,20.1],[60,20.1],[75,20.0],[105,20.0],[120,19.9],[150,19.9],[165,19.8],[195,19.8],[210,19.7],[270,19.7],[285,19.6],[330,19.6],[345,19.5],[450,19.5],[465,19.4],[675,19.4],[690,19.3],[795,19.3],[810,19.2],[915,19.2],[930,19.1],[945,19.1],[960,19.2],[975,19.3],[990,19.3],[1035,19.6],[1050,19.6],[1065,19.8],[1080,19.9],[1095,19.8],[1110,20.0],[1125,20.6],[1140,20.8],[1155,21.0],[1185,21.2],[1200,21.3],[1215,21.4],[1230,21.3],[1245,21.2],[1275,21.0],[1290,21.2],[1320,20.8],[1335,20.7],[1395,20.7],[1425,20.5],[1440,20.3],[1455,20.2],[1470,20.2],[1485,20.1],[1530,20.1],[1545,20.0],[1590,20.0],[1605,19.9],[1665,19.9],[1680,19.8],[1725,19.8],[1740,19.7],[1785,19.7],[1800,19.6],[1875,19.6],[1890,19.5],[1980,19.5],[1995,19.4],[2190,19.4],[2205,19.3],[2220,19.4],[2235,19.4],[2250,19.3],[2415,19.3],[2430,19.4],[2505,19.4],[2520,19.3],[2640,19.3],[2655,19.4],[2670,19.3],[2955,19.3],[2970,19.2],[3000,19.2],[3015,19.3],[3045,19.3],[3060,19.2],[3225,19.2],[3240,19.1],[3255,19.2],[3300,19.2],[3315,19.1],[3495,19.1],[3510,19.0],[3720,19.0],[3735,18.9],[3810,18.9],[3825,19.0],[3870,19.0],[3900,19.2],[3915,19.3],[3975,19.7],[3990,19.9],[4005,20.0],[4035,19.8],[4050,20.0],[4065,20.0],[4080,20.2],[4095,20.1],[4125,20.1],[4140,20.2],[4200,20.2],[4215,20.1]],"tage":[["2026-09-03",21.95,10],["2026-09-04",22.13,51],["2026-09-05",21.9,42],["2026-09-06",21.81,49],["2026-09-07",21.94,62],["2026-09-08",22.08,50],["2026-09-09",21.3,30],["2026-09-10",20.88,22],["2026-09-11",20.45,26],["2026-09-12",20.32,48],["2026-09-13",20.28,40],["2026-09-14",20.41,41],["2026-09-15",20.14,50],["2026-09-16",20.07,46],["2026-09-17",19.32,26],["2026-09-18",19.58,22]]},{"key":"goesselsdorfer_see","name":"Gösselsdorfer See","jetzt":19.2,"jetzt_um":"2026-09-18T16:00","mittel_24h":19.0,"normal":23.0,"abweichung":-4.1,"trend_24h":-0.8,"min_72h":18.7,"max_72h":20.2,"punkte":[[15,20.0],[30,20.1],[45,20.0],[105,20.0],[120,19.9],[150,19.9],[165,20.0],[360,20.0],[375,19.9],[420,19.9],[435,19.8],[480,19.8],[495,19.7],[540,19.7],[555,19.6],[600,19.6],[615,19.5],[645,19.5],[660,19.4],[720,19.4],[735,19.3],[825,19.3],[840,19.2],[870,19.2],[885,19.3],[900,19.3],[915,19.4],[930,19.4],[945,19.5],[975,19.5],[1005,19.7],[1020,19.7],[1035,19.8],[1050,19.8],[1065,19.7],[1155,19.7],[1170,19.8],[1230,19.8],[1245,19.9],[1305,19.9],[1335,20.1],[1350,20.0],[1410,20.0],[1425,20.2],[1455,20.0],[1470,20.0],[1485,20.1],[1500,20.0],[1545,20.0],[1560,19.9],[1575,20.0],[1905,20.0],[1920,19.9],[1965,19.9],[1980,19.8],[2025,19.8],[2040,19.7],[2115,19.7],[2130,19.6],[2205,19.6],[2220,19.5],[2325,19.5],[2340,19.4],[2400,19.4],[2415,19.3],[2475,19.3],[2490,19.4],[2520,19.4],[2535,19.3],[2940,19.3],[2955,19.2],[3075,19.2],[3090,19.1],[3180,19.1],[3195,19.0],[3300,19.0],[3315,18.9],[3450,18.9],[3465,18.8],[3600,18.8],[3615,18.7],[3870,18.7],[3885,18.8],[3900,18.8],[3915,18.9],[3930,18.8],[3945,18.9],[3975,18.9],[3990,19.0],[4065,19.0],[4080,19.1],[4170,19.1],[4185,19.2],[4275,19.2]],"tage":[["2026-09-03",23.63,7],["2026-09-04",23.64,52],["2026-09-05",23.49,40],["2026-09-06",23.32,47],["2026-09-07",23.12,39],["2026-09-08",23.1,42],["2026-09-09",22.91,41],["2026-09-10",21.75,50],["2026-09-11",20.63,36],["2026-09-12",19.96,42],["2026-09-13",19.59,40],["2026-09-14",19.88,37],["2026-09-15",19.69,43],["2026-09-16",19.7,41],["2026-09-17",19.46,25],["2026-09-18",18.92,18]]}]}</script>
+<section id="jetzt">
+<h2>Wie warm ist es jetzt?</h2>
+<p class="caption">Der jüngste Messwert je See, dazu die Einordnung: wie das Tagesmittel gegen den Normalwert steht und ob es seit gestern steigt. Die kleine Linie ist der Verlauf der letzten drei Tage.</p>
+<p class="stand">Stand <time datetime="2026-09-18T16:45+02:00">Fr 18.9., 16:45</time> <span id="alter" class="alter"></span><span>Hydrographischer Dienst Kärnten — abgelegter Abruf</span><span>Achtung - ungeprüfte Rohdaten!</span></p>
+<div class="stats"><div class="stat"><span class="k">Wärmster See</span><span class="v">Wörthersee</span><span class="s">22,8 °C</span></div><div class="stat"><span class="k">Kältester See</span><span class="v">Gösselsdorfer See</span><span class="s">19,2 °C</span></div><div class="stat"><span class="k">Badewarm ab 22 °C</span><span class="v">5 von 15</span><span class="s">Seen</span></div><div class="stat"><span class="k">Wärmer als normal</span><span class="v">2 von 15</span><span class="s">Seen mit Normalwert</span></div></div>
+<div class="controls js-only"><label class="search"><span class="sr">See suchen</span><input type="search" id="suche" placeholder="See suchen …" autocomplete="off"></label><div class="seg" id="sortierung" role="group" aria-label="Sortierung"><button type="button" data-sort="jetzt" aria-pressed="true">Wärmste zuerst</button><button type="button" data-sort="name" aria-pressed="false">A–Z</button><button type="button" data-sort="abw" aria-pressed="false">Abweichung</button></div><button type="button" id="nur-favoriten" class="toggle" aria-pressed="false">★ Meine Seen</button></div>
+<ul class="cards" id="karten"><li class="card" id="see-woerthersee" data-key="woerthersee" data-name="Wörthersee" data-jetzt="22.8" data-abw="0.0"><div class="card-top"><h3>Wörthersee</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Wörthersee als Favorit merken">☆</button></div><div class="card-now"><span class="big">22,8<span class="unit">°C</span></span><span class="badge b-warm">badewarm</span></div><a class="spark-link" href="#verlauf" data-lake="woerthersee"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 22,2 bis 23,9 °C"><path class="area" d="M4.2 32 L4.2 9.1 L4.6 7.6 L5.0 7.6 L5.4 9.1 L7.4 9.1 L7.8 10.6 L8.5 10.6 L8.9 12.2 L10.1 12.2 L10.5 13.7 L13.3 13.7 L13.7 15.2 L15.3 15.2 L15.7 16.8 L17.2 16.8 L17.6 18.3 L20.4 18.3 L20.8 19.8 L24.4 19.8 L24.8 21.4 L29.1 21.4 L29.5 19.8 L30.3 19.8 L31.1 16.8 L31.9 16.8 L32.3 15.2 L32.7 13.7 L33.1 12.2 L33.5 12.2 L33.9 10.6 L34.7 10.6 L35.1 7.6 L35.5 6.1 L35.9 4.5 L36.2 6.1 L36.6 4.5 L37.0 6.1 L38.2 6.1 L38.6 4.5 L39.0 6.1 L40.6 6.1 L41.0 3.0 L42.6 3.0 L43.0 4.5 L44.2 4.5 L44.6 6.1 L45.8 6.1 L46.1 7.6 L47.3 7.6 L47.7 9.1 L49.3 9.1 L49.7 10.6 L50.9 10.6 L51.3 12.2 L52.5 12.2 L52.9 13.7 L53.7 13.7 L54.1 15.2 L54.9 15.2 L55.2 16.8 L56.0 16.8 L56.4 18.3 L59.6 18.3 L60.0 19.8 L61.2 19.8 L61.6 18.3 L62.0 19.8 L63.6 19.8 L64.0 21.4 L64.4 22.9 L64.8 22.9 L65.1 24.4 L65.5 21.4 L66.3 21.4 L66.7 19.8 L67.1 21.4 L73.5 21.4 L73.9 22.9 L74.2 21.4 L74.6 22.9 L75.0 21.4 L75.4 21.4 L75.8 22.9 L77.0 22.9 L77.4 21.4 L77.8 22.9 L84.1 22.9 L84.5 24.4 L85.7 24.4 L86.1 22.9 L86.5 24.4 L90.1 24.4 L90.5 25.9 L90.9 24.4 L91.3 25.9 L91.7 24.4 L92.1 24.4 L92.5 25.9 L98.0 25.9 L98.4 27.5 L99.6 27.5 L100.0 25.9 L100.4 27.5 L104.7 27.5 L105.1 29.0 L105.5 27.5 L108.7 27.5 L109.1 25.9 L109.5 25.9 L109.9 24.4 L110.3 24.4 L111.1 21.4 L113.0 21.4 L113.4 19.8 L117.0 19.8 L117.0 32 Z"/><path d="M4.2 9.1 L4.6 7.6 L5.0 7.6 L5.4 9.1 L7.4 9.1 L7.8 10.6 L8.5 10.6 L8.9 12.2 L10.1 12.2 L10.5 13.7 L13.3 13.7 L13.7 15.2 L15.3 15.2 L15.7 16.8 L17.2 16.8 L17.6 18.3 L20.4 18.3 L20.8 19.8 L24.4 19.8 L24.8 21.4 L29.1 21.4 L29.5 19.8 L30.3 19.8 L31.1 16.8 L31.9 16.8 L32.3 15.2 L32.7 13.7 L33.1 12.2 L33.5 12.2 L33.9 10.6 L34.7 10.6 L35.1 7.6 L35.5 6.1 L35.9 4.5 L36.2 6.1 L36.6 4.5 L37.0 6.1 L38.2 6.1 L38.6 4.5 L39.0 6.1 L40.6 6.1 L41.0 3.0 L42.6 3.0 L43.0 4.5 L44.2 4.5 L44.6 6.1 L45.8 6.1 L46.1 7.6 L47.3 7.6 L47.7 9.1 L49.3 9.1 L49.7 10.6 L50.9 10.6 L51.3 12.2 L52.5 12.2 L52.9 13.7 L53.7 13.7 L54.1 15.2 L54.9 15.2 L55.2 16.8 L56.0 16.8 L56.4 18.3 L59.6 18.3 L60.0 19.8 L61.2 19.8 L61.6 18.3 L62.0 19.8 L63.6 19.8 L64.0 21.4 L64.4 22.9 L64.8 22.9 L65.1 24.4 L65.5 21.4 L66.3 21.4 L66.7 19.8 L67.1 21.4 M73.5 21.4 L73.9 22.9 L74.2 21.4 L74.6 22.9 L75.0 21.4 L75.4 21.4 L75.8 22.9 L77.0 22.9 L77.4 21.4 L77.8 22.9 M84.1 22.9 L84.5 24.4 L85.7 24.4 L86.1 22.9 L86.5 24.4 L90.1 24.4 L90.5 25.9 L90.9 24.4 L91.3 25.9 L91.7 24.4 L92.1 24.4 L92.5 25.9 M98.0 25.9 L98.4 27.5 L99.6 27.5 L100.0 25.9 L100.4 27.5 L104.7 27.5 L105.1 29.0 L105.5 27.5 L108.7 27.5 L109.1 25.9 L109.5 25.9 L109.9 24.4 L110.3 24.4 L111.1 21.4 L113.0 21.4 L113.4 19.8 L117.0 19.8"/><circle cx="117.0" cy="19.8" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="demo" title="Normalwert aus dem Demomodell">±0,0 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,6 K</dd></div><div><dt>Ø 24 h</dt><dd>22,5 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:45">Fr 16:45</dd></div></dl><a class="more" href="#heuer-woerthersee">Verlauf heuer →</a></li><li class="card" id="see-klopeiner_see" data-key="klopeiner_see" data-name="Klopeiner See" data-jetzt="22.5" data-abw="-0.5"><div class="card-top"><h3>Klopeiner See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Klopeiner See als Favorit merken">☆</button></div><div class="card-now"><span class="big">22,5<span class="unit">°C</span></span><span class="badge b-warm">badewarm</span></div><a class="spark-link" href="#verlauf" data-lake="klopeiner_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,7 bis 23,7 °C"><path class="area" d="M7.0 32 L7.0 8.2 L7.4 9.5 L8.1 9.5 L8.5 10.8 L9.3 10.8 L10.1 13.4 L10.5 13.4 L10.9 14.7 L11.3 14.7 L11.7 16.0 L12.9 16.0 L13.3 17.3 L14.1 17.3 L14.5 18.6 L15.7 18.6 L16.1 19.9 L17.6 19.9 L18.0 21.2 L18.8 21.2 L19.2 22.5 L24.4 22.5 L24.8 23.8 L25.2 23.8 L25.6 22.5 L26.0 23.8 L30.7 23.8 L31.1 22.5 L31.5 22.5 L31.9 21.2 L33.9 21.2 L35.5 16.0 L35.9 14.7 L36.2 12.1 L36.6 12.1 L37.0 9.5 L37.4 8.2 L37.8 6.9 L38.2 8.2 L38.6 6.9 L39.8 6.9 L40.6 4.3 L42.6 4.3 L43.0 3.0 L44.2 3.0 L45.0 5.6 L45.4 9.5 L46.1 14.7 L47.7 14.7 L48.1 16.0 L48.9 16.0 L49.3 17.3 L50.5 17.3 L50.9 18.6 L52.1 18.6 L52.5 19.9 L54.1 19.9 L54.5 21.2 L56.4 21.2 L56.8 22.5 L65.5 22.5 L65.9 23.8 L67.9 23.8 L68.3 26.4 L69.1 23.8 L79.4 23.8 L79.8 25.1 L87.7 25.1 L88.1 26.4 L90.9 26.4 L91.3 27.7 L92.9 27.7 L93.2 26.4 L93.6 27.7 L94.0 26.4 L95.2 26.4 L95.6 27.7 L103.1 27.7 L103.5 29.0 L107.5 29.0 L107.9 27.7 L108.3 27.7 L108.7 29.0 L109.1 27.7 L111.5 27.7 L111.9 26.4 L112.6 26.4 L113.0 25.1 L113.8 25.1 L114.2 23.8 L114.6 23.8 L115.0 22.5 L115.4 22.5 L115.8 21.2 L116.2 21.2 L117.0 18.6 L117.0 32 Z"/><path d="M7.0 8.2 L7.4 9.5 L8.1 9.5 L8.5 10.8 L9.3 10.8 L10.1 13.4 L10.5 13.4 L10.9 14.7 L11.3 14.7 L11.7 16.0 L12.9 16.0 L13.3 17.3 L14.1 17.3 L14.5 18.6 L15.7 18.6 L16.1 19.9 L17.6 19.9 L18.0 21.2 L18.8 21.2 L19.2 22.5 M24.4 22.5 L24.8 23.8 L25.2 23.8 L25.6 22.5 L26.0 23.8 L30.7 23.8 L31.1 22.5 L31.5 22.5 L31.9 21.2 L33.9 21.2 L35.5 16.0 L35.9 14.7 L36.2 12.1 L36.6 12.1 L37.0 9.5 L37.4 8.2 L37.8 6.9 L38.2 8.2 L38.6 6.9 L39.8 6.9 L40.6 4.3 L42.6 4.3 L43.0 3.0 L44.2 3.0 L45.0 5.6 L45.4 9.5 L46.1 14.7 L47.7 14.7 L48.1 16.0 L48.9 16.0 L49.3 17.3 L50.5 17.3 L50.9 18.6 L52.1 18.6 L52.5 19.9 L54.1 19.9 L54.5 21.2 L56.4 21.2 L56.8 22.5 M65.5 22.5 L65.9 23.8 L67.9 23.8 L68.3 26.4 L69.1 23.8 M79.4 23.8 L79.8 25.1 M87.7 25.1 L88.1 26.4 L90.9 26.4 L91.3 27.7 L92.9 27.7 L93.2 26.4 L93.6 27.7 L94.0 26.4 L95.2 26.4 L95.6 27.7 M103.1 27.7 L103.5 29.0 L107.5 29.0 L107.9 27.7 L108.3 27.7 L108.7 29.0 L109.1 27.7 L111.5 27.7 L111.9 26.4 L112.6 26.4 L113.0 25.1 L113.8 25.1 L114.2 23.8 L114.6 23.8 L115.0 22.5 L115.4 22.5 L115.8 21.2 L116.2 21.2 L117.0 18.6"/><circle cx="117.0" cy="18.6" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,5 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,7 K</dd></div><div><dt>Ø 24 h</dt><dd>21,9 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-klopeiner_see">Verlauf heuer →</a></li><li class="card" id="see-millstaetter_see" data-key="millstaetter_see" data-name="Millstätter See" data-jetzt="22.4" data-abw="0.4"><div class="card-top"><h3>Millstätter See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Millstätter See als Favorit merken">☆</button></div><div class="card-now"><span class="big">22,4<span class="unit">°C</span></span><span class="badge b-warm">badewarm</span></div><a class="spark-link" href="#verlauf" data-lake="millstaetter_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,3 bis 23,8 °C"><path class="area" d="M5.8 32 L5.8 7.2 L6.2 8.2 L7.4 8.2 L7.8 9.2 L8.9 12.4 L9.7 12.4 L10.1 13.4 L10.5 14.4 L10.9 14.4 L11.3 15.5 L12.1 15.5 L12.5 16.5 L12.9 16.5 L13.3 17.6 L14.1 17.6 L14.5 18.6 L15.3 18.6 L15.7 19.6 L16.1 19.6 L16.5 20.7 L17.2 20.7 L17.6 21.7 L18.8 21.7 L19.2 22.8 L19.6 22.8 L20.0 23.8 L26.8 23.8 L27.1 24.8 L28.3 24.8 L28.7 23.8 L31.1 23.8 L31.5 22.8 L32.3 20.7 L33.1 20.7 L33.5 18.6 L34.7 18.6 L35.1 16.5 L35.5 16.5 L35.9 15.5 L36.2 15.5 L36.6 14.4 L37.0 13.4 L37.4 10.3 L38.2 10.3 L38.6 7.2 L39.0 5.1 L39.4 6.1 L39.8 4.0 L40.2 3.0 L40.6 4.0 L41.0 4.0 L41.4 3.0 L41.8 4.0 L43.0 4.0 L43.4 5.1 L43.8 8.2 L44.2 9.2 L44.6 9.2 L45.0 8.2 L45.4 8.2 L45.8 7.2 L46.1 8.2 L47.3 8.2 L47.7 12.4 L50.1 12.4 L50.5 13.4 L50.9 13.4 L51.3 14.4 L51.7 15.5 L52.1 14.4 L52.5 14.4 L52.9 15.5 L54.1 15.5 L54.5 16.5 L55.2 16.5 L55.6 17.6 L56.8 17.6 L57.2 18.6 L57.6 18.6 L58.0 19.6 L58.4 19.6 L58.8 20.7 L60.4 20.7 L60.8 21.7 L63.2 21.7 L63.6 22.8 L64.4 22.8 L64.8 21.7 L67.9 21.7 L68.3 22.8 L69.5 22.8 L69.9 21.7 L70.3 22.8 L72.3 22.8 L72.7 23.8 L76.2 23.8 L76.6 22.8 L77.0 23.8 L80.2 23.8 L80.6 24.8 L83.0 24.8 L83.4 25.9 L84.5 25.9 L84.9 26.9 L87.7 26.9 L88.1 28.0 L88.5 28.0 L88.9 26.9 L90.9 26.9 L91.3 28.0 L98.8 28.0 L99.2 29.0 L99.6 29.0 L100.0 28.0 L102.0 28.0 L102.4 29.0 L105.1 29.0 L105.5 28.0 L105.9 29.0 L107.5 29.0 L107.9 26.9 L109.1 26.9 L109.5 24.8 L110.7 24.8 L111.1 23.8 L112.2 23.8 L112.6 21.7 L113.4 19.6 L113.8 17.6 L114.2 16.5 L114.6 14.4 L115.4 14.4 L116.2 16.5 L116.6 16.5 L117.0 17.6 L117.0 32 Z"/><path d="M5.8 7.2 L6.2 8.2 L7.4 8.2 L7.8 9.2 L8.9 12.4 L9.7 12.4 L10.1 13.4 L10.5 14.4 L10.9 14.4 L11.3 15.5 L12.1 15.5 L12.5 16.5 L12.9 16.5 L13.3 17.6 L14.1 17.6 L14.5 18.6 L15.3 18.6 L15.7 19.6 L16.1 19.6 L16.5 20.7 L17.2 20.7 L17.6 21.7 L18.8 21.7 L19.2 22.8 L19.6 22.8 L20.0 23.8 M26.8 23.8 L27.1 24.8 L28.3 24.8 L28.7 23.8 L31.1 23.8 L31.5 22.8 L32.3 20.7 L33.1 20.7 L33.5 18.6 L34.7 18.6 L35.1 16.5 L35.5 16.5 L35.9 15.5 L36.2 15.5 L36.6 14.4 L37.0 13.4 L37.4 10.3 L38.2 10.3 L38.6 7.2 L39.0 5.1 L39.4 6.1 L39.8 4.0 L40.2 3.0 L40.6 4.0 L41.0 4.0 L41.4 3.0 L41.8 4.0 L43.0 4.0 L43.4 5.1 L43.8 8.2 L44.2 9.2 L44.6 9.2 L45.0 8.2 L45.4 8.2 L45.8 7.2 L46.1 8.2 L47.3 8.2 L47.7 12.4 L50.1 12.4 L50.5 13.4 L50.9 13.4 L51.3 14.4 L51.7 15.5 L52.1 14.4 L52.5 14.4 L52.9 15.5 L54.1 15.5 L54.5 16.5 L55.2 16.5 L55.6 17.6 L56.8 17.6 L57.2 18.6 L57.6 18.6 L58.0 19.6 L58.4 19.6 L58.8 20.7 L60.4 20.7 L60.8 21.7 L63.2 21.7 L63.6 22.8 L64.4 22.8 L64.8 21.7 L67.9 21.7 L68.3 22.8 L69.5 22.8 L69.9 21.7 L70.3 22.8 L72.3 22.8 L72.7 23.8 L76.2 23.8 L76.6 22.8 L77.0 23.8 L80.2 23.8 L80.6 24.8 L83.0 24.8 L83.4 25.9 L84.5 25.9 L84.9 26.9 L87.7 26.9 L88.1 28.0 L88.5 28.0 L88.9 26.9 L90.9 26.9 L91.3 28.0 M98.8 28.0 L99.2 29.0 L99.6 29.0 L100.0 28.0 L102.0 28.0 L102.4 29.0 L105.1 29.0 L105.5 28.0 L105.9 29.0 L107.5 29.0 L107.9 26.9 L109.1 26.9 L109.5 24.8 L110.7 24.8 L111.1 23.8 L112.2 23.8 L112.6 21.7 L113.4 19.6 L113.8 17.6 L114.2 16.5 L114.6 14.4 L115.4 14.4 L116.2 16.5 L116.6 16.5 L117.0 17.6"/><circle cx="117.0" cy="17.6" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="warm demo" title="Normalwert aus dem Demomodell">+0,4 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,8 K</dd></div><div><dt>Ø 24 h</dt><dd>21,7 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-millstaetter_see">Verlauf heuer →</a></li><li class="card" id="see-keutschacher_see" data-key="keutschacher_see" data-name="Keutschacher See" data-jetzt="22.2" data-abw="-0.5"><div class="card-top"><h3>Keutschacher See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Keutschacher See als Favorit merken">☆</button></div><div class="card-now"><span class="big">22,2<span class="unit">°C</span></span><span class="badge b-warm">badewarm</span></div><a class="spark-link" href="#verlauf" data-lake="keutschacher_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,5 bis 23,3 °C"><path class="area" d="M4.2 32 L4.2 14.6 L7.0 14.6 L7.4 13.1 L7.8 13.1 L8.1 14.6 L10.1 14.6 L10.5 16.0 L13.7 16.0 L14.1 17.4 L16.5 17.4 L16.9 18.9 L20.4 18.9 L20.8 20.3 L24.4 20.3 L24.8 21.8 L28.3 21.8 L28.7 21.8 L29.1 20.3 L29.5 20.3 L29.9 18.9 L31.5 18.9 L31.9 17.4 L33.1 17.4 L33.5 16.0 L34.3 16.0 L34.7 14.6 L35.1 11.7 L35.5 10.2 L35.9 10.2 L36.6 4.4 L37.0 3.0 L37.8 3.0 L38.2 7.3 L38.6 10.2 L39.0 11.7 L40.2 11.7 L40.6 13.1 L41.0 13.1 L41.4 11.7 L43.8 11.7 L44.2 13.1 L45.4 13.1 L45.8 11.7 L49.7 11.7 L50.1 13.1 L51.3 13.1 L51.7 14.6 L52.9 14.6 L53.3 16.0 L54.9 16.0 L55.2 17.4 L56.8 17.4 L57.2 18.9 L60.4 18.9 L60.8 20.3 L64.4 20.3 L64.8 21.8 L72.7 21.8 L73.1 23.2 L83.0 23.2 L83.4 24.7 L88.9 24.7 L89.3 26.1 L95.6 26.1 L96.0 27.6 L103.5 27.6 L103.9 29.0 L104.3 29.0 L104.7 27.6 L106.3 27.6 L106.7 26.1 L109.1 26.1 L109.5 24.7 L111.5 24.7 L111.9 23.2 L113.0 23.2 L113.4 21.8 L115.8 21.8 L116.2 18.9 L116.6 20.3 L117.0 18.9 L117.0 32 Z"/><path d="M4.2 14.6 L7.0 14.6 L7.4 13.1 L7.8 13.1 L8.1 14.6 L10.1 14.6 L10.5 16.0 L13.7 16.0 L14.1 17.4 L16.5 17.4 L16.9 18.9 L20.4 18.9 L20.8 20.3 L24.4 20.3 L24.8 21.8 L28.3 21.8 L28.7 21.8 L29.1 20.3 L29.5 20.3 L29.9 18.9 L31.5 18.9 L31.9 17.4 L33.1 17.4 L33.5 16.0 L34.3 16.0 L34.7 14.6 L35.1 11.7 L35.5 10.2 L35.9 10.2 L36.6 4.4 L37.0 3.0 L37.8 3.0 L38.2 7.3 L38.6 10.2 L39.0 11.7 L40.2 11.7 L40.6 13.1 L41.0 13.1 L41.4 11.7 L43.8 11.7 L44.2 13.1 L45.4 13.1 L45.8 11.7 L49.7 11.7 L50.1 13.1 L51.3 13.1 L51.7 14.6 L52.9 14.6 L53.3 16.0 L54.9 16.0 L55.2 17.4 L56.8 17.4 L57.2 18.9 L60.4 18.9 L60.8 20.3 L64.4 20.3 L64.8 21.8 M72.7 21.8 L73.1 23.2 M83.0 23.2 L83.4 24.7 M88.9 24.7 L89.3 26.1 M95.6 26.1 L96.0 27.6 M103.5 27.6 L103.9 29.0 L104.3 29.0 L104.7 27.6 L106.3 27.6 L106.7 26.1 L109.1 26.1 L109.5 24.7 L111.5 24.7 L111.9 23.2 L113.0 23.2 L113.4 21.8 L115.8 21.8 L116.2 18.9 L116.6 20.3 L117.0 18.9"/><circle cx="117.0" cy="18.9" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,5 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,6 K</dd></div><div><dt>Ø 24 h</dt><dd>21,8 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:00">Fr 16:00</dd></div></dl><a class="more" href="#heuer-keutschacher_see">Verlauf heuer →</a></li><li class="card" id="see-maltschacher_see" data-key="maltschacher_see" data-name="Maltschacher See" data-jetzt="22.1" data-abw="-0.4"><div class="card-top"><h3>Maltschacher See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Maltschacher See als Favorit merken">☆</button></div><div class="card-now"><span class="big">22,1<span class="unit">°C</span></span><span class="badge b-warm">badewarm</span></div><a class="spark-link" href="#verlauf" data-lake="maltschacher_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,0 bis 23,5 °C"><path class="area" d="M4.2 32 L4.2 6.1 L4.6 9.2 L5.0 10.3 L5.4 10.3 L5.8 8.2 L6.2 9.2 L6.6 11.3 L7.4 13.4 L7.8 12.4 L8.1 13.4 L8.5 12.4 L8.9 13.4 L9.7 11.3 L10.1 12.4 L10.5 12.4 L10.9 11.3 L11.3 12.4 L12.5 12.4 L12.9 13.4 L13.7 13.4 L14.1 14.4 L15.3 14.4 L15.7 15.5 L16.1 15.5 L16.5 16.5 L17.2 16.5 L17.6 17.6 L18.4 17.6 L18.8 18.6 L19.2 18.6 L19.6 19.6 L21.2 19.6 L21.6 20.7 L23.2 20.7 L23.6 21.7 L26.4 21.7 L26.8 22.8 L28.7 22.8 L29.1 21.7 L29.5 21.7 L29.9 20.7 L30.3 20.7 L31.1 18.6 L31.5 18.6 L32.3 16.5 L32.7 14.4 L33.1 16.5 L33.9 14.4 L34.3 16.5 L34.7 15.5 L35.1 14.4 L35.5 14.4 L35.9 10.3 L36.2 5.1 L36.6 11.3 L37.0 13.4 L37.4 11.3 L37.8 11.3 L38.2 10.3 L38.6 5.1 L39.0 8.2 L39.4 9.2 L39.8 8.2 L40.2 3.0 L40.6 5.1 L41.4 11.3 L41.8 13.4 L42.2 13.4 L42.6 14.4 L43.0 13.4 L43.4 11.3 L44.2 13.4 L44.6 12.4 L45.0 12.4 L45.4 11.3 L46.5 11.3 L46.9 10.3 L47.3 10.3 L47.7 9.2 L48.1 10.3 L48.9 10.3 L49.3 11.3 L49.7 11.3 L50.1 10.3 L50.5 11.3 L50.9 11.3 L51.3 12.4 L52.1 12.4 L52.5 13.4 L53.7 13.4 L54.1 14.4 L54.9 14.4 L55.2 15.5 L56.8 15.5 L57.2 16.5 L58.4 16.5 L58.8 17.6 L59.6 17.6 L60.0 18.6 L62.0 18.6 L62.4 19.6 L64.0 19.6 L64.8 21.7 L66.3 21.7 L66.7 22.8 L74.6 22.8 L75.0 23.8 L81.8 23.8 L82.2 24.8 L87.3 24.8 L87.7 25.9 L92.9 25.9 L93.2 26.9 L93.6 26.9 L94.0 25.9 L94.4 25.9 L94.8 26.9 L99.2 26.9 L99.6 28.0 L102.4 28.0 L102.8 29.0 L104.3 29.0 L104.7 28.0 L105.9 28.0 L106.3 26.9 L107.5 26.9 L107.9 25.9 L108.7 25.9 L109.5 23.8 L110.7 23.8 L111.1 22.8 L111.9 22.8 L112.2 21.7 L112.6 20.7 L113.0 16.5 L113.4 16.5 L114.2 18.6 L114.6 20.7 L115.0 18.6 L115.4 15.5 L115.8 14.4 L116.2 16.5 L116.6 16.5 L117.0 17.6 L117.0 32 Z"/><path d="M4.2 6.1 L4.6 9.2 L5.0 10.3 L5.4 10.3 L5.8 8.2 L6.2 9.2 L6.6 11.3 L7.4 13.4 L7.8 12.4 L8.1 13.4 L8.5 12.4 L8.9 13.4 L9.7 11.3 L10.1 12.4 L10.5 12.4 L10.9 11.3 L11.3 12.4 L12.5 12.4 L12.9 13.4 L13.7 13.4 L14.1 14.4 L15.3 14.4 L15.7 15.5 L16.1 15.5 L16.5 16.5 L17.2 16.5 L17.6 17.6 L18.4 17.6 L18.8 18.6 L19.2 18.6 L19.6 19.6 L21.2 19.6 L21.6 20.7 L23.2 20.7 L23.6 21.7 L26.4 21.7 L26.8 22.8 L28.7 22.8 L29.1 21.7 L29.5 21.7 L29.9 20.7 L30.3 20.7 L31.1 18.6 L31.5 18.6 L32.3 16.5 L32.7 14.4 L33.1 16.5 L33.9 14.4 L34.3 16.5 L34.7 15.5 L35.1 14.4 L35.5 14.4 L35.9 10.3 L36.2 5.1 L36.6 11.3 L37.0 13.4 L37.4 11.3 L37.8 11.3 L38.2 10.3 L38.6 5.1 L39.0 8.2 L39.4 9.2 L39.8 8.2 L40.2 3.0 L40.6 5.1 L41.4 11.3 L41.8 13.4 L42.2 13.4 L42.6 14.4 L43.0 13.4 L43.4 11.3 L44.2 13.4 L44.6 12.4 L45.0 12.4 L45.4 11.3 L46.5 11.3 L46.9 10.3 L47.3 10.3 L47.7 9.2 L48.1 10.3 L48.9 10.3 L49.3 11.3 L49.7 11.3 L50.1 10.3 L50.5 11.3 L50.9 11.3 L51.3 12.4 L52.1 12.4 L52.5 13.4 L53.7 13.4 L54.1 14.4 L54.9 14.4 L55.2 15.5 L56.8 15.5 L57.2 16.5 L58.4 16.5 L58.8 17.6 L59.6 17.6 L60.0 18.6 L62.0 18.6 L62.4 19.6 L64.0 19.6 L64.8 21.7 L66.3 21.7 L66.7 22.8 M74.6 22.8 L75.0 23.8 M81.8 23.8 L82.2 24.8 M87.3 24.8 L87.7 25.9 M92.9 25.9 L93.2 26.9 L93.6 26.9 L94.0 25.9 L94.4 25.9 L94.8 26.9 L99.2 26.9 L99.6 28.0 L102.4 28.0 L102.8 29.0 L104.3 29.0 L104.7 28.0 L105.9 28.0 L106.3 26.9 L107.5 26.9 L107.9 25.9 L108.7 25.9 L109.5 23.8 L110.7 23.8 L111.1 22.8 L111.9 22.8 L112.2 21.7 L112.6 20.7 L113.0 16.5 L113.4 16.5 L114.2 18.6 L114.6 20.7 L115.0 18.6 L115.4 15.5 L115.8 14.4 L116.2 16.5 L116.6 16.5 L117.0 17.6"/><circle cx="117.0" cy="17.6" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,4 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,9 K</dd></div><div><dt>Ø 24 h</dt><dd>21,5 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:00">Fr 16:00</dd></div></dl><a class="more" href="#heuer-maltschacher_see">Verlauf heuer →</a></li><li class="card" id="see-faaker_see" data-key="faaker_see" data-name="Faaker See" data-jetzt="21.9" data-abw="-0.4"><div class="card-top"><h3>Faaker See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Faaker See als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,9<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="faaker_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 20,7 bis 22,9 °C"><path class="area" d="M3.0 32 L3.0 8.9 L5.4 8.9 L5.8 10.1 L7.8 10.1 L8.1 11.3 L10.5 11.3 L10.9 12.5 L12.9 12.5 L13.3 13.6 L14.9 13.6 L15.3 14.8 L16.9 14.8 L17.2 16.0 L18.0 16.0 L18.4 17.2 L19.6 17.2 L20.0 18.4 L21.2 18.4 L21.6 19.5 L22.8 19.5 L23.2 20.7 L26.4 20.7 L26.8 19.5 L28.7 19.5 L29.1 18.4 L29.9 18.4 L30.3 17.2 L30.7 17.2 L31.1 16.0 L32.3 12.5 L33.1 12.5 L33.5 11.3 L33.9 10.1 L35.1 6.5 L35.5 6.5 L35.9 5.4 L36.2 4.2 L36.6 5.4 L37.4 5.4 L37.8 4.2 L38.2 5.4 L38.6 4.2 L39.8 4.2 L40.2 3.0 L41.0 3.0 L41.4 4.2 L42.2 4.2 L42.6 5.4 L43.8 5.4 L44.2 6.5 L46.1 6.5 L46.5 7.7 L47.3 7.7 L47.7 8.9 L48.9 8.9 L49.3 10.1 L50.1 10.1 L50.5 11.3 L51.3 11.3 L51.7 12.5 L52.1 12.5 L52.5 13.6 L52.9 13.6 L53.7 16.0 L54.1 17.2 L55.2 17.2 L55.6 18.4 L56.4 18.4 L56.8 19.5 L58.4 19.5 L58.8 20.7 L60.0 20.7 L60.4 21.9 L63.6 21.9 L64.0 23.1 L69.5 23.1 L69.9 24.3 L70.3 24.3 L70.7 23.1 L71.1 24.3 L78.6 24.3 L79.0 25.5 L84.5 25.5 L84.9 26.6 L92.1 26.6 L92.5 27.8 L101.6 27.8 L102.0 29.0 L102.8 29.0 L103.1 27.8 L104.7 27.8 L105.1 26.6 L105.5 26.6 L105.9 25.5 L106.3 25.5 L107.1 23.1 L107.5 21.9 L107.9 21.9 L108.3 20.7 L109.1 20.7 L109.9 18.4 L110.3 16.0 L110.7 16.0 L111.1 13.6 L111.9 11.3 L114.2 11.3 L114.6 12.5 L115.8 12.5 L116.2 13.6 L116.6 13.6 L117.0 14.8 L117.0 32 Z"/><path d="M3.0 8.9 L5.4 8.9 L5.8 10.1 L7.8 10.1 L8.1 11.3 L10.5 11.3 L10.9 12.5 L12.9 12.5 L13.3 13.6 L14.9 13.6 L15.3 14.8 L16.9 14.8 L17.2 16.0 L18.0 16.0 L18.4 17.2 L19.6 17.2 L20.0 18.4 L21.2 18.4 L21.6 19.5 L22.8 19.5 L23.2 20.7 L26.4 20.7 L26.8 19.5 L28.7 19.5 L29.1 18.4 L29.9 18.4 L30.3 17.2 L30.7 17.2 L31.1 16.0 L32.3 12.5 L33.1 12.5 L33.5 11.3 L33.9 10.1 L35.1 6.5 L35.5 6.5 L35.9 5.4 L36.2 4.2 L36.6 5.4 L37.4 5.4 L37.8 4.2 L38.2 5.4 L38.6 4.2 L39.8 4.2 L40.2 3.0 L41.0 3.0 L41.4 4.2 L42.2 4.2 L42.6 5.4 L43.8 5.4 L44.2 6.5 L46.1 6.5 L46.5 7.7 L47.3 7.7 L47.7 8.9 L48.9 8.9 L49.3 10.1 L50.1 10.1 L50.5 11.3 L51.3 11.3 L51.7 12.5 L52.1 12.5 L52.5 13.6 L52.9 13.6 L53.7 16.0 L54.1 17.2 L55.2 17.2 L55.6 18.4 L56.4 18.4 L56.8 19.5 L58.4 19.5 L58.8 20.7 L60.0 20.7 L60.4 21.9 L63.6 21.9 L64.0 23.1 M69.5 23.1 L69.9 24.3 L70.3 24.3 L70.7 23.1 L71.1 24.3 M78.6 24.3 L79.0 25.5 M84.5 25.5 L84.9 26.6 M92.1 26.6 L92.5 27.8 M101.6 27.8 L102.0 29.0 L102.8 29.0 L103.1 27.8 L104.7 27.8 L105.1 26.6 L105.5 26.6 L105.9 25.5 L106.3 25.5 L107.1 23.1 L107.5 21.9 L107.9 21.9 L108.3 20.7 L109.1 20.7 L109.9 18.4 L110.3 16.0 L110.7 16.0 L111.1 13.6 L111.9 11.3 L114.2 11.3 L114.6 12.5 L115.8 12.5 L116.2 13.6 L116.6 13.6 L117.0 14.8"/><circle cx="117.0" cy="14.8" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,4 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,5 K</dd></div><div><dt>Ø 24 h</dt><dd>21,4 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:45">Fr 16:45</dd></div></dl><a class="more" href="#heuer-faaker_see">Verlauf heuer →</a></li><li class="card" id="see-laengsee" data-key="laengsee" data-name="Längsee" data-jetzt="21.9" data-abw="-0.1"><div class="card-top"><h3>Längsee</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Längsee als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,9<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="laengsee"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,2 bis 22,4 °C"><path class="area" d="M3.4 32 L3.4 3.0 L3.8 5.2 L4.6 5.2 L5.0 7.3 L6.2 7.3 L6.6 9.5 L7.8 9.5 L8.1 11.7 L8.9 11.7 L9.3 13.8 L9.7 11.7 L12.9 11.7 L13.3 13.8 L14.9 13.8 L15.3 16.0 L18.8 16.0 L19.2 18.2 L22.4 18.2 L22.8 20.3 L28.3 20.3 L28.7 18.2 L29.1 18.2 L29.1 16.0 L29.5 16.0 L29.9 13.8 L30.3 16.0 L30.7 11.7 L31.1 13.8 L31.5 11.7 L31.9 11.7 L32.3 9.5 L33.5 9.5 L33.9 7.3 L34.7 7.3 L35.1 5.2 L35.9 5.2 L36.2 3.0 L36.6 3.0 L37.0 5.2 L37.4 5.2 L37.8 7.3 L39.0 7.3 L39.4 5.2 L41.0 5.2 L41.4 7.3 L42.2 7.3 L42.6 9.5 L43.8 9.5 L44.2 11.7 L45.4 11.7 L45.8 13.8 L48.1 13.8 L48.5 11.7 L49.7 11.7 L50.5 7.3 L51.7 7.3 L52.1 9.5 L54.5 9.5 L54.9 11.7 L57.2 11.7 L57.6 13.8 L61.2 13.8 L61.6 16.0 L64.0 16.0 L64.4 18.2 L66.3 18.2 L66.7 20.3 L77.4 20.3 L77.8 22.5 L84.1 22.5 L84.5 24.7 L90.5 24.7 L90.9 26.8 L96.8 26.8 L97.2 29.0 L108.7 29.0 L109.1 26.8 L109.5 26.8 L110.7 20.3 L111.1 20.3 L111.5 18.2 L111.9 16.0 L112.2 13.8 L114.6 13.8 L114.6 16.0 L115.4 16.0 L115.8 13.8 L117.0 13.8 L117.0 32 Z"/><path d="M3.4 3.0 L3.8 5.2 L4.6 5.2 L5.0 7.3 L6.2 7.3 L6.6 9.5 L7.8 9.5 L8.1 11.7 L8.9 11.7 L9.3 13.8 L9.7 11.7 L12.9 11.7 L13.3 13.8 L14.9 13.8 L15.3 16.0 L18.8 16.0 L19.2 18.2 L22.4 18.2 L22.8 20.3 M28.3 20.3 L28.7 18.2 L29.1 18.2 L29.1 16.0 L29.5 16.0 L29.9 13.8 L30.3 16.0 L30.7 11.7 L31.1 13.8 L31.5 11.7 L31.9 11.7 L32.3 9.5 L33.5 9.5 L33.9 7.3 L34.7 7.3 L35.1 5.2 L35.9 5.2 L36.2 3.0 L36.6 3.0 L37.0 5.2 L37.4 5.2 L37.8 7.3 L39.0 7.3 L39.4 5.2 L41.0 5.2 L41.4 7.3 L42.2 7.3 L42.6 9.5 L43.8 9.5 L44.2 11.7 L45.4 11.7 L45.8 13.8 L48.1 13.8 L48.5 11.7 L49.7 11.7 L50.5 7.3 L51.7 7.3 L52.1 9.5 L54.5 9.5 L54.9 11.7 L57.2 11.7 L57.6 13.8 L61.2 13.8 L61.6 16.0 L64.0 16.0 L64.4 18.2 L66.3 18.2 L66.7 20.3 M77.4 20.3 L77.8 22.5 M84.1 22.5 L84.5 24.7 M90.5 24.7 L90.9 26.8 M96.8 26.8 L97.2 29.0 M108.7 29.0 L109.1 26.8 L109.5 26.8 L110.7 20.3 L111.1 20.3 L111.5 18.2 L111.9 16.0 L112.2 13.8 L114.6 13.8 L114.6 16.0 L115.4 16.0 L115.8 13.8 L117.0 13.8"/><circle cx="117.0" cy="13.8" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,1 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,4 K</dd></div><div><dt>Ø 24 h</dt><dd>21,6 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:30">Fr 16:30</dd></div></dl><a class="more" href="#heuer-laengsee">Verlauf heuer →</a></li><li class="card" id="see-ossiacher_see" data-key="ossiacher_see" data-name="Ossiacher See" data-jetzt="21.8" data-abw="-0.7"><div class="card-top"><h3>Ossiacher See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Ossiacher See als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,8<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="ossiacher_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 21,1 bis 22,6 °C"><path class="area" d="M3.0 32 L3.0 4.7 L3.4 6.5 L3.8 4.7 L4.2 6.5 L6.2 6.5 L6.6 8.2 L7.8 8.2 L8.1 9.9 L9.7 9.9 L10.1 11.7 L11.3 11.7 L11.7 9.9 L12.9 9.9 L13.3 11.7 L14.5 11.7 L14.9 13.4 L15.3 11.7 L15.7 11.7 L16.1 13.4 L22.4 13.4 L22.8 15.1 L27.5 15.1 L27.9 16.9 L28.3 15.1 L29.1 15.1 L29.5 13.4 L30.7 13.4 L31.1 11.7 L32.3 11.7 L32.7 9.9 L33.9 9.9 L34.3 8.2 L34.7 8.2 L35.1 6.5 L35.5 6.5 L35.9 8.2 L37.4 8.2 L37.8 4.7 L38.2 6.5 L39.0 6.5 L39.4 4.7 L39.8 6.5 L40.2 6.5 L41.0 3.0 L44.6 3.0 L45.0 4.7 L46.9 4.7 L47.3 6.5 L50.5 6.5 L50.9 8.2 L54.5 8.2 L54.9 9.9 L57.2 9.9 L57.6 11.7 L61.6 11.7 L62.0 13.4 L63.2 13.4 L63.6 15.1 L64.4 15.1 L64.8 16.9 L65.1 16.9 L65.5 15.1 L65.9 15.1 L66.3 16.9 L71.9 16.9 L72.3 18.6 L77.0 18.6 L77.4 20.3 L81.8 20.3 L82.2 22.1 L85.3 22.1 L85.7 23.8 L88.1 23.8 L88.5 25.5 L88.9 23.8 L89.3 25.5 L89.7 23.8 L90.1 25.5 L94.4 25.5 L94.8 27.3 L95.2 27.3 L95.6 25.5 L96.0 27.3 L97.2 27.3 L97.6 29.0 L99.2 29.0 L99.6 27.3 L100.4 27.3 L100.8 29.0 L102.8 29.0 L103.1 27.3 L103.5 27.3 L103.9 25.5 L104.3 27.3 L106.3 27.3 L106.7 25.5 L107.1 23.8 L107.5 23.8 L107.9 22.1 L108.3 22.1 L108.7 20.3 L110.7 20.3 L111.1 18.6 L111.9 18.6 L112.2 20.3 L112.6 18.6 L113.0 20.3 L113.4 18.6 L115.8 18.6 L116.2 16.9 L117.0 16.9 L117.0 32 Z"/><path d="M3.0 4.7 L3.4 6.5 L3.8 4.7 L4.2 6.5 L6.2 6.5 L6.6 8.2 L7.8 8.2 L8.1 9.9 L9.7 9.9 L10.1 11.7 L11.3 11.7 L11.7 9.9 L12.9 9.9 L13.3 11.7 L14.5 11.7 L14.9 13.4 L15.3 11.7 L15.7 11.7 L16.1 13.4 M22.4 13.4 L22.8 15.1 L27.5 15.1 L27.9 16.9 L28.3 15.1 L29.1 15.1 L29.5 13.4 L30.7 13.4 L31.1 11.7 L32.3 11.7 L32.7 9.9 L33.9 9.9 L34.3 8.2 L34.7 8.2 L35.1 6.5 L35.5 6.5 L35.9 8.2 L37.4 8.2 L37.8 4.7 L38.2 6.5 L39.0 6.5 L39.4 4.7 L39.8 6.5 L40.2 6.5 L41.0 3.0 L44.6 3.0 L45.0 4.7 L46.9 4.7 L47.3 6.5 L50.5 6.5 L50.9 8.2 L54.5 8.2 L54.9 9.9 L57.2 9.9 L57.6 11.7 L61.6 11.7 L62.0 13.4 L63.2 13.4 L63.6 15.1 L64.4 15.1 L64.8 16.9 L65.1 16.9 L65.5 15.1 L65.9 15.1 L66.3 16.9 M71.9 16.9 L72.3 18.6 L77.0 18.6 L77.4 20.3 L81.8 20.3 L82.2 22.1 L85.3 22.1 L85.7 23.8 L88.1 23.8 L88.5 25.5 L88.9 23.8 L89.3 25.5 L89.7 23.8 L90.1 25.5 L94.4 25.5 L94.8 27.3 L95.2 27.3 L95.6 25.5 L96.0 27.3 L97.2 27.3 L97.6 29.0 L99.2 29.0 L99.6 27.3 L100.4 27.3 L100.8 29.0 L102.8 29.0 L103.1 27.3 L103.5 27.3 L103.9 25.5 L104.3 27.3 L106.3 27.3 L106.7 25.5 L107.1 23.8 L107.5 23.8 L107.9 22.1 L108.3 22.1 L108.7 20.3 L110.7 20.3 L111.1 18.6 L111.9 18.6 L112.2 20.3 L112.6 18.6 L113.0 20.3 L113.4 18.6 L115.8 18.6 L116.2 16.9 L117.0 16.9"/><circle cx="117.0" cy="16.9" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,7 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,7 K</dd></div><div><dt>Ø 24 h</dt><dd>21,4 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:45">Fr 16:45</dd></div></dl><a class="more" href="#heuer-ossiacher_see">Verlauf heuer →</a></li><li class="card" id="see-turnersee" data-key="turnersee" data-name="Turnersee" data-jetzt="21.8" data-abw="-1.3"><div class="card-top"><h3>Turnersee</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Turnersee als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,8<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="turnersee"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 20,9 bis 23,9 °C"><path class="area" d="M6.6 32 L6.6 8.2 L7.0 9.1 L8.9 9.1 L9.3 9.9 L9.7 9.9 L10.1 10.8 L10.5 10.8 L10.9 11.7 L11.7 11.7 L12.1 12.5 L12.5 12.5 L12.9 13.4 L13.3 13.4 L13.7 14.3 L14.1 14.3 L14.5 15.1 L14.9 15.1 L15.3 16.0 L15.7 16.0 L16.1 16.9 L16.9 16.9 L17.2 17.7 L18.0 17.7 L18.4 18.6 L19.2 18.6 L19.6 19.5 L20.0 19.5 L20.4 20.3 L20.8 20.3 L21.2 21.2 L22.0 21.2 L22.4 22.1 L23.2 22.1 L23.6 22.9 L24.0 22.9 L24.4 23.8 L25.2 23.8 L25.6 24.7 L28.7 24.7 L29.1 23.8 L29.5 23.8 L29.9 22.9 L30.3 22.9 L30.7 22.1 L31.1 22.1 L31.5 21.2 L31.9 20.3 L32.3 20.3 L32.7 19.5 L33.1 19.5 L33.9 17.7 L34.3 17.7 L34.7 16.9 L36.2 13.4 L36.6 13.4 L37.0 12.5 L37.8 12.5 L38.2 11.7 L38.6 11.7 L39.8 9.1 L41.0 9.1 L41.4 8.2 L41.8 7.3 L42.2 5.6 L42.6 4.7 L43.0 3.9 L43.8 3.9 L44.2 3.0 L45.8 3.0 L46.1 3.9 L46.9 3.9 L47.3 4.7 L48.9 8.2 L49.3 9.1 L50.5 11.7 L50.9 11.7 L51.3 12.5 L51.7 12.5 L52.1 13.4 L52.5 12.5 L52.9 13.4 L53.3 13.4 L53.7 14.3 L54.1 14.3 L54.5 15.1 L54.9 15.1 L55.2 16.0 L55.6 16.0 L56.0 16.9 L56.4 16.9 L56.8 17.7 L57.2 17.7 L57.6 18.6 L58.0 18.6 L58.4 19.5 L58.8 19.5 L59.2 20.3 L60.4 20.3 L60.8 21.2 L61.6 21.2 L62.0 22.1 L63.6 22.1 L64.0 22.9 L67.5 22.9 L68.3 24.7 L68.7 24.7 L69.1 25.5 L71.5 25.5 L71.9 24.7 L72.7 24.7 L73.1 23.8 L74.2 23.8 L74.6 24.7 L77.4 24.7 L77.8 25.5 L78.2 25.5 L78.6 24.7 L79.4 24.7 L79.8 25.5 L83.8 25.5 L84.1 26.4 L88.5 26.4 L88.9 27.3 L92.1 27.3 L92.5 28.1 L98.8 28.1 L99.2 29.0 L107.9 29.0 L108.3 28.1 L109.1 28.1 L109.5 27.3 L110.7 27.3 L111.1 26.4 L111.9 26.4 L112.2 25.5 L112.6 24.7 L114.6 24.7 L115.0 23.8 L115.4 23.8 L115.8 22.9 L116.2 22.9 L116.6 22.1 L117.0 21.2 L117.0 32 Z"/><path d="M6.6 8.2 L7.0 9.1 L8.9 9.1 L9.3 9.9 L9.7 9.9 L10.1 10.8 L10.5 10.8 L10.9 11.7 L11.7 11.7 L12.1 12.5 L12.5 12.5 L12.9 13.4 L13.3 13.4 L13.7 14.3 L14.1 14.3 L14.5 15.1 L14.9 15.1 L15.3 16.0 L15.7 16.0 L16.1 16.9 L16.9 16.9 L17.2 17.7 L18.0 17.7 L18.4 18.6 L19.2 18.6 L19.6 19.5 L20.0 19.5 L20.4 20.3 L20.8 20.3 L21.2 21.2 L22.0 21.2 L22.4 22.1 L23.2 22.1 L23.6 22.9 L24.0 22.9 L24.4 23.8 L25.2 23.8 L25.6 24.7 L28.7 24.7 L29.1 23.8 L29.5 23.8 L29.9 22.9 L30.3 22.9 L30.7 22.1 L31.1 22.1 L31.5 21.2 L31.9 20.3 L32.3 20.3 L32.7 19.5 L33.1 19.5 L33.9 17.7 L34.3 17.7 L34.7 16.9 L36.2 13.4 L36.6 13.4 L37.0 12.5 L37.8 12.5 L38.2 11.7 L38.6 11.7 L39.8 9.1 L41.0 9.1 L41.4 8.2 L41.8 7.3 L42.2 5.6 L42.6 4.7 L43.0 3.9 L43.8 3.9 L44.2 3.0 L45.8 3.0 L46.1 3.9 L46.9 3.9 L47.3 4.7 L48.9 8.2 L49.3 9.1 L50.5 11.7 L50.9 11.7 L51.3 12.5 L51.7 12.5 L52.1 13.4 L52.5 12.5 L52.9 13.4 L53.3 13.4 L53.7 14.3 L54.1 14.3 L54.5 15.1 L54.9 15.1 L55.2 16.0 L55.6 16.0 L56.0 16.9 L56.4 16.9 L56.8 17.7 L57.2 17.7 L57.6 18.6 L58.0 18.6 L58.4 19.5 L58.8 19.5 L59.2 20.3 L60.4 20.3 L60.8 21.2 L61.6 21.2 L62.0 22.1 L63.6 22.1 L64.0 22.9 L67.5 22.9 L68.3 24.7 L68.7 24.7 L69.1 25.5 L71.5 25.5 L71.9 24.7 L72.7 24.7 L73.1 23.8 L74.2 23.8 L74.6 24.7 L77.4 24.7 L77.8 25.5 L78.2 25.5 L78.6 24.7 L79.4 24.7 L79.8 25.5 L83.8 25.5 L84.1 26.4 L88.5 26.4 L88.9 27.3 L92.1 27.3 L92.5 28.1 M98.8 28.1 L99.2 29.0 M107.9 29.0 L108.3 28.1 L109.1 28.1 L109.5 27.3 L110.7 27.3 L111.1 26.4 L111.9 26.4 L112.2 25.5 L112.6 24.7 L114.6 24.7 L115.0 23.8 L115.4 23.8 L115.8 22.9 L116.2 22.9 L116.6 22.1 L117.0 21.2"/><circle cx="117.0" cy="21.2" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−1,3 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−1,1 K</dd></div><div><dt>Ø 24 h</dt><dd>21,2 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-turnersee">Verlauf heuer →</a></li><li class="card" id="see-rauschele_see" data-key="rauschele_see" data-name="Rauschele See" data-jetzt="21.7" data-abw="-1.0"><div class="card-top"><h3>Rauschele See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Rauschele See als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,7<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="rauschele_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 20,8 bis 23,7 °C"><path class="area" d="M5.8 32 L5.8 6.6 L6.2 6.6 L6.6 7.5 L7.0 6.6 L7.4 8.4 L7.8 9.3 L8.1 9.3 L8.9 11.1 L9.3 12.0 L10.1 13.8 L10.5 13.8 L10.9 14.7 L11.7 14.7 L12.1 15.6 L12.5 15.6 L12.9 16.4 L13.3 16.4 L13.7 17.3 L14.1 17.3 L14.5 18.2 L15.7 18.2 L16.1 19.1 L16.9 19.1 L17.2 20.0 L18.4 20.0 L18.8 20.9 L20.4 20.9 L20.8 21.8 L23.2 21.8 L23.6 22.7 L26.0 22.7 L26.4 23.6 L27.1 23.6 L27.5 22.7 L27.9 22.7 L28.3 23.6 L29.1 23.6 L29.5 22.7 L29.9 22.7 L30.7 20.9 L31.1 20.9 L31.5 20.0 L31.9 19.1 L32.3 19.1 L32.7 17.3 L33.1 16.4 L33.5 15.6 L33.9 15.6 L34.3 13.8 L34.7 13.8 L35.5 12.0 L35.9 11.1 L36.2 9.3 L36.6 8.4 L37.0 8.4 L37.4 6.6 L38.2 4.8 L38.6 4.8 L39.0 5.7 L39.8 3.9 L40.2 4.8 L40.6 3.9 L41.0 3.9 L41.4 3.0 L41.8 3.0 L42.2 3.9 L42.6 6.6 L43.4 4.8 L43.8 6.6 L45.4 6.6 L45.8 8.4 L46.1 9.3 L46.5 11.1 L46.9 12.0 L48.1 12.0 L48.5 12.9 L48.9 12.9 L49.3 13.8 L49.7 13.8 L50.1 14.7 L50.5 14.7 L50.9 15.6 L51.3 15.6 L51.7 16.4 L52.1 16.4 L52.5 17.3 L53.3 17.3 L53.7 18.2 L54.1 18.2 L54.5 19.1 L55.6 19.1 L56.0 20.0 L57.2 20.0 L57.6 20.9 L59.2 20.9 L59.6 21.8 L60.0 21.8 L60.4 22.7 L65.9 22.7 L66.3 23.6 L73.9 23.6 L74.2 24.5 L74.6 23.6 L75.0 23.6 L75.4 24.5 L80.6 24.5 L81.0 25.4 L85.3 25.4 L85.7 26.3 L90.5 26.3 L90.9 27.2 L97.2 27.2 L97.6 28.1 L102.8 28.1 L103.1 29.0 L107.9 29.0 L108.7 27.2 L109.1 28.1 L110.3 28.1 L110.7 26.3 L111.1 26.3 L111.5 27.2 L111.9 25.4 L112.2 25.4 L112.6 22.7 L113.0 22.7 L113.4 23.6 L113.8 23.6 L114.2 22.7 L115.8 22.7 L116.2 21.8 L116.6 21.8 L117.0 20.9 L117.0 32 Z"/><path d="M5.8 6.6 L6.2 6.6 L6.6 7.5 L7.0 6.6 L7.4 8.4 L7.8 9.3 L8.1 9.3 L8.9 11.1 L9.3 12.0 L10.1 13.8 L10.5 13.8 L10.9 14.7 L11.7 14.7 L12.1 15.6 L12.5 15.6 L12.9 16.4 L13.3 16.4 L13.7 17.3 L14.1 17.3 L14.5 18.2 L15.7 18.2 L16.1 19.1 L16.9 19.1 L17.2 20.0 L18.4 20.0 L18.8 20.9 L20.4 20.9 L20.8 21.8 L23.2 21.8 L23.6 22.7 L26.0 22.7 L26.4 23.6 L27.1 23.6 L27.5 22.7 L27.9 22.7 L28.3 23.6 L29.1 23.6 L29.5 22.7 L29.9 22.7 L30.7 20.9 L31.1 20.9 L31.5 20.0 L31.9 19.1 L32.3 19.1 L32.7 17.3 L33.1 16.4 L33.5 15.6 L33.9 15.6 L34.3 13.8 L34.7 13.8 L35.5 12.0 L35.9 11.1 L36.2 9.3 L36.6 8.4 L37.0 8.4 L37.4 6.6 L38.2 4.8 L38.6 4.8 L39.0 5.7 L39.8 3.9 L40.2 4.8 L40.6 3.9 L41.0 3.9 L41.4 3.0 L41.8 3.0 L42.2 3.9 L42.6 6.6 L43.4 4.8 L43.8 6.6 L45.4 6.6 L45.8 8.4 L46.1 9.3 L46.5 11.1 L46.9 12.0 L48.1 12.0 L48.5 12.9 L48.9 12.9 L49.3 13.8 L49.7 13.8 L50.1 14.7 L50.5 14.7 L50.9 15.6 L51.3 15.6 L51.7 16.4 L52.1 16.4 L52.5 17.3 L53.3 17.3 L53.7 18.2 L54.1 18.2 L54.5 19.1 L55.6 19.1 L56.0 20.0 L57.2 20.0 L57.6 20.9 L59.2 20.9 L59.6 21.8 L60.0 21.8 L60.4 22.7 M65.9 22.7 L66.3 23.6 M73.9 23.6 L74.2 24.5 L74.6 23.6 L75.0 23.6 L75.4 24.5 M80.6 24.5 L81.0 25.4 L85.3 25.4 L85.7 26.3 L90.5 26.3 L90.9 27.2 M97.2 27.2 L97.6 28.1 M102.8 28.1 L103.1 29.0 L107.9 29.0 L108.7 27.2 L109.1 28.1 L110.3 28.1 L110.7 26.3 L111.1 26.3 L111.5 27.2 L111.9 25.4 L112.2 25.4 L112.6 22.7 L113.0 22.7 L113.4 23.6 L113.8 23.6 L114.2 22.7 L115.8 22.7 L116.2 21.8 L116.6 21.8 L117.0 20.9"/><circle cx="117.0" cy="20.9" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−1,0 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−1,1 K</dd></div><div><dt>Ø 24 h</dt><dd>21,2 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-rauschele_see">Verlauf heuer →</a></li><li class="card" id="see-pressegger_see" data-key="pressegger_see" data-name="Pressegger See" data-jetzt="21.1" data-abw="-2.3"><div class="card-top"><h3>Pressegger See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Pressegger See als Favorit merken">☆</button></div><div class="card-now"><span class="big">21,1<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="pressegger_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 18,6 bis 22,8 °C"><path class="area" d="M3.0 32 L3.0 6.7 L3.4 7.3 L3.8 7.3 L4.2 8.0 L4.6 8.0 L5.0 8.6 L5.4 8.6 L5.8 9.8 L6.2 9.8 L7.0 11.0 L7.4 11.0 L7.8 11.7 L8.1 11.7 L8.5 12.3 L8.9 12.3 L9.3 12.9 L9.7 13.5 L10.1 13.5 L10.5 14.1 L10.9 14.1 L11.7 15.4 L12.1 16.0 L12.5 16.0 L12.9 16.6 L13.3 16.6 L13.7 17.2 L14.1 17.2 L14.9 18.5 L15.3 18.5 L15.7 19.1 L16.1 19.1 L16.5 19.7 L16.9 19.7 L17.6 21.0 L18.0 21.0 L18.4 21.6 L19.6 21.6 L20.0 22.2 L20.4 22.2 L20.8 22.8 L23.6 22.8 L24.0 23.4 L25.6 23.4 L26.0 22.8 L26.8 22.8 L27.1 22.2 L27.5 21.6 L29.1 19.1 L29.5 18.5 L31.1 16.0 L31.5 14.1 L31.9 14.1 L32.3 12.9 L32.7 11.7 L33.1 11.0 L33.5 9.8 L33.9 9.8 L34.3 9.2 L35.1 8.0 L35.5 6.7 L35.9 4.2 L36.2 3.6 L36.6 3.6 L37.0 3.0 L37.4 3.6 L37.8 3.6 L38.2 4.2 L39.0 4.2 L39.4 4.9 L40.2 4.9 L40.6 4.2 L41.0 4.9 L41.4 4.9 L42.2 6.1 L42.6 6.7 L43.0 7.3 L43.4 7.3 L44.2 8.6 L44.6 8.6 L45.0 9.2 L45.4 9.8 L46.1 11.0 L46.5 12.3 L46.9 12.3 L47.3 13.5 L47.7 13.5 L48.5 14.8 L49.3 14.8 L49.7 15.4 L50.1 15.4 L50.5 16.0 L50.9 16.6 L51.3 16.6 L52.1 17.9 L53.3 17.9 L53.7 18.5 L54.1 19.1 L55.6 19.1 L56.4 20.3 L57.2 20.3 L57.6 21.0 L58.4 21.0 L58.8 21.6 L59.2 21.0 L60.4 21.0 L60.8 21.6 L62.0 21.6 L62.4 22.2 L63.6 22.2 L64.0 22.8 L65.9 22.8 L66.3 22.2 L69.5 22.2 L69.9 22.8 L75.8 22.8 L76.2 23.4 L81.4 23.4 L81.8 24.0 L83.0 24.0 L83.4 24.7 L84.1 24.7 L84.5 25.3 L84.9 25.9 L86.5 25.9 L86.9 26.5 L89.3 26.5 L89.7 27.1 L91.7 27.1 L92.1 27.8 L94.8 27.8 L95.2 28.4 L95.6 28.4 L96.0 27.8 L96.4 27.8 L96.8 28.4 L98.8 28.4 L99.2 29.0 L100.8 29.0 L101.2 28.4 L103.5 28.4 L103.9 27.8 L104.3 27.8 L104.7 27.1 L105.1 27.1 L105.5 26.5 L105.9 26.5 L106.7 25.3 L107.1 24.7 L107.5 22.8 L107.9 21.6 L108.3 19.7 L109.1 19.7 L109.5 19.1 L109.9 17.9 L110.3 17.2 L110.7 16.0 L111.1 15.4 L111.5 15.4 L111.9 14.8 L112.2 13.5 L112.6 11.7 L113.8 11.7 L114.2 12.3 L114.6 12.3 L115.0 11.7 L115.8 11.7 L116.2 12.3 L116.6 12.3 L117.0 13.5 L117.0 32 Z"/><path d="M3.0 6.7 L3.4 7.3 L3.8 7.3 L4.2 8.0 L4.6 8.0 L5.0 8.6 L5.4 8.6 L5.8 9.8 L6.2 9.8 L7.0 11.0 L7.4 11.0 L7.8 11.7 L8.1 11.7 L8.5 12.3 L8.9 12.3 L9.3 12.9 L9.7 13.5 L10.1 13.5 L10.5 14.1 L10.9 14.1 L11.7 15.4 L12.1 16.0 L12.5 16.0 L12.9 16.6 L13.3 16.6 L13.7 17.2 L14.1 17.2 L14.9 18.5 L15.3 18.5 L15.7 19.1 L16.1 19.1 L16.5 19.7 L16.9 19.7 L17.6 21.0 L18.0 21.0 L18.4 21.6 L19.6 21.6 L20.0 22.2 L20.4 22.2 L20.8 22.8 L23.6 22.8 L24.0 23.4 L25.6 23.4 L26.0 22.8 L26.8 22.8 L27.1 22.2 L27.5 21.6 L29.1 19.1 L29.5 18.5 L31.1 16.0 L31.5 14.1 L31.9 14.1 L32.3 12.9 L32.7 11.7 L33.1 11.0 L33.5 9.8 L33.9 9.8 L34.3 9.2 L35.1 8.0 L35.5 6.7 L35.9 4.2 L36.2 3.6 L36.6 3.6 L37.0 3.0 L37.4 3.6 L37.8 3.6 L38.2 4.2 L39.0 4.2 L39.4 4.9 L40.2 4.9 L40.6 4.2 L41.0 4.9 L41.4 4.9 L42.2 6.1 L42.6 6.7 L43.0 7.3 L43.4 7.3 L44.2 8.6 L44.6 8.6 L45.0 9.2 L45.4 9.8 L46.1 11.0 L46.5 12.3 L46.9 12.3 L47.3 13.5 L47.7 13.5 L48.5 14.8 L49.3 14.8 L49.7 15.4 L50.1 15.4 L50.5 16.0 L50.9 16.6 L51.3 16.6 L52.1 17.9 L53.3 17.9 L53.7 18.5 L54.1 19.1 L55.6 19.1 L56.4 20.3 L57.2 20.3 L57.6 21.0 L58.4 21.0 L58.8 21.6 L59.2 21.0 L60.4 21.0 L60.8 21.6 L62.0 21.6 L62.4 22.2 L63.6 22.2 L64.0 22.8 L65.9 22.8 L66.3 22.2 L69.5 22.2 L69.9 22.8 M75.8 22.8 L76.2 23.4 M81.4 23.4 L81.8 24.0 L83.0 24.0 L83.4 24.7 L84.1 24.7 L84.5 25.3 L84.9 25.9 L86.5 25.9 L86.9 26.5 L89.3 26.5 L89.7 27.1 L91.7 27.1 L92.1 27.8 L94.8 27.8 L95.2 28.4 L95.6 28.4 L96.0 27.8 L96.4 27.8 L96.8 28.4 L98.8 28.4 L99.2 29.0 L100.8 29.0 L101.2 28.4 L103.5 28.4 L103.9 27.8 L104.3 27.8 L104.7 27.1 L105.1 27.1 L105.5 26.5 L105.9 26.5 L106.7 25.3 L107.1 24.7 L107.5 22.8 L107.9 21.6 L108.3 19.7 L109.1 19.7 L109.5 19.1 L109.9 17.9 L110.3 17.2 L110.7 16.0 L111.1 15.4 L111.5 15.4 L111.9 14.8 L112.2 13.5 L112.6 11.7 L113.8 11.7 L114.2 12.3 L114.6 12.3 L115.0 11.7 L115.8 11.7 L116.2 12.3 L116.6 12.3 L117.0 13.5"/><circle cx="117.0" cy="13.5" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−2,3 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,9 K</dd></div><div><dt>Ø 24 h</dt><dd>19,7 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:45">Fr 16:45</dd></div></dl><a class="more" href="#heuer-pressegger_see">Verlauf heuer →</a></li><li class="card" id="see-weissensee" data-key="weissensee" data-name="Weißensee" data-jetzt="20.8" data-abw="2.1"><div class="card-top"><h3>Weißensee</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Weißensee als Favorit merken">☆</button></div><div class="card-now"><span class="big">20,8<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="weissensee"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 20,0 bis 21,7 °C"><path class="area" d="M3.4 32 L3.4 6.1 L5.0 9.1 L10.5 12.2 L11.3 13.7 L17.6 18.3 L24.0 21.4 L30.3 19.8 L30.3 13.7 L30.7 13.7 L31.1 12.2 L31.5 12.2 L31.9 9.1 L32.3 9.1 L32.7 16.8 L35.1 10.6 L36.2 13.7 L36.6 9.1 L37.4 6.1 L39.4 4.5 L40.6 7.6 L41.0 3.0 L42.6 3.0 L43.0 4.5 L48.1 9.1 L49.3 10.6 L50.9 13.7 L55.6 16.8 L62.0 19.8 L67.9 22.9 L68.3 21.4 L74.6 22.9 L81.0 22.9 L87.3 25.9 L100.0 29.0 L106.3 29.0 L106.7 27.5 L107.1 29.0 L110.7 25.9 L112.6 24.4 L112.6 16.8 L114.6 16.8 L115.0 18.3 L115.4 16.8 L115.8 15.2 L116.2 16.8 L117.0 16.8 L117.0 32 Z"/><path d="M3.4 6.1 L5.0 9.1 M10.5 12.2 L11.3 13.7 M17.6 18.3 M24.0 21.4 M30.3 19.8 L30.3 13.7 L30.7 13.7 L31.1 12.2 L31.5 12.2 L31.9 9.1 L32.3 9.1 L32.7 16.8 L35.1 10.6 L36.2 13.7 L36.6 9.1 L37.4 6.1 L39.4 4.5 L40.6 7.6 L41.0 3.0 L42.6 3.0 L43.0 4.5 M48.1 9.1 L49.3 10.6 L50.9 13.7 L55.6 16.8 M62.0 19.8 M67.9 22.9 L68.3 21.4 M74.6 22.9 M81.0 22.9 M87.3 25.9 M100.0 29.0 M106.3 29.0 L106.7 27.5 L107.1 29.0 L110.7 25.9 L112.6 24.4 L112.6 16.8 L114.6 16.8 L115.0 18.3 L115.4 16.8 L115.8 15.2 L116.2 16.8 L117.0 16.8"/><circle cx="117.0" cy="16.8" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="warm demo" title="Normalwert aus dem Demomodell">+2,1 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,5 K</dd></div><div><dt>Ø 24 h</dt><dd>20,4 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:45">Fr 16:45</dd></div></dl><a class="more" href="#heuer-weissensee">Verlauf heuer →</a></li><li class="card" id="see-brennsee" data-key="brennsee" data-name="Feldsee (Brennsee)" data-jetzt="20.5" data-abw="-0.1"><div class="card-top"><h3>Feldsee (Brennsee)</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Feldsee (Brennsee) als Favorit merken">☆</button></div><div class="card-now"><span class="big">20,5<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="brennsee"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 19,9 bis 22,1 °C"><path class="area" d="M6.2 32 L6.2 10.1 L7.0 12.5 L7.4 12.5 L7.8 13.6 L9.3 13.6 L9.7 14.8 L10.9 14.8 L11.3 16.0 L13.3 16.0 L13.7 17.2 L14.1 16.0 L14.5 17.2 L16.1 17.2 L16.5 18.4 L19.6 18.4 L20.0 19.5 L21.6 19.5 L22.0 20.7 L24.8 20.7 L25.2 21.9 L26.4 21.9 L26.8 23.1 L27.1 21.9 L27.5 23.1 L30.3 23.1 L30.7 21.9 L31.5 21.9 L31.9 20.7 L32.7 20.7 L33.1 19.5 L33.5 18.4 L35.1 18.4 L35.5 17.2 L35.9 14.8 L36.6 14.8 L37.0 13.6 L37.4 14.8 L37.8 7.7 L38.2 7.7 L38.6 6.5 L39.0 7.7 L39.8 10.1 L40.2 5.4 L41.0 3.0 L41.4 3.0 L41.8 5.4 L42.2 6.5 L42.6 7.7 L43.0 8.9 L45.8 8.9 L46.1 10.1 L48.1 10.1 L48.5 11.3 L50.9 11.3 L51.3 12.5 L52.5 12.5 L52.9 13.6 L53.7 13.6 L54.1 14.8 L55.2 14.8 L55.6 16.0 L56.4 16.0 L56.8 17.2 L58.8 17.2 L59.2 18.4 L60.8 18.4 L61.2 19.5 L62.8 19.5 L63.2 20.7 L65.1 20.7 L65.5 21.9 L67.9 21.9 L68.3 23.1 L77.0 23.1 L77.4 24.3 L83.4 24.3 L83.8 25.5 L89.7 25.5 L90.1 26.6 L90.5 25.5 L90.9 25.5 L91.3 26.6 L98.0 26.6 L98.4 27.8 L106.3 27.8 L106.7 29.0 L107.1 27.8 L107.9 27.8 L108.3 26.6 L108.7 26.6 L109.1 25.5 L109.5 25.5 L109.9 24.3 L110.3 24.3 L110.7 23.1 L111.1 24.3 L113.4 24.3 L113.8 21.9 L114.2 21.9 L114.6 20.7 L115.0 21.9 L117.0 21.9 L117.0 32 Z"/><path d="M6.2 10.1 L7.0 12.5 L7.4 12.5 L7.8 13.6 L9.3 13.6 L9.7 14.8 L10.9 14.8 L11.3 16.0 L13.3 16.0 L13.7 17.2 L14.1 16.0 L14.5 17.2 L16.1 17.2 L16.5 18.4 L19.6 18.4 L20.0 19.5 L21.6 19.5 L22.0 20.7 L24.8 20.7 L25.2 21.9 L26.4 21.9 L26.8 23.1 L27.1 21.9 L27.5 23.1 L30.3 23.1 L30.7 21.9 L31.5 21.9 L31.9 20.7 L32.7 20.7 L33.1 19.5 L33.5 18.4 L35.1 18.4 L35.5 17.2 L35.9 14.8 L36.6 14.8 L37.0 13.6 L37.4 14.8 L37.8 7.7 L38.2 7.7 L38.6 6.5 L39.0 7.7 L39.8 10.1 L40.2 5.4 L41.0 3.0 L41.4 3.0 L41.8 5.4 L42.2 6.5 L42.6 7.7 L43.0 8.9 L45.8 8.9 L46.1 10.1 L48.1 10.1 L48.5 11.3 L50.9 11.3 L51.3 12.5 L52.5 12.5 L52.9 13.6 L53.7 13.6 L54.1 14.8 L55.2 14.8 L55.6 16.0 L56.4 16.0 L56.8 17.2 L58.8 17.2 L59.2 18.4 L60.8 18.4 L61.2 19.5 L62.8 19.5 L63.2 20.7 L65.1 20.7 L65.5 21.9 L67.9 21.9 L68.3 23.1 M77.0 23.1 L77.4 24.3 M83.4 24.3 L83.8 25.5 M89.7 25.5 L90.1 26.6 L90.5 25.5 L90.9 25.5 L91.3 26.6 M98.0 26.6 L98.4 27.8 M106.3 27.8 L106.7 29.0 L107.1 27.8 L107.9 27.8 L108.3 26.6 L108.7 26.6 L109.1 25.5 L109.5 25.5 L109.9 24.3 L110.3 24.3 L110.7 23.1 L111.1 24.3 L113.4 24.3 L113.8 21.9 L114.2 21.9 L114.6 20.7 L115.0 21.9 L117.0 21.9"/><circle cx="117.0" cy="21.9" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−0,1 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,9 K</dd></div><div><dt>Ø 24 h</dt><dd>20,2 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-brennsee">Verlauf heuer →</a></li><li class="card" id="see-afritzer_see" data-key="afritzer_see" data-name="Afritzer See" data-jetzt="20.1" data-abw="-1.1"><div class="card-top"><h3>Afritzer See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Afritzer See als Favorit merken">☆</button></div><div class="card-now"><span class="big">20,1<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="afritzer_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 18,9 bis 21,4 °C"><path class="area" d="M5.8 32 L5.8 14.4 L6.2 15.5 L6.6 16.5 L7.4 16.5 L7.8 17.6 L8.5 17.6 L8.9 18.6 L9.7 18.6 L10.1 19.6 L10.9 19.6 L11.3 20.7 L12.9 20.7 L13.3 21.7 L14.5 21.7 L14.9 22.8 L17.6 22.8 L18.0 23.8 L23.6 23.8 L24.0 24.8 L26.8 24.8 L27.1 25.9 L29.9 25.9 L30.3 26.9 L30.7 26.9 L31.1 25.9 L31.5 24.8 L31.9 24.8 L33.1 21.7 L33.5 21.7 L33.9 19.6 L34.3 18.6 L34.7 19.6 L35.1 17.6 L35.5 11.3 L35.9 9.2 L36.2 7.2 L37.0 5.1 L37.4 4.0 L37.8 3.0 L38.2 4.0 L38.6 5.1 L39.4 7.2 L39.8 5.1 L40.6 9.2 L41.0 10.3 L42.6 10.3 L43.4 12.4 L43.8 14.4 L44.2 15.5 L44.6 15.5 L45.0 16.5 L46.1 16.5 L46.5 17.6 L47.7 17.6 L48.1 18.6 L49.7 18.6 L50.1 19.6 L51.3 19.6 L51.7 20.7 L52.9 20.7 L53.3 21.7 L55.2 21.7 L55.6 22.8 L58.0 22.8 L58.4 23.8 L63.6 23.8 L64.0 24.8 L64.4 23.8 L64.8 23.8 L65.1 24.8 L69.5 24.8 L69.9 23.8 L71.9 23.8 L72.3 24.8 L75.4 24.8 L75.8 23.8 L76.2 24.8 L83.8 24.8 L84.1 25.9 L84.9 25.9 L85.3 24.8 L86.1 24.8 L86.5 25.9 L90.9 25.9 L91.3 26.9 L91.7 25.9 L92.9 25.9 L93.2 26.9 L98.0 26.9 L98.4 28.0 L103.9 28.0 L104.3 29.0 L106.3 29.0 L106.7 28.0 L107.9 28.0 L108.7 25.9 L109.1 24.8 L110.7 20.7 L111.1 18.6 L111.5 17.6 L112.2 19.6 L112.6 17.6 L113.0 17.6 L113.4 15.5 L113.8 16.5 L114.6 16.5 L115.0 15.5 L116.6 15.5 L117.0 16.5 L117.0 32 Z"/><path d="M5.8 14.4 L6.2 15.5 L6.6 16.5 L7.4 16.5 L7.8 17.6 L8.5 17.6 L8.9 18.6 L9.7 18.6 L10.1 19.6 L10.9 19.6 L11.3 20.7 L12.9 20.7 L13.3 21.7 L14.5 21.7 L14.9 22.8 L17.6 22.8 L18.0 23.8 M23.6 23.8 L24.0 24.8 L26.8 24.8 L27.1 25.9 L29.9 25.9 L30.3 26.9 L30.7 26.9 L31.1 25.9 L31.5 24.8 L31.9 24.8 L33.1 21.7 L33.5 21.7 L33.9 19.6 L34.3 18.6 L34.7 19.6 L35.1 17.6 L35.5 11.3 L35.9 9.2 L36.2 7.2 L37.0 5.1 L37.4 4.0 L37.8 3.0 L38.2 4.0 L38.6 5.1 L39.4 7.2 L39.8 5.1 L40.6 9.2 L41.0 10.3 L42.6 10.3 L43.4 12.4 L43.8 14.4 L44.2 15.5 L44.6 15.5 L45.0 16.5 L46.1 16.5 L46.5 17.6 L47.7 17.6 L48.1 18.6 L49.7 18.6 L50.1 19.6 L51.3 19.6 L51.7 20.7 L52.9 20.7 L53.3 21.7 L55.2 21.7 L55.6 22.8 L58.0 22.8 L58.4 23.8 M63.6 23.8 L64.0 24.8 L64.4 23.8 L64.8 23.8 L65.1 24.8 L69.5 24.8 L69.9 23.8 L71.9 23.8 L72.3 24.8 L75.4 24.8 L75.8 23.8 L76.2 24.8 M83.8 24.8 L84.1 25.9 L84.9 25.9 L85.3 24.8 L86.1 24.8 L86.5 25.9 L90.9 25.9 L91.3 26.9 L91.7 25.9 L92.9 25.9 L93.2 26.9 L98.0 26.9 L98.4 28.0 M103.9 28.0 L104.3 29.0 L106.3 29.0 L106.7 28.0 L107.9 28.0 L108.7 25.9 L109.1 24.8 L110.7 20.7 L111.1 18.6 L111.5 17.6 L112.2 19.6 L112.6 17.6 L113.0 17.6 L113.4 15.5 L113.8 16.5 L114.6 16.5 L115.0 15.5 L116.6 15.5 L117.0 16.5"/><circle cx="117.0" cy="16.5" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−1,1 K</dd></div><div><dt>Trend</dt><dd class="flat" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,2 K</dd></div><div><dt>Ø 24 h</dt><dd>19,5 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 15:00">Fr 15:00</dd></div></dl><a class="more" href="#heuer-afritzer_see">Verlauf heuer →</a></li><li class="card" id="see-goesselsdorfer_see" data-key="goesselsdorfer_see" data-name="Gösselsdorfer See" data-jetzt="19.2" data-abw="-4.1"><div class="card-top"><h3>Gösselsdorfer See</h3><button type="button" class="fav js-only" aria-pressed="false" aria-label="Gösselsdorfer See als Favorit merken">☆</button></div><div class="card-now"><span class="big">19,2<span class="unit">°C</span></span><span class="badge b-frisch">frisch</span></div><a class="spark-link" href="#verlauf" data-lake="goesselsdorfer_see"><svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Verlauf der letzten Stunden: 18,7 bis 20,2 °C"><path class="area" d="M4.6 32 L4.6 6.5 L5.0 4.7 L5.4 6.5 L7.0 6.5 L7.4 8.2 L8.1 8.2 L8.5 6.5 L13.7 6.5 L14.1 8.2 L15.3 8.2 L15.7 9.9 L16.9 9.9 L17.2 11.7 L18.4 11.7 L18.8 13.4 L20.0 13.4 L20.4 15.1 L21.2 15.1 L21.6 16.9 L23.2 16.9 L23.6 18.6 L26.0 18.6 L26.4 20.3 L27.1 20.3 L27.5 18.6 L27.9 18.6 L28.3 16.9 L28.7 16.9 L29.1 15.1 L29.9 15.1 L30.7 11.7 L31.1 11.7 L31.5 9.9 L31.9 9.9 L32.3 11.7 L34.7 11.7 L35.1 9.9 L36.6 9.9 L37.0 8.2 L38.6 8.2 L39.4 4.7 L39.8 6.5 L41.4 6.5 L41.8 3.0 L42.6 6.5 L43.0 6.5 L43.4 4.7 L43.8 6.5 L45.0 6.5 L45.4 8.2 L45.8 6.5 L54.5 6.5 L54.9 8.2 L56.0 8.2 L56.4 9.9 L57.6 9.9 L58.0 11.7 L60.0 11.7 L60.4 13.4 L62.4 13.4 L62.8 15.1 L65.5 15.1 L65.9 16.9 L67.5 16.9 L67.9 18.6 L69.5 18.6 L69.9 16.9 L70.7 16.9 L71.1 18.6 L81.8 18.6 L82.2 20.3 L85.3 20.3 L85.7 22.1 L88.1 22.1 L88.5 23.8 L91.3 23.8 L91.7 25.5 L95.2 25.5 L95.6 27.3 L99.2 27.3 L99.6 29.0 L106.3 29.0 L106.7 27.3 L107.1 27.3 L107.5 25.5 L107.9 27.3 L108.3 25.5 L109.1 25.5 L109.5 23.8 L111.5 23.8 L111.9 22.1 L114.2 22.1 L114.6 20.3 L117.0 20.3 L117.0 32 Z"/><path d="M4.6 6.5 L5.0 4.7 L5.4 6.5 L7.0 6.5 L7.4 8.2 L8.1 8.2 L8.5 6.5 M13.7 6.5 L14.1 8.2 L15.3 8.2 L15.7 9.9 L16.9 9.9 L17.2 11.7 L18.4 11.7 L18.8 13.4 L20.0 13.4 L20.4 15.1 L21.2 15.1 L21.6 16.9 L23.2 16.9 L23.6 18.6 L26.0 18.6 L26.4 20.3 L27.1 20.3 L27.5 18.6 L27.9 18.6 L28.3 16.9 L28.7 16.9 L29.1 15.1 L29.9 15.1 L30.7 11.7 L31.1 11.7 L31.5 9.9 L31.9 9.9 L32.3 11.7 L34.7 11.7 L35.1 9.9 L36.6 9.9 L37.0 8.2 L38.6 8.2 L39.4 4.7 L39.8 6.5 L41.4 6.5 L41.8 3.0 L42.6 6.5 L43.0 6.5 L43.4 4.7 L43.8 6.5 L45.0 6.5 L45.4 8.2 L45.8 6.5 M54.5 6.5 L54.9 8.2 L56.0 8.2 L56.4 9.9 L57.6 9.9 L58.0 11.7 L60.0 11.7 L60.4 13.4 L62.4 13.4 L62.8 15.1 L65.5 15.1 L65.9 16.9 L67.5 16.9 L67.9 18.6 L69.5 18.6 L69.9 16.9 L70.7 16.9 L71.1 18.6 M81.8 18.6 L82.2 20.3 L85.3 20.3 L85.7 22.1 L88.1 22.1 L88.5 23.8 L91.3 23.8 L91.7 25.5 L95.2 25.5 L95.6 27.3 L99.2 27.3 L99.6 29.0 M106.3 29.0 L106.7 27.3 L107.1 27.3 L107.5 25.5 L107.9 27.3 L108.3 25.5 L109.1 25.5 L109.5 23.8 L111.5 23.8 L111.9 22.1 L114.2 22.1 L114.6 20.3 L117.0 20.3"/><circle cx="117.0" cy="20.3" r="2.6"/></svg></a><dl class="facts"><div><dt>Abweichung</dt><dd class="cool demo" title="Normalwert aus dem Demomodell">−4,1 K</dd></div><div><dt>Trend</dt><dd class="down" title="Mittel der letzten 24 h gegenüber den 24 h davor">−0,8 K</dd></div><div><dt>Ø 24 h</dt><dd>19,0 °C</dd></div><div><dt>Gemessen</dt><dd title="Fr 18.9., 16:00">Fr 16:00</dd></div></dl><a class="more" href="#heuer-goesselsdorfer_see">Verlauf heuer →</a></li></ul>
+<p class="hint js-only" id="leer" hidden></p>
+<p class="legende"><span class="badge b-warm">badewarm</span> ab 22 °C · <span class="badge b-frisch">frisch</span> ab 18 °C · darunter <span class="badge b-kalt">kalt</span>. Abweichung: das Mittel der letzten 24 Stunden gegen den Normalwert des Tages. Trend: dasselbe Mittel gegen das der 24 Stunden davor — so bleibt der Tagesgang aussen vor. Der Stern merkt einen See auf diesem Gerät als Favorit.</p>
+<details id="tabelle"><summary>Alle Werte als Tabelle</summary><div class="body"><table><thead><tr><th>See</th><th class="n">jetzt</th><th class="n">Ø 24 h</th><th class="n">gegen Normalwert</th></tr></thead><tbody><tr><td>Wörthersee</td><td class="n">22,8 °C</td><td class="n">22,5 °C</td><td class="n warm">−0,0 K</td></tr><tr><td>Klopeiner See</td><td class="n">22,5 °C</td><td class="n">21,9 °C</td><td class="n cool">−0,5 K</td></tr><tr><td>Keutschacher See</td><td class="n">22,2 °C</td><td class="n">21,8 °C</td><td class="n cool">−0,5 K</td></tr><tr><td>Millstätter See</td><td class="n">22,4 °C</td><td class="n">21,7 °C</td><td class="n warm">+0,4 K</td></tr><tr><td>Längsee</td><td class="n">21,9 °C</td><td class="n">21,6 °C</td><td class="n cool">−0,1 K</td></tr><tr><td>Maltschacher See</td><td class="n">22,1 °C</td><td class="n">21,5 °C</td><td class="n cool">−0,4 K</td></tr><tr><td>Ossiacher See</td><td class="n">21,8 °C</td><td class="n">21,4 °C</td><td class="n cool">−0,7 K</td></tr><tr><td>Faaker See</td><td class="n">21,9 °C</td><td class="n">21,4 °C</td><td class="n cool">−0,4 K</td></tr><tr><td>Turnersee</td><td class="n">21,8 °C</td><td class="n">21,2 °C</td><td class="n cool">−1,3 K</td></tr><tr><td>Rauschele See</td><td class="n">21,7 °C</td><td class="n">21,2 °C</td><td class="n cool">−1,0 K</td></tr><tr><td>Weißensee</td><td class="n">20,8 °C</td><td class="n">20,4 °C</td><td class="n warm">+2,1 K</td></tr><tr><td>Feldsee (Brennsee)</td><td class="n">20,5 °C</td><td class="n">20,2 °C</td><td class="n cool">−0,1 K</td></tr><tr><td>Pressegger See</td><td class="n">21,1 °C</td><td class="n">19,7 °C</td><td class="n cool">−2,3 K</td></tr><tr><td>Afritzer See</td><td class="n">20,1 °C</td><td class="n">19,5 °C</td><td class="n cool">−1,1 K</td></tr><tr><td>Gösselsdorfer See</td><td class="n">19,2 °C</td><td class="n">19,0 °C</td><td class="n cool">−4,1 K</td></tr></tbody></table><p class="caption">Stand 2026-09-18 16:45 · Hydrographischer Dienst Kärnten — abgelegter Abruf (3 h alt) · Achtung - ungeprüfte Rohdaten!</p></div></details>
+</section>
+<section id="verlauf">
+<h2>Verlauf</h2>
+<p class="caption">Die letzten drei Tage in Einzelmessungen — oder alles, was seit dem ersten Abruf abgelegt wurde, als Tagesmittel. Einen See antippen hebt ihn hervor und zeigt seinen Normalwert; über die Linien fahren oder tippen zeigt den Wert.</p>
+<div class="chart js-only" id="chart">
+<div class="chart-bar"><div class="seg" id="bereich" role="group" aria-label="Zeitraum"><button type="button" data-range="72h" aria-pressed="true">72 Stunden</button><button type="button" data-range="alles" aria-pressed="false">Alles</button></div><span class="chart-note" id="chart-note"></span></div>
+<div class="chart-box"><svg role="img" aria-label="Wassertemperatur je See im Verlauf"></svg><div class="tip" hidden></div></div>
+<div class="chips" id="chips"></div>
+</div>
+<details class="bilder" open><summary>Die Bilder dazu — zum Speichern und Teilen</summary><div class="body">
+<h3>Alles, was gemessen wurde</h3>
 <p class="caption">Jeder Tag, den wir haben: das Tagesmittel je See über den ganzen Bestand, dazu -- blasser -- die Einzelmessungen der jüngsten Tage. Die Reihe wächst mit jedem abgelegten Abruf.</p>
 <figure><a href="light/00_verlauf.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/00_verlauf.png"><img src="light/00_verlauf.png" alt="Alles, was gemessen wurde" loading="lazy"></picture></a></figure>
-<h2>Die letzten 72 Stunden</h2>
+<h3>Die letzten 72 Stunden</h3>
 <p class="caption">Alle Seen in Einzelmessungen -- wo es gerade warm ist und wie der Tagesgang verläuft. Mehr als drei Tage gibt der Dienst nicht her.</p>
 <figure><a href="light/00_letzte_72h.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/00_letzte_72h.png"><img src="light/00_letzte_72h.png" alt="Die letzten 72 Stunden" loading="lazy"></picture></a></figure>
-<table><thead><tr><th>See</th><th class="n">jetzt</th><th class="n">Ø 24 h</th><th class="n">gegen Normalwert</th></tr></thead><tbody><tr><td>Wörthersee</td><td class="n">23,1 °C</td><td class="n">23,2 °C</td><td class="n warm">+0,4 K</td></tr><tr><td>Klopeiner See</td><td class="n">22,2 °C</td><td class="n">22,8 °C</td><td class="n warm">−0,0 K</td></tr><tr><td>Millstätter See</td><td class="n">21,9 °C</td><td class="n">22,7 °C</td><td class="n warm">+1,3 K</td></tr><tr><td>Keutschacher See</td><td class="n">22,0 °C</td><td class="n">22,5 °C</td><td class="n warm">+0,2 K</td></tr><tr><td>Maltschacher See</td><td class="n">22,0 °C</td><td class="n">22,5 °C</td><td class="n warm">+0,6 K</td></tr><tr><td>Turnersee</td><td class="n">21,8 °C</td><td class="n">22,4 °C</td><td class="n cool">−0,3 K</td></tr><tr><td>Rauschele See</td><td class="n">21,8 °C</td><td class="n">22,3 °C</td><td class="n cool">−0,3 K</td></tr><tr><td>Ossiacher See</td><td class="n">22,1 °C</td><td class="n">22,1 °C</td><td class="n cool">−0,3 K</td></tr><tr><td>Längsee</td><td class="n">22,0 °C</td><td class="n">22,0 °C</td><td class="n cool">−0,4 K</td></tr><tr><td>Faaker See</td><td class="n">22,1 °C</td><td class="n">22,0 °C</td><td class="n warm">+0,2 K</td></tr><tr><td>Weißensee</td><td class="n">21,3 °C</td><td class="n">21,1 °C</td><td class="n warm">+2,5 K</td></tr><tr><td>Feldsee (Brennsee)</td><td class="n">20,5 °C</td><td class="n">21,0 °C</td><td class="n warm">+0,5 K</td></tr><tr><td>Pressegger See</td><td class="n">21,2 °C</td><td class="n">20,9 °C</td><td class="n cool">−1,0 K</td></tr><tr><td>Afritzer See</td><td class="n">19,3 °C</td><td class="n">20,0 °C</td><td class="n cool">−0,6 K</td></tr><tr><td>Gösselsdorfer See</td><td class="n">19,4 °C</td><td class="n">19,7 °C</td><td class="n cool">−3,7 K</td></tr></tbody></table><p class="caption">Stand 2026-09-16 11:15 · Hydrographischer Dienst Kärnten — abgelegter Abruf (3 h alt) · Achtung - ungeprüfte Rohdaten!</p>
-<h2>Heute gegen den Normalwert</h2>
+</div></details>
+</section>
+<section id="normal">
+<h2>Gegen den Normalwert</h2>
+<h3>Heute gegen den Normalwert</h3>
 <p class="caption">Gemessener Wert je See gegenüber seinem Normalwert.</p>
 <figure><a href="light/00_aktuell.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/00_aktuell.png"><img src="light/00_aktuell.png" alt="Heute gegen den Normalwert" loading="lazy"></picture></a></figure>
-<h2>Jeder August der Aufzeichnung</h2>
+<h3>Jeder August der Aufzeichnung</h3>
 <p class="caption">Das August-Mittel jedes Jahres gegen den Normalwert desselben Monats.</p>
 <figure><a href="light/05_august_je_jahr.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/05_august_je_jahr.png"><img src="light/05_august_je_jahr.png" alt="Jeder August der Aufzeichnung" loading="lazy"></picture></a></figure>
-<h2 class="lakes">2026 in Tageswerten</h2>
-<p class="caption">Was heuer gemessen wurde, Tag für Tag gegen den Monatsnormalwert. Die Reihe wächst mit jedem abgelegten Abruf.</p>
-<p class="caption" style="margin-top:14px">Wörthersee</p>
-<figure><a href="light/seen/woerthersee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/woerthersee_heuer.png"><img src="light/seen/woerthersee_heuer.png" alt="Wörthersee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Ossiacher See</p>
-<figure><a href="light/seen/ossiacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/ossiacher_see_heuer.png"><img src="light/seen/ossiacher_see_heuer.png" alt="Ossiacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Millstätter See</p>
-<figure><a href="light/seen/millstaetter_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/millstaetter_see_heuer.png"><img src="light/seen/millstaetter_see_heuer.png" alt="Millstätter See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Faaker See</p>
-<figure><a href="light/seen/faaker_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/faaker_see_heuer.png"><img src="light/seen/faaker_see_heuer.png" alt="Faaker See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Klopeiner See</p>
-<figure><a href="light/seen/klopeiner_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/klopeiner_see_heuer.png"><img src="light/seen/klopeiner_see_heuer.png" alt="Klopeiner See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Weißensee</p>
-<figure><a href="light/seen/weissensee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/weissensee_heuer.png"><img src="light/seen/weissensee_heuer.png" alt="Weißensee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Keutschacher See</p>
-<figure><a href="light/seen/keutschacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/keutschacher_see_heuer.png"><img src="light/seen/keutschacher_see_heuer.png" alt="Keutschacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Längsee</p>
-<figure><a href="light/seen/laengsee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/laengsee_heuer.png"><img src="light/seen/laengsee_heuer.png" alt="Längsee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Turnersee</p>
-<figure><a href="light/seen/turnersee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/turnersee_heuer.png"><img src="light/seen/turnersee_heuer.png" alt="Turnersee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Pressegger See</p>
-<figure><a href="light/seen/pressegger_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/pressegger_see_heuer.png"><img src="light/seen/pressegger_see_heuer.png" alt="Pressegger See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Afritzer See</p>
-<figure><a href="light/seen/afritzer_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/afritzer_see_heuer.png"><img src="light/seen/afritzer_see_heuer.png" alt="Afritzer See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Feldsee (Brennsee)</p>
-<figure><a href="light/seen/brennsee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/brennsee_heuer.png"><img src="light/seen/brennsee_heuer.png" alt="Feldsee (Brennsee)" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Gösselsdorfer See</p>
-<figure><a href="light/seen/goesselsdorfer_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/goesselsdorfer_see_heuer.png"><img src="light/seen/goesselsdorfer_see_heuer.png" alt="Gösselsdorfer See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Maltschacher See</p>
-<figure><a href="light/seen/maltschacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/maltschacher_see_heuer.png"><img src="light/seen/maltschacher_see_heuer.png" alt="Maltschacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Rauschele See</p>
-<figure><a href="light/seen/rauschele_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/rauschele_see_heuer.png"><img src="light/seen/rauschele_see_heuer.png" alt="Rauschele See" loading="lazy"></picture></a></figure>
+</section>
+<section id="heuer">
+<h2>2026 in Tageswerten</h2>
+<p class="caption">Was heuer gemessen wurde, Tag für Tag gegen den Monatsnormalwert. Die Reihe wächst mit jedem abgelegten Abruf. Einen See antippen klappt sein Bild auf.</p>
+<nav class="lake-nav" aria-label="Seen"><a href="#heuer-woerthersee">Wörthersee</a><a href="#heuer-ossiacher_see">Ossiacher See</a><a href="#heuer-millstaetter_see">Millstätter See</a><a href="#heuer-faaker_see">Faaker See</a><a href="#heuer-klopeiner_see">Klopeiner See</a><a href="#heuer-weissensee">Weißensee</a><a href="#heuer-keutschacher_see">Keutschacher See</a><a href="#heuer-laengsee">Längsee</a><a href="#heuer-turnersee">Turnersee</a><a href="#heuer-pressegger_see">Pressegger See</a><a href="#heuer-afritzer_see">Afritzer See</a><a href="#heuer-brennsee">Feldsee (Brennsee)</a><a href="#heuer-goesselsdorfer_see">Gösselsdorfer See</a><a href="#heuer-maltschacher_see">Maltschacher See</a><a href="#heuer-rauschele_see">Rauschele See</a></nav>
+<details class="lake" id="heuer-woerthersee"><summary>Wörthersee<span class="sum-val">22,8 °C<span class="cool">±0,0 K</span></span></summary><div class="body"><figure><a href="light/seen/woerthersee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/woerthersee_heuer.png"><img src="light/seen/woerthersee_heuer.png" alt="Wörthersee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-ossiacher_see"><summary>Ossiacher See<span class="sum-val">21,8 °C<span class="cool">−0,7 K</span></span></summary><div class="body"><figure><a href="light/seen/ossiacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/ossiacher_see_heuer.png"><img src="light/seen/ossiacher_see_heuer.png" alt="Ossiacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-millstaetter_see"><summary>Millstätter See<span class="sum-val">22,4 °C<span class="warm">+0,4 K</span></span></summary><div class="body"><figure><a href="light/seen/millstaetter_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/millstaetter_see_heuer.png"><img src="light/seen/millstaetter_see_heuer.png" alt="Millstätter See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-faaker_see"><summary>Faaker See<span class="sum-val">21,9 °C<span class="cool">−0,4 K</span></span></summary><div class="body"><figure><a href="light/seen/faaker_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/faaker_see_heuer.png"><img src="light/seen/faaker_see_heuer.png" alt="Faaker See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-klopeiner_see"><summary>Klopeiner See<span class="sum-val">22,5 °C<span class="cool">−0,5 K</span></span></summary><div class="body"><figure><a href="light/seen/klopeiner_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/klopeiner_see_heuer.png"><img src="light/seen/klopeiner_see_heuer.png" alt="Klopeiner See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-weissensee"><summary>Weißensee<span class="sum-val">20,8 °C<span class="warm">+2,1 K</span></span></summary><div class="body"><figure><a href="light/seen/weissensee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/weissensee_heuer.png"><img src="light/seen/weissensee_heuer.png" alt="Weißensee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-keutschacher_see"><summary>Keutschacher See<span class="sum-val">22,2 °C<span class="cool">−0,5 K</span></span></summary><div class="body"><figure><a href="light/seen/keutschacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/keutschacher_see_heuer.png"><img src="light/seen/keutschacher_see_heuer.png" alt="Keutschacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-laengsee"><summary>Längsee<span class="sum-val">21,9 °C<span class="cool">−0,1 K</span></span></summary><div class="body"><figure><a href="light/seen/laengsee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/laengsee_heuer.png"><img src="light/seen/laengsee_heuer.png" alt="Längsee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-turnersee"><summary>Turnersee<span class="sum-val">21,8 °C<span class="cool">−1,3 K</span></span></summary><div class="body"><figure><a href="light/seen/turnersee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/turnersee_heuer.png"><img src="light/seen/turnersee_heuer.png" alt="Turnersee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-pressegger_see"><summary>Pressegger See<span class="sum-val">21,1 °C<span class="cool">−2,3 K</span></span></summary><div class="body"><figure><a href="light/seen/pressegger_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/pressegger_see_heuer.png"><img src="light/seen/pressegger_see_heuer.png" alt="Pressegger See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-afritzer_see"><summary>Afritzer See<span class="sum-val">20,1 °C<span class="cool">−1,1 K</span></span></summary><div class="body"><figure><a href="light/seen/afritzer_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/afritzer_see_heuer.png"><img src="light/seen/afritzer_see_heuer.png" alt="Afritzer See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-brennsee"><summary>Feldsee (Brennsee)<span class="sum-val">20,5 °C<span class="cool">−0,1 K</span></span></summary><div class="body"><figure><a href="light/seen/brennsee_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/brennsee_heuer.png"><img src="light/seen/brennsee_heuer.png" alt="Feldsee (Brennsee)" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-goesselsdorfer_see"><summary>Gösselsdorfer See<span class="sum-val">19,2 °C<span class="cool">−4,1 K</span></span></summary><div class="body"><figure><a href="light/seen/goesselsdorfer_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/goesselsdorfer_see_heuer.png"><img src="light/seen/goesselsdorfer_see_heuer.png" alt="Gösselsdorfer See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-maltschacher_see"><summary>Maltschacher See<span class="sum-val">22,1 °C<span class="cool">−0,4 K</span></span></summary><div class="body"><figure><a href="light/seen/maltschacher_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/maltschacher_see_heuer.png"><img src="light/seen/maltschacher_see_heuer.png" alt="Maltschacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="heuer-rauschele_see"><summary>Rauschele See<span class="sum-val">21,7 °C<span class="cool">−1,0 K</span></span></summary><div class="body"><figure><a href="light/seen/rauschele_see_heuer.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/rauschele_see_heuer.png"><img src="light/seen/rauschele_see_heuer.png" alt="Rauschele See" loading="lazy"></picture></a></figure></div></details>
+</section>
+<section id="archiv">
 <h2>Die amtliche Reihe bis 2026</h2>
-<p class="caption">Ab hier die langjährigen Messreihen: sie enden mit dem letzten Jahrbuch (2026-09-16), Vergleichsjahr ist 2026. Das laufende Jahr steht nicht in ihnen — es steht oben.</p>
-<h2>Alle Seen im Vergleich</h2>
+<p class="caption">Ab hier die langjährigen Messreihen: sie enden mit dem letzten Jahrbuch (2026-09-18), Vergleichsjahr ist 2026. Das laufende Jahr steht nicht in ihnen — es steht oben.</p>
+<h3>Alle Seen im Vergleich</h3>
 <p class="caption">Mittlere Abweichung der Badesaison vom langjährigen Normalwert.</p>
 <figure><a href="light/01_uebersicht_abweichung_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/01_uebersicht_abweichung_2026.png"><img src="light/01_uebersicht_abweichung_2026.png" alt="Alle Seen im Vergleich" loading="lazy"></picture></a></figure>
-<h2>Monat für Monat</h2>
+<h3>Monat für Monat</h3>
 <p class="caption">Wo im Jahr die Abweichung entstanden ist -- je See und Monat.</p>
 <figure><a href="light/02_monatsmatrix_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/02_monatsmatrix_2026.png"><img src="light/02_monatsmatrix_2026.png" alt="Monat für Monat" loading="lazy"></picture></a></figure>
-<h2>Badetage</h2>
+<h3>Badetage</h3>
 <p class="caption">Wie viele Tage warm genug waren, gemessen am langjährigen Mittel.</p>
 <figure><a href="light/03_badetage_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/03_badetage_2026.png"><img src="light/03_badetage_2026.png" alt="Badetage" loading="lazy"></picture></a></figure>
-<h2>Jeder Sommer seit Reihenbeginn</h2>
+<h3>Jeder Sommer seit Reihenbeginn</h3>
 <p class="caption">Ein Balken je Jahr und See -- der lange Blick auf die Entwicklung.</p>
 <figure><a href="light/04_saisonabweichung_zeitreihe.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/04_saisonabweichung_zeitreihe.png"><img src="light/04_saisonabweichung_zeitreihe.png" alt="Jeder Sommer seit Reihenbeginn" loading="lazy"></picture></a></figure>
-<h2 class="lakes">Jahresgang je See 2026</h2>
+<h3>Jahresgang je See 2026</h3>
 <p class="caption">Der Verlauf des Jahres gegen den Normalwert, das Band zeigt die Bandbreite des Bezugszeitraums.</p>
-<p class="caption" style="margin-top:14px">Wörthersee</p>
-<figure><a href="light/seen/woerthersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/woerthersee_2026.png"><img src="light/seen/woerthersee_2026.png" alt="Wörthersee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Ossiacher See</p>
-<figure><a href="light/seen/ossiacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/ossiacher_see_2026.png"><img src="light/seen/ossiacher_see_2026.png" alt="Ossiacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Millstätter See</p>
-<figure><a href="light/seen/millstaetter_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/millstaetter_see_2026.png"><img src="light/seen/millstaetter_see_2026.png" alt="Millstätter See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Faaker See</p>
-<figure><a href="light/seen/faaker_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/faaker_see_2026.png"><img src="light/seen/faaker_see_2026.png" alt="Faaker See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Klopeiner See</p>
-<figure><a href="light/seen/klopeiner_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/klopeiner_see_2026.png"><img src="light/seen/klopeiner_see_2026.png" alt="Klopeiner See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Weißensee</p>
-<figure><a href="light/seen/weissensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/weissensee_2026.png"><img src="light/seen/weissensee_2026.png" alt="Weißensee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Keutschacher See</p>
-<figure><a href="light/seen/keutschacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/keutschacher_see_2026.png"><img src="light/seen/keutschacher_see_2026.png" alt="Keutschacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Längsee</p>
-<figure><a href="light/seen/laengsee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/laengsee_2026.png"><img src="light/seen/laengsee_2026.png" alt="Längsee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Turnersee</p>
-<figure><a href="light/seen/turnersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/turnersee_2026.png"><img src="light/seen/turnersee_2026.png" alt="Turnersee" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Pressegger See</p>
-<figure><a href="light/seen/pressegger_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/pressegger_see_2026.png"><img src="light/seen/pressegger_see_2026.png" alt="Pressegger See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Afritzer See</p>
-<figure><a href="light/seen/afritzer_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/afritzer_see_2026.png"><img src="light/seen/afritzer_see_2026.png" alt="Afritzer See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Feldsee (Brennsee)</p>
-<figure><a href="light/seen/brennsee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/brennsee_2026.png"><img src="light/seen/brennsee_2026.png" alt="Feldsee (Brennsee)" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Gösselsdorfer See</p>
-<figure><a href="light/seen/goesselsdorfer_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/goesselsdorfer_see_2026.png"><img src="light/seen/goesselsdorfer_see_2026.png" alt="Gösselsdorfer See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Maltschacher See</p>
-<figure><a href="light/seen/maltschacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/maltschacher_see_2026.png"><img src="light/seen/maltschacher_see_2026.png" alt="Maltschacher See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Rauschele See</p>
-<figure><a href="light/seen/rauschele_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/rauschele_see_2026.png"><img src="light/seen/rauschele_see_2026.png" alt="Rauschele See" loading="lazy"></picture></a></figure>
-<p class="caption" style="margin-top:14px">Magdalensee</p>
-<figure><a href="light/seen/magdalensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/magdalensee_2026.png"><img src="light/seen/magdalensee_2026.png" alt="Magdalensee" loading="lazy"></picture></a></figure>
-<h2>Grundlage der Normalwerte</h2><p class="caption">Wie viele Jahre zum Vergleichswert je See beitragen. Die WMO-Normalperiode umfasst dreissig.</p><table><thead><tr><th>See</th><th class="n">Jahre</th><th>Zeitraum</th></tr></thead><tbody><tr><td>Wörthersee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Ossiacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Millstätter See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Faaker See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Klopeiner See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Weißensee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Keutschacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Längsee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Turnersee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Pressegger See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Afritzer See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Feldsee (Brennsee)</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Gösselsdorfer See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Maltschacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Rauschele See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Magdalensee</td><td class="n">30</td><td>1991–2020</td></tr></tbody></table>
+<nav class="lake-nav" aria-label="Seen"><a href="#archiv-woerthersee">Wörthersee</a><a href="#archiv-ossiacher_see">Ossiacher See</a><a href="#archiv-millstaetter_see">Millstätter See</a><a href="#archiv-faaker_see">Faaker See</a><a href="#archiv-klopeiner_see">Klopeiner See</a><a href="#archiv-weissensee">Weißensee</a><a href="#archiv-keutschacher_see">Keutschacher See</a><a href="#archiv-laengsee">Längsee</a><a href="#archiv-turnersee">Turnersee</a><a href="#archiv-pressegger_see">Pressegger See</a><a href="#archiv-afritzer_see">Afritzer See</a><a href="#archiv-brennsee">Feldsee (Brennsee)</a><a href="#archiv-goesselsdorfer_see">Gösselsdorfer See</a><a href="#archiv-maltschacher_see">Maltschacher See</a><a href="#archiv-rauschele_see">Rauschele See</a><a href="#archiv-magdalensee">Magdalensee</a></nav>
+<details class="lake" id="archiv-woerthersee"><summary>Wörthersee</summary><div class="body"><figure><a href="light/seen/woerthersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/woerthersee_2026.png"><img src="light/seen/woerthersee_2026.png" alt="Wörthersee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-ossiacher_see"><summary>Ossiacher See</summary><div class="body"><figure><a href="light/seen/ossiacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/ossiacher_see_2026.png"><img src="light/seen/ossiacher_see_2026.png" alt="Ossiacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-millstaetter_see"><summary>Millstätter See</summary><div class="body"><figure><a href="light/seen/millstaetter_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/millstaetter_see_2026.png"><img src="light/seen/millstaetter_see_2026.png" alt="Millstätter See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-faaker_see"><summary>Faaker See</summary><div class="body"><figure><a href="light/seen/faaker_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/faaker_see_2026.png"><img src="light/seen/faaker_see_2026.png" alt="Faaker See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-klopeiner_see"><summary>Klopeiner See</summary><div class="body"><figure><a href="light/seen/klopeiner_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/klopeiner_see_2026.png"><img src="light/seen/klopeiner_see_2026.png" alt="Klopeiner See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-weissensee"><summary>Weißensee</summary><div class="body"><figure><a href="light/seen/weissensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/weissensee_2026.png"><img src="light/seen/weissensee_2026.png" alt="Weißensee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-keutschacher_see"><summary>Keutschacher See</summary><div class="body"><figure><a href="light/seen/keutschacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/keutschacher_see_2026.png"><img src="light/seen/keutschacher_see_2026.png" alt="Keutschacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-laengsee"><summary>Längsee</summary><div class="body"><figure><a href="light/seen/laengsee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/laengsee_2026.png"><img src="light/seen/laengsee_2026.png" alt="Längsee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-turnersee"><summary>Turnersee</summary><div class="body"><figure><a href="light/seen/turnersee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/turnersee_2026.png"><img src="light/seen/turnersee_2026.png" alt="Turnersee" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-pressegger_see"><summary>Pressegger See</summary><div class="body"><figure><a href="light/seen/pressegger_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/pressegger_see_2026.png"><img src="light/seen/pressegger_see_2026.png" alt="Pressegger See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-afritzer_see"><summary>Afritzer See</summary><div class="body"><figure><a href="light/seen/afritzer_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/afritzer_see_2026.png"><img src="light/seen/afritzer_see_2026.png" alt="Afritzer See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-brennsee"><summary>Feldsee (Brennsee)</summary><div class="body"><figure><a href="light/seen/brennsee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/brennsee_2026.png"><img src="light/seen/brennsee_2026.png" alt="Feldsee (Brennsee)" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-goesselsdorfer_see"><summary>Gösselsdorfer See</summary><div class="body"><figure><a href="light/seen/goesselsdorfer_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/goesselsdorfer_see_2026.png"><img src="light/seen/goesselsdorfer_see_2026.png" alt="Gösselsdorfer See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-maltschacher_see"><summary>Maltschacher See</summary><div class="body"><figure><a href="light/seen/maltschacher_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/maltschacher_see_2026.png"><img src="light/seen/maltschacher_see_2026.png" alt="Maltschacher See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-rauschele_see"><summary>Rauschele See</summary><div class="body"><figure><a href="light/seen/rauschele_see_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/rauschele_see_2026.png"><img src="light/seen/rauschele_see_2026.png" alt="Rauschele See" loading="lazy"></picture></a></figure></div></details>
+<details class="lake" id="archiv-magdalensee"><summary>Magdalensee</summary><div class="body"><figure><a href="light/seen/magdalensee_2026.png"><picture><source media="(prefers-color-scheme: dark)" srcset="dark/seen/magdalensee_2026.png"><img src="light/seen/magdalensee_2026.png" alt="Magdalensee" loading="lazy"></picture></a></figure></div></details>
+</section>
+<section id="hintergrund">
+<details id="grundlage"><summary>Grundlage der Normalwerte</summary><div class="body"><p class="caption">Wie viele Jahre zum Vergleichswert je See beitragen. Die WMO-Normalperiode umfasst dreissig.</p><table><thead><tr><th>See</th><th class="n">Jahre</th><th>Zeitraum</th></tr></thead><tbody><tr><td>Wörthersee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Ossiacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Millstätter See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Faaker See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Klopeiner See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Weißensee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Keutschacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Längsee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Turnersee</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Pressegger See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Afritzer See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Feldsee (Brennsee)</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Gösselsdorfer See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Maltschacher See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Rauschele See</td><td class="n">30</td><td>1991–2020</td></tr><tr><td>Magdalensee</td><td class="n">30</td><td>1991–2020</td></tr></tbody></table></div></details>
 <div class="meta"><dl>
 <dt>Quelle</dt><dd>Demo-Modell (synthetisch)</dd>
 <dt>Auflösung</dt><dd>Tageswerte</dd>
 <dt>Normalwert</dt><dd>gleitendes ±7-Tage-Fenster über 1991–2020</dd>
-<dt>Datenstand</dt><dd>2026-09-16 (208.688 Werte ab 1991-01-01)</dd>
-<dt>Erzeugt</dt><dd>16.09.2026, 12:32 UTC</dd>
+<dt>Datenstand</dt><dd>2026-09-18 (208.720 Werte ab 1991-01-01)</dd>
+<dt>Erzeugt</dt><dd>18.09.2026, 17:19 UTC</dd>
 </dl><ul class="notes"><li>Synthetische Werte aus einem Jahresgangmodell -- keine Messdaten.</li><li>Enthaltener Trend: +0.35 K/Jahrzehnt ab 1991.</li></ul></div>
+</section>
 <footer>
 Erzeugt mit <a href="https://github.com/mgorfer/lake-temperature">seetemp</a>. 
-Die Seite folgt der Hell/Dunkel-Einstellung des Geräts. 
-Rohdaten des Laufs: <a href="run.json">run.json</a>.
+Die Seite folgt der Hell/Dunkel-Einstellung des Geräts<span class="js-only">, der Schalter oben rechts stellt sie um</span>. Favoriten und Einstellungen bleiben auf diesem Gerät. 
+Rohdaten des Laufs: <a href="run.json">run.json</a>, <a href="aktuell.json">aktuell.json</a>.
 </footer>
-</main></body></html>
+</main>
+<button type="button" class="nach-oben js-only" id="nach-oben" aria-label="Nach oben">↑</button>
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  root.classList.add('js');
+
+  // ---------------------------------------------------------- Zahlen, Zeiten
+  var MINUS = '−';
+  function num(v, d) {
+    d = d == null ? 1 : d;
+    return v.toFixed(d).replace('-', MINUS).replace('.', ',');
+  }
+  function signed(v, d) {
+    d = d == null ? 1 : d;
+    if (Math.abs(v) < 0.5 * Math.pow(10, -d)) return '±' + num(Math.abs(v), d);
+    return (v > 0 ? '+' : '') + num(v, d);
+  }
+  var WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  // Die Stempel sind Kärntner Wanduhrzeit ohne Zone. Als UTC gelesen und
+  // als UTC ausgegeben bleibt die Uhrzeit die Kärntner, wo immer der
+  // Browser steht -- Sommerzeitwechsel im Browser können sie nicht verschieben.
+  function wand(text) {
+    var m = /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/.exec(text || '');
+    if (!m) return null;
+    return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0));
+  }
+  function fmtTag(ms) {
+    var d = new Date(ms);
+    return WOCHENTAGE[d.getUTCDay()] + ' ' + d.getUTCDate() + '.' + (d.getUTCMonth() + 1) + '.';
+  }
+  function fmtZeit(ms) {
+    var d = new Date(ms);
+    return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+  }
+  function tausender(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function fold(text) {
+    return String(text).toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+  }
+
+  // Der Speicher darf fehlen (privates Fenster, gesperrte Seitendaten):
+  // dann merkt sich die Seite nichts, funktioniert aber.
+  function lies(key, fallback) {
+    try { var v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  }
+  function merk(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* egal */ }
+  }
+  function $(sel, el) { return (el || document).querySelector(sel); }
+  function $$(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
+
+  // ---------------------------------------------------------- Farbschema
+  var THEMES = ['auto', 'light', 'dark'];
+  var THEME_LABEL = { auto: '◐ Auto', light: '☀ Hell', dark: '☾ Dunkel' };
+  var themeButton = $('#theme');
+  var hoerer = [];   // wer beim Wechsel neu zeichnen will
+  function applyTheme(theme) {
+    if (theme === 'auto') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', theme);
+    // Die Bilder wählen ihre Fassung über <source media>; ein Schalter muss
+    // das mit umstellen, sonst steht ein helles Bild auf dunklem Grund.
+    var media = theme === 'dark' ? 'all' : theme === 'light' ? 'not all' : '(prefers-color-scheme: dark)';
+    $$('picture > source').forEach(function (s) { s.setAttribute('media', media); });
+    if (themeButton) {
+      themeButton.textContent = THEME_LABEL[theme];
+      themeButton.setAttribute('aria-label', 'Farbschema: ' + THEME_LABEL[theme].slice(2) + ' (antippen wechselt)');
+    }
+    hoerer.forEach(function (f) { f(); });
+  }
+  var theme = lies('seetemp.farbschema', 'auto');
+  if (THEMES.indexOf(theme) < 0) theme = 'auto';
+  applyTheme(theme);
+  if (themeButton) {
+    themeButton.addEventListener('click', function () {
+      theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+      merk('seetemp.farbschema', theme);
+      applyTheme(theme);
+    });
+  }
+  if (window.matchMedia) {
+    try {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+        if (theme === 'auto') hoerer.forEach(function (f) { f(); });
+      });
+    } catch (e) { /* alte Browser */ }
+  }
+
+  // ---------------------------------------------------------- Die Daten
+  var daten = null;
+  var datenEl = $('#aktuell-daten');
+  if (datenEl) {
+    try { daten = JSON.parse(datenEl.textContent); } catch (e) { daten = null; }
+  }
+
+  // ---------------------------------------------------------- Alter des Abrufs
+  // Der Server schreibt "Stand 18.09., 15:00"; das ist ehrlich, aber der
+  // Leser rechnet. Hier rechnet der Browser: "vor 3 Stunden" -- und ab
+  // anderthalb Tagen wird daraus eine Warnung, nicht nur eine Zahl.
+  var alterEl = $('#alter');
+  function zeigeAlter() {
+    if (!alterEl || !daten || !daten.stand) return;
+    var dann = Date.parse(daten.stand);
+    if (isNaN(dann)) return;
+    var h = (Date.now() - dann) / 36e5;
+    var text, stale = false;
+    if (h < -1) { text = ''; }
+    else if (h < 1) { text = 'vor wenigen Minuten'; }
+    else if (h < 36) { text = 'vor ' + Math.round(h) + ' Stunden'; }
+    else { text = 'vor ' + Math.round(h / 24) + ' Tagen'; stale = true; }
+    if (stale) text += ' — der jüngste abgelegte Abruf ist nicht von heute';
+    alterEl.textContent = text;
+    alterEl.classList.toggle('stale', stale);
+  }
+  zeigeAlter();
+  setInterval(zeigeAlter, 60000);
+
+  // ---------------------------------------------------------- Karten
+  var liste = $('#karten');
+  if (liste) {
+    var karten = $$('.card', liste);
+    var suche = $('#suche');
+    var sortKnoepfe = $$('#sortierung button');
+    var favFilter = $('#nur-favoriten');
+    var leer = $('#leer');
+    var favoriten = lies('seetemp.favoriten', []);
+    if (!Array.isArray(favoriten)) favoriten = [];
+    var sortierung = lies('seetemp.sortierung', 'jetzt');
+    var nurFavoriten = false;
+
+    function istFav(key) { return favoriten.indexOf(key) >= 0; }
+    function wert(card, attr) {
+      var v = parseFloat(card.getAttribute(attr));
+      return isNaN(v) ? null : v;
+    }
+    function ordne() {
+      var q = suche ? fold(suche.value.trim()) : '';
+      var sichtbar = 0;
+      karten.sort(function (a, b) {
+        var fa = istFav(a.dataset.key), fb = istFav(b.dataset.key);
+        if (fa !== fb) return fa ? -1 : 1;
+        if (sortierung === 'name') return a.dataset.name.localeCompare(b.dataset.name, 'de');
+        var attr = sortierung === 'abw' ? 'data-abw' : 'data-jetzt';
+        var va = wert(a, attr), vb = wert(b, attr);
+        if (va === null && vb === null) return a.dataset.name.localeCompare(b.dataset.name, 'de');
+        if (va === null) return 1;
+        if (vb === null) return -1;
+        return vb - va;
+      });
+      karten.forEach(function (card) {
+        var passt = (!q || fold(card.dataset.name).indexOf(q) >= 0)
+          && (!nurFavoriten || istFav(card.dataset.key));
+        card.hidden = !passt;
+        if (passt) sichtbar++;
+        card.classList.toggle('is-fav', istFav(card.dataset.key));
+        var stern = $('.fav', card);
+        if (stern) {
+          stern.setAttribute('aria-pressed', istFav(card.dataset.key) ? 'true' : 'false');
+          stern.textContent = istFav(card.dataset.key) ? '★' : '☆';
+        }
+        liste.appendChild(card);
+      });
+      if (leer) {
+        leer.hidden = sichtbar > 0;
+        leer.textContent = nurFavoriten && !favoriten.length
+          ? 'Noch keine Favoriten. Den Stern an einer Karte antippen, dann steht der See hier -- und immer ganz oben.'
+          : 'Kein See passt zur Suche.';
+      }
+      sortKnoepfe.forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.sort === sortierung ? 'true' : 'false');
+      });
+    }
+    karten.forEach(function (card) {
+      var stern = $('.fav', card);
+      if (!stern) return;
+      stern.addEventListener('click', function () {
+        var key = card.dataset.key, i = favoriten.indexOf(key);
+        if (i >= 0) favoriten.splice(i, 1); else favoriten.push(key);
+        merk('seetemp.favoriten', favoriten);
+        ordne();
+      });
+    });
+    if (suche) suche.addEventListener('input', ordne);
+    sortKnoepfe.forEach(function (b) {
+      b.addEventListener('click', function () {
+        sortierung = b.dataset.sort;
+        merk('seetemp.sortierung', sortierung);
+        ordne();
+      });
+    });
+    if (favFilter) {
+      favFilter.addEventListener('click', function () {
+        nurFavoriten = !nurFavoriten;
+        favFilter.setAttribute('aria-pressed', nurFavoriten ? 'true' : 'false');
+        ordne();
+      });
+    }
+    ordne();
+  }
+
+  // ---------------------------------------------------------- Das Diagramm
+  var chart = $('#chart');
+  var waehle = null;   // von aussen: einen See hervorheben
+  if (chart && daten && daten.seen && daten.seen.length) {
+    var svg = $('svg', chart), tip = $('.tip', chart), chips = $('#chips'), note = $('#chart-note');
+    var rangeKnoepfe = $$('#bereich button');
+    var bereich = daten.t0 ? '72h' : 'alles';
+    var gewaehlt = null;
+    var serien = [], layout = null;
+    var t0 = daten.t0 ? wand(daten.t0) : null;
+    // Ab dieser Lücke reisst die Linie ab statt durchzulaufen -- dieselben
+    // Grenzen wie in den Bildern: drei Stunden Stille sind ein fehlender
+    // Abruf, zwei fehlende Tage ein Loch in der Reihe.
+    var LUECKE = { '72h': 3 * 36e5, 'alles': 2 * 864e5 };
+
+    function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+    function hex(c) {
+      var m = /^#?([0-9a-f]{6})$/i.exec(c);
+      if (!m) return [0, 0, 0];
+      var n = parseInt(m[1], 16);
+      return [n >> 16 & 255, n >> 8 & 255, n & 255];
+    }
+    function mix(a, b, t) {
+      return 'rgb(' + [0, 1, 2].map(function (i) { return Math.round(a[i] + (b[i] - a[i]) * t); }).join(',') + ')';
+    }
+    // Die Farbe folgt allein der Temperatur -- fünfzehn Seen vertragen
+    // keine fünfzehn Farben. Wer welcher ist, sagen Chip und Fingertipp.
+    function ramp(n) {
+      var c0 = hex(cssVar('--ramp-0')), c1 = hex(cssVar('--ramp-1')), c2 = hex(cssVar('--ramp-2'));
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        var t = n <= 1 ? 1 : i / (n - 1);
+        out.push(t < 0.5 ? mix(c0, c1, t * 2) : mix(c1, c2, (t - 0.5) * 2));
+      }
+      return out;
+    }
+
+    function reihen() {
+      var out = [];
+      daten.seen.forEach(function (s) {
+        var pts;
+        if (bereich === '72h') {
+          if (t0 === null) return;
+          pts = s.punkte.map(function (p) { return { t: t0 + p[0] * 60000, v: p[1] }; });
+        } else {
+          pts = s.tage.map(function (d) { return { t: wand(d[0]), v: d[1], n: d[2] }; });
+        }
+        if (!pts.length) return;
+        out.push({ key: s.key, name: s.name, pts: pts, letzte: pts[pts.length - 1].v, normal: s.normal });
+      });
+      // Farbe nach Rang der jüngsten Temperatur.
+      var ordnung = out.slice().sort(function (a, b) { return a.letzte - b.letzte; });
+      var farben = ramp(ordnung.length);
+      ordnung.forEach(function (s, i) { s.farbe = farben[i]; });
+      return out;
+    }
+
+    function nice(step) {
+      var p = Math.pow(10, Math.floor(Math.log10(step)));
+      var f = step / p;
+      return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+    }
+
+    function zeichne() {
+      serien = reihen();
+      if (!serien.length) { svg.innerHTML = ''; return; }
+      var W = chart.clientWidth - 24 || 320;
+      var H = Math.max(240, Math.min(400, Math.round(W * 0.58)));
+      var m = { l: 34, r: 16, t: 14, b: 30 };
+      var tMin = Infinity, tMax = -Infinity, vMin = Infinity, vMax = -Infinity;
+      serien.forEach(function (s) {
+        s.pts.forEach(function (p) {
+          if (p.t < tMin) tMin = p.t; if (p.t > tMax) tMax = p.t;
+          if (p.v < vMin) vMin = p.v; if (p.v > vMax) vMax = p.v;
+        });
+      });
+      var luft = Math.max(0.6, (vMax - vMin) * 0.06);
+      vMin -= luft; vMax += luft;
+      var tPad = (tMax - tMin) * 0.02 || 36e5;
+      var x = function (t) { return m.l + (t - tMin) / (tMax + tPad - tMin) * (W - m.l - m.r); };
+      var y = function (v) { return m.t + (vMax - v) / (vMax - vMin) * (H - m.t - m.b); };
+      layout = { W: W, H: H, m: m, x: x, y: y, tMin: tMin, tMax: tMax };
+
+      var out = [];
+      // Nacht als blasses Feld, wie im Bild: der Tagesgang erklärt sich damit selbst.
+      if (bereich === '72h') {
+        var tag = Math.floor(tMin / 864e5) * 864e5 - 864e5;
+        while (tag <= tMax) {
+          var von = Math.max(tag + 20 * 36e5, tMin), bis = Math.min(tag + 30 * 36e5, tMax);
+          if (von < bis) out.push('<rect class="nacht" x="' + x(von).toFixed(1) + '" y="' + m.t + '" width="' + (x(bis) - x(von)).toFixed(1) + '" height="' + (H - m.t - m.b) + '"/>');
+          tag += 864e5;
+        }
+      }
+      // Raster und Achsen.
+      var stepY = nice((vMax - vMin) / 5);
+      out.push('<g class="grid">');
+      for (var v = Math.ceil(vMin / stepY) * stepY; v <= vMax; v += stepY) {
+        out.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '"/>');
+        out.push('<text x="' + (m.l - 6) + '" y="' + (y(v) + 4).toFixed(1) + '" text-anchor="end">' + num(v, stepY < 1 ? 1 : 0) + '</text>');
+      }
+      var ticks = [];
+      if (bereich === '72h') {
+        var pxPro6h = x(tMin + 6 * 36e5) - x(tMin);
+        var mark = Math.ceil(tMin / (6 * 36e5)) * 6 * 36e5;
+        while (mark <= tMax) {
+          var h = new Date(mark).getUTCHours(), label = '';
+          if (h === 0) label = fmtTag(mark);
+          else if (h === 12 && pxPro6h >= 40) label = '12 Uhr';
+          ticks.push({ t: mark, label: label });
+          mark += 6 * 36e5;
+        }
+      } else {
+        var tage = Math.round((tMax - tMin) / 864e5) + 1;
+        var pxProTag = (W - m.l - m.r) / Math.max(tage, 1);
+        var jeder = Math.max(1, Math.ceil(56 / pxProTag));
+        var d0 = Math.floor(tMin / 864e5) * 864e5;
+        for (var i = 0; d0 + i * 864e5 <= tMax; i++) {
+          var tt = d0 + i * 864e5;
+          ticks.push({ t: tt, label: i % jeder === 0 ? fmtTag(tt) : '' });
+        }
+      }
+      ticks.forEach(function (tk) {
+        var xx = x(tk.t).toFixed(1);
+        out.push('<line x1="' + xx + '" x2="' + xx + '" y1="' + m.t + '" y2="' + (H - m.b) + '"/>');
+        if (tk.label) out.push('<text x="' + xx + '" y="' + (H - m.b + 16) + '" text-anchor="middle">' + tk.label + '</text>');
+      });
+      out.push('</g>');
+
+      // Normalwert des hervorgehobenen Sees: gestrichelt, damit der Blick
+      // "wärmer als üblich?" nicht erst zur Tabelle muss.
+      var aktiv = null;
+      serien.forEach(function (s) { if (s.key === gewaehlt) aktiv = s; });
+      if (aktiv && aktiv.normal != null && aktiv.normal > vMin && aktiv.normal < vMax) {
+        var yn = y(aktiv.normal).toFixed(1);
+        out.push('<line class="normal" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yn + '" y2="' + yn + '"/>');
+        out.push('<text class="normal-text" x="' + (m.l + 4) + '" y="' + (y(aktiv.normal) - 4).toFixed(1) + '">Normalwert ' + num(aktiv.normal) + ' °C' + (daten.normal_demo ? ' (Demo)' : '') + '</text>');
+      }
+
+      // Die Linien: der gewählte See kräftig und zuletzt, die anderen blass.
+      var luecke = LUECKE[bereich];
+      var sortiert = serien.slice().sort(function (a, b) { return (a.key === gewaehlt) - (b.key === gewaehlt); });
+      sortiert.forEach(function (s) {
+        var d = '', vorher = null;
+        s.pts.forEach(function (p) {
+          d += (vorher === null || p.t - vorher > luecke ? 'M' : 'L') + x(p.t).toFixed(1) + ' ' + y(p.v).toFixed(1);
+          vorher = p.t;
+        });
+        var cls = 'linie' + (gewaehlt ? (s.key === gewaehlt ? ' aktiv' : ' blass') : '');
+        out.push('<path class="' + cls + '" data-key="' + s.key + '" d="' + d + '" stroke="' + s.farbe + '"/>');
+        var last = s.pts[s.pts.length - 1];
+        out.push('<circle class="ende' + (gewaehlt && s.key !== gewaehlt ? ' blass' : '') + '" cx="' + x(last.t).toFixed(1) + '" cy="' + y(last.v).toFixed(1) + '" r="' + (s.key === gewaehlt ? 4.5 : 3) + '" fill="' + s.farbe + '"/>');
+        if (s.key === gewaehlt) {
+          var lx = x(last.t), anchor = lx > W - 110 ? 'end' : 'start';
+          out.push('<text class="name" x="' + (lx + (anchor === 'end' ? -8 : 8)).toFixed(1) + '" y="' + (y(last.v) - 8).toFixed(1) + '" text-anchor="' + anchor + '">' + esc(s.name) + ' ' + num(last.v) + ' °C</text>');
+        }
+      });
+      out.push('<g class="cursor" hidden><line/><circle r="5"/></g>');
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      svg.setAttribute('height', H);
+      svg.innerHTML = out.join('');
+      if (tip) tip.hidden = true;
+
+      if (note) {
+        if (bereich === '72h') {
+          var n = 0; serien.forEach(function (s) { n += s.pts.length; });
+          note.textContent = 'Einzelmessungen ' + fmtTag(tMin) + ' ' + fmtZeit(tMin) + ' bis ' + fmtTag(tMax) + ' ' + fmtZeit(tMax) + ' · ' + tausender(n) + ' Werte · Uhrzeit Kärnten';
+        } else {
+          note.textContent = 'Tagesmittel je See, ' + fmtTag(tMin) + ' bis ' + fmtTag(tMax) + ' · Lücken bleiben Lücken';
+        }
+      }
+      zeichneChips();
+    }
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+    function zeichneChips() {
+      if (!chips) return;
+      var out = ['<button type="button" data-key="" aria-pressed="' + (gewaehlt ? 'false' : 'true') + '">Alle Seen</button>'];
+      serien.slice().sort(function (a, b) { return b.letzte - a.letzte; }).forEach(function (s) {
+        out.push('<button type="button" data-key="' + s.key + '" aria-pressed="' + (s.key === gewaehlt ? 'true' : 'false') + '">'
+          + '<span class="dot" style="background:' + s.farbe + '"></span>' + esc(s.name)
+          + ' <span class="val">' + num(s.letzte) + '°</span></button>');
+      });
+      chips.innerHTML = out.join('');
+    }
+    if (chips) {
+      chips.addEventListener('click', function (ev) {
+        var b = ev.target.closest('button');
+        if (!b) return;
+        var key = b.dataset.key;
+        gewaehlt = (!key || key === gewaehlt) ? null : key;
+        zeichne();
+      });
+    }
+    rangeKnoepfe.forEach(function (b) {
+      b.addEventListener('click', function () {
+        bereich = b.dataset.range;
+        rangeKnoepfe.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+        zeichne();
+      });
+      if (!daten.t0 && b.dataset.range === '72h') b.disabled = true;
+    });
+
+    // Fingertipp oder Mauszeiger: der nächste Punkt, sein Wert, seine Zeit.
+    function zeige(ev) {
+      if (!layout || !serien.length) return;
+      var r = svg.getBoundingClientRect();
+      var px = (ev.clientX - r.left) * layout.W / r.width;
+      var py = (ev.clientY - r.top) * layout.H / r.height;
+      var best = null, bestD = Infinity;
+      serien.forEach(function (s) {
+        if (gewaehlt && s.key !== gewaehlt) return;
+        // Binäre Suche nach der Zeit, dann Abstand in Bildpunkten.
+        var lo = 0, hi = s.pts.length - 1;
+        while (lo < hi) {
+          var mid = (lo + hi) >> 1;
+          if (layout.x(s.pts[mid].t) < px) lo = mid + 1; else hi = mid;
+        }
+        [lo - 1, lo].forEach(function (i) {
+          if (i < 0 || i >= s.pts.length) return;
+          var p = s.pts[i];
+          var dx = layout.x(p.t) - px, dy = layout.y(p.v) - py;
+          var d = gewaehlt ? Math.abs(dx) : Math.sqrt(dx * dx + dy * dy);
+          if (d < bestD) { bestD = d; best = { s: s, p: p }; }
+        });
+      });
+      var cursor = $('.cursor', svg);
+      if (!best || (!gewaehlt && bestD > 60)) {
+        if (cursor) cursor.hidden = true;
+        if (tip) tip.hidden = true;
+        return;
+      }
+      var cx = layout.x(best.p.t), cy = layout.y(best.p.v);
+      if (cursor) {
+        cursor.hidden = false;
+        var line = $('line', cursor), dot = $('circle', cursor);
+        line.setAttribute('x1', cx); line.setAttribute('x2', cx);
+        line.setAttribute('y1', layout.m.t); line.setAttribute('y2', layout.H - layout.m.b);
+        dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+      }
+      if (tip) {
+        var wann = bereich === '72h' ? fmtTag(best.p.t) + ', ' + fmtZeit(best.p.t) : fmtTag(best.p.t);
+        var extra = bereich === 'alles' && best.p.n ? ' · Tagesmittel aus ' + best.p.n + ' Messungen' : '';
+        tip.innerHTML = '<strong>' + esc(best.s.name) + ' ' + num(best.p.v) + ' °C</strong>' + wann + extra;
+        tip.hidden = false;
+        var sx = cx * r.width / layout.W, sy = cy * r.height / layout.H;
+        var tw = tip.offsetWidth, th = tip.offsetHeight;
+        var left = sx + 12, top = sy - th - 10;
+        if (left + tw > r.width) left = sx - tw - 12;
+        if (left < 0) left = 4;
+        if (top < 0) top = sy + 14;
+        tip.style.left = left + 'px'; tip.style.top = top + 'px';
+      }
+    }
+    svg.addEventListener('pointermove', zeige);
+    svg.addEventListener('pointerdown', zeige);
+    svg.addEventListener('pointerleave', function (ev) {
+      if (ev.pointerType === 'mouse') {
+        var cursor = $('.cursor', svg);
+        if (cursor) cursor.hidden = true;
+        if (tip) tip.hidden = true;
+      }
+    });
+    var timer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(timer); timer = setTimeout(zeichne, 150);
+    });
+    hoerer.push(zeichne);
+    waehle = function (key) {
+      gewaehlt = key;
+      if (bereich !== '72h' && daten.t0) {
+        bereich = '72h';
+        rangeKnoepfe.forEach(function (o) { o.setAttribute('aria-pressed', o.dataset.range === '72h' ? 'true' : 'false'); });
+      }
+      zeichne();
+    };
+    zeichne();
+  } else if (chart) {
+    chart.hidden = true;
+  }
+
+  // Von der Karte ins Diagramm: der See bleibt dort hervorgehoben.
+  $$('a[data-lake]').forEach(function (a) {
+    a.addEventListener('click', function () { if (waehle) waehle(a.dataset.lake); });
+  });
+
+  // ---------------------------------------------------------- Aufklappen
+  // Ein Link in einen zugeklappten Abschnitt soll ihn öffnen -- sonst
+  // springt die Seite zu einer Zeile, hinter der nichts zu sehen ist.
+  function oeffne(hash) {
+    if (!hash || hash.length < 2) return;
+    var el = document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (!el) return;
+    var d = el.closest('details');
+    while (d) { d.open = true; d = d.parentElement && d.parentElement.closest('details'); }
+  }
+  $$('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function () { oeffne(a.getAttribute('href')); });
+  });
+  window.addEventListener('hashchange', function () { oeffne(location.hash); });
+  oeffne(location.hash);
+  // Mit Diagramm sind die grossen Bilder dazu eine Wiederholung: zugeklappt,
+  // einen Tipp entfernt. Ohne JavaScript bleiben sie offen.
+  $$('details.bilder').forEach(function (d) { if (chart && !chart.hidden) d.open = false; });
+
+  // ---------------------------------------------------------- Kopfleiste
+  var tabs = $$('.tabs a');
+  if (tabs.length && 'IntersectionObserver' in window) {
+    var ziele = tabs.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); }).filter(Boolean);
+    var sichtbar = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { sichtbar[e.target.id] = e.isIntersecting ? e.boundingClientRect.top : null; });
+      var oben = null;
+      ziele.forEach(function (z) {
+        if (sichtbar[z.id] != null && (oben === null || sichtbar[z.id] < sichtbar[oben.id])) oben = z;
+      });
+      if (!oben) return;
+      tabs.forEach(function (a) {
+        if (a.getAttribute('href') === '#' + oben.id) a.setAttribute('aria-current', 'true');
+        else a.removeAttribute('aria-current');
+      });
+    }, { rootMargin: '-56px 0px -60% 0px', threshold: 0 });
+    ziele.forEach(function (z) { io.observe(z); });
+  }
+  var hoch = $('#nach-oben');
+  if (hoch) {
+    var pruefe = function () { hoch.classList.toggle('sichtbar', window.scrollY > 600); };
+    window.addEventListener('scroll', pruefe, { passive: true });
+    hoch.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    pruefe();
+  }
+})();
+</script>
+</body></html>
