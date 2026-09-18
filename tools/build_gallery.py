@@ -316,6 +316,9 @@ details.lake img { border: none; border-radius: 8px; }
 .chart-box svg .normal { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 4 4; }
 .chart-box svg .normal-text { fill: var(--ink-2); font-size: 10.5px; }
 .chart-box svg .name { fill: var(--ink); font-weight: 600; font-size: 12px; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; }
+/* Das hidden-Attribut gilt nur für HTML-Elemente; im SVG stünde der leere
+   Cursor sonst als Viertelkreis in der linken oberen Ecke. */
+.chart-box svg .cursor[hidden] { display: none; }
 .chart-box svg .cursor line { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
 .chart-box svg .cursor circle { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
 .tip {
@@ -776,15 +779,16 @@ SCRIPT = r"""
           if (d < bestD) { bestD = d; best = { s: s, p: p }; }
         });
       });
+      // SVG-Elemente haben keine hidden-Eigenschaft, nur das Attribut.
       var cursor = $('.cursor', svg);
       if (!best || (!gewaehlt && bestD > 60)) {
-        if (cursor) cursor.hidden = true;
+        if (cursor) cursor.setAttribute('hidden', '');
         if (tip) tip.hidden = true;
         return;
       }
       var cx = layout.x(best.p.t), cy = layout.y(best.p.v);
       if (cursor) {
-        cursor.hidden = false;
+        cursor.removeAttribute('hidden');
         var line = $('line', cursor), dot = $('circle', cursor);
         line.setAttribute('x1', cx); line.setAttribute('x2', cx);
         line.setAttribute('y1', layout.m.t); line.setAttribute('y2', layout.H - layout.m.b);
@@ -809,7 +813,7 @@ SCRIPT = r"""
     svg.addEventListener('pointerleave', function (ev) {
       if (ev.pointerType === 'mouse') {
         var cursor = $('.cursor', svg);
-        if (cursor) cursor.hidden = true;
+        if (cursor) cursor.setAttribute('hidden', '');
         if (tip) tip.hidden = true;
       }
     });
