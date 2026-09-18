@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import charts, climatology, lakes as lakes_mod, theme as theme_mod
+from . import charts, climatology, lakes as lakes_mod, theme as theme_mod, webdaten
 from .sources import csvfile, synthetic
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -475,6 +475,21 @@ def run(argv: list[str] | None = None) -> int:
     (args.out / "run.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+
+    # Die Zahlen hinter den Bildern ganz vorne, für die Übersichtsseite:
+    # dort zeichnet der Browser die letzten Stunden selbst und zeigt den
+    # Wert unter dem Finger. Ohne aktuelle Werte gibt es die Datei nicht --
+    # die Seite kommt dann ohne den Abschnitt aus, statt Leeres zu zeigen.
+    if args.current == "ktn" and not (current.empty and recent.empty and daily_alles.empty):
+        webdaten.write(
+            webdaten.build(
+                current, recent, daily_alles,
+                source=current_source or KTN_LABEL, caveat=current_caveat,
+                threshold=args.threshold, hours=recent_hours,
+                is_demo=dataset.is_demo, reference=clim.label,
+            ),
+            args.out / "aktuell.json",
+        )
 
     print(f"\n{len(written)} PNG-Dateien geschrieben nach {args.out}/")
     for path in written[:6]:

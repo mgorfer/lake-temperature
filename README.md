@@ -31,6 +31,13 @@ Je Farbschema (`output/light/`, `output/dark/`):
 | `seen/<see>_<Jahr>.png` | Jahresgang eines Sees mit Normalwert, Perzentilband und Min/Max-Hülle |
 | `seen/<see>_heuer.png` | Das laufende Jahr in Tageswerten gegen den Monatsnormalwert (nur mit `--current ktn`) |
 
+Dazu, einmal je Lauf: `run.json` mit Quelle, Auflösung, Bezugszeitraum,
+Datenstand und Dateiliste — und mit `--current ktn` auch `aktuell.json`,
+die Zahlen hinter den Bildern ganz vorne (jüngster Wert, 24-h-Mittel,
+Normalwert, Trend, die Einzelmessungen der letzten drei Tage und die
+Tagesreihe je See). Aus beidem baut `tools/build_gallery.py` die
+Übersichtsseite.
+
 Die Reihenfolge folgt dem Interesse: **ganz vorne das aktuelle Geschehen.**
 `00_verlauf.png` zeigt alles, was abgelegt wurde: je See das Tagesmittel über
 den ganzen Bestand, blass darüber die Einzelmessungen der jüngsten Tage. Zwei
@@ -271,12 +278,23 @@ rechnet die Auswertung und veröffentlicht sie als Seite:
 
 **<https://mgorfer.github.io/lake-temperature/>**
 
-Eine Seite in einer Spalte, Bilder in voller Breite, Antippen öffnet die
-Originalauflösung — gedacht als Lesezeichen am Handy. Oben die letzten 72
-Stunden samt Zahlentabelle, unten die lange Reihe; wer die Seite aufruft,
-will meist zuerst wissen, wie warm es *jetzt* ist. Liegen beide
-Farbschemata vor, wählt der Browser über `prefers-color-scheme` selbst; die
-Seite folgt also der Systemeinstellung, ohne Schalter und ohne JavaScript.
+Gedacht als Lesezeichen am Handy. Wer die Seite aufruft, will meist zuerst
+wissen, wie warm es *jetzt* ist — deshalb steht das ganz oben, als Karte je
+See: jüngster Messwert, Einordnung (badewarm, frisch, kalt), Abweichung vom
+Normalwert, Trend gegenüber gestern und der Verlauf der letzten drei Tage
+als kleine Linie. Darunter ein Diagramm zum Antippen — einen See hervorheben,
+den Wert unter dem Finger lesen, zwischen den letzten 72 Stunden und dem
+ganzen abgelegten Bestand umschalten — und dann die Bilder, nach Abschnitten
+geordnet und je See zum Aufklappen. Eine Leiste oben führt zu den
+Abschnitten.
+
+Ohne JavaScript bleibt alles lesbar: Karten, Bilder und Tabellen sind fertig
+im HTML. Mit JavaScript kommt dazu, was ein Bild nicht kann: Seen suchen und
+sortieren, Favoriten merken (bleiben auf dem Gerät, `localStorage`), das Alter
+des jüngsten Abrufs live gegen die eigene Uhr rechnen, das Farbschema
+umschalten. Bibliotheken braucht die Seite keine; sie lädt auch aus einer
+Datei am Handy. Ohne Schalter folgt sie der Systemeinstellung für Hell und
+Dunkel (`prefers-color-scheme`).
 
 Einmalige Einrichtung: **Settings → Pages → Source: „GitHub Actions"**.
 
@@ -298,9 +316,11 @@ sehen will, startet den Workflow von Hand mit `source: demo` — die Seite träg
 dann einen unübersehbaren Warnhinweis.
 
 Jeder Lauf schreibt neben den PNGs eine `run.json` mit Quelle, Auflösung,
-Bezugszeitraum, Datenstand und Dateiliste; daraus bauen
-`tools/build_gallery.py` die Seite und `tools/summary.py` die Zusammenfassung
-im Actions-Protokoll.
+Bezugszeitraum, Datenstand und Dateiliste, mit `--current ktn` auch die
+`aktuell.json` für Karten und Diagramm; daraus bauen `tools/build_gallery.py`
+die Seite und `tools/summary.py` die Zusammenfassung im Actions-Protokoll.
+Die Zahlen liegen dabei direkt in der Seite — kein zweiter Abruf, und ein
+See namens `</script>` könnte den Block nicht sprengen.
 
 ## Datenquellen
 
@@ -589,6 +609,7 @@ seetemp/
   lakes.py          Stammdaten der Seen
   climatology.py    Normalwerte, Abweichungen, Badetage
   charts.py         PNG-Erzeugung
+  webdaten.py       aktuell.json -- die Zahlen für Karten und Diagramm der Seite
   theme.py          Farben und Typografie (hell/dunkel)
   cli.py            Kommandozeile
   sources/
@@ -605,7 +626,7 @@ tools/probe_more.py     Umwege zu den Daten abklopfen
 tools/snapshot_ktn.py   aktuelle Werte holen und im Projekt ablegen
 data/aktuell/           abgelegte Abrufe (siehe LIESMICH.md dort)
 docs/DATENWEGE.md       welche Wege geprüft wurden und warum sie scheitern
-tools/build_gallery.py  Übersichtsseite aus einem Ausgabeverzeichnis
+tools/build_gallery.py  Übersichtsseite aus einem Ausgabeverzeichnis (Karten, Diagramm, Bilder)
 tools/summary.py        Lauf-Zusammenfassung für GitHub Actions
 .github/workflows/      Rechnen und Veröffentlichen auf GitHub Pages
 ```
