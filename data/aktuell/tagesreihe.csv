@@ -39,7 +39,8 @@ afritzer_see,2026-10-11,15.41,15
 afritzer_see,2026-10-12,15.25,11
 afritzer_see,2026-10-13,15.19,35
 afritzer_see,2026-10-14,15.19,37
-afritzer_see,2026-10-15,14.96,28
+afritzer_see,2026-10-15,14.94,30
+afritzer_see,2026-10-16,14.63,3
 brennsee,2026-09-03,23.32,9
 brennsee,2026-09-04,23.04,47
 brennsee,2026-09-05,22.9,42
@@ -80,7 +81,8 @@ brennsee,2026-10-11,16.49,27
 brennsee,2026-10-12,16.18,5
 brennsee,2026-10-13,16.05,35
 brennsee,2026-10-14,15.89,34
-brennsee,2026-10-15,15.62,31
+brennsee,2026-10-15,15.61,33
+brennsee,2026-10-16,15.33,6
 faaker_see,2026-09-03,24.05,6
 faaker_see,2026-09-04,23.83,47
 faaker_see,2026-09-05,23.59,30
@@ -121,7 +123,8 @@ faaker_see,2026-10-11,17.33,11
 faaker_see,2026-10-12,17.14,9
 faaker_see,2026-10-13,17.04,25
 faaker_see,2026-10-14,17.05,28
-faaker_see,2026-10-15,16.94,33
+faaker_see,2026-10-15,16.92,35
+faaker_see,2026-10-16,16.68,18
 goesselsdorfer_see,2026-09-03,23.63,7
 goesselsdorfer_see,2026-09-04,23.64,52
 goesselsdorfer_see,2026-09-05,23.49,40
@@ -162,7 +165,8 @@ goesselsdorfer_see,2026-10-11,15.29,36
 goesselsdorfer_see,2026-10-12,14.98,6
 goesselsdorfer_see,2026-10-13,14.69,35
 goesselsdorfer_see,2026-10-14,14.4,35
-goesselsdorfer_see,2026-10-15,14.26,39
+goesselsdorfer_see,2026-10-15,14.28,46
+goesselsdorfer_see,2026-10-16,14.08,5
 keutschacher_see,2026-09-03,24.87,7
 keutschacher_see,2026-09-04,25.01,52
 keutschacher_see,2026-09-05,24.64,46
@@ -203,7 +207,8 @@ keutschacher_see,2026-10-11,17.72,17
 keutschacher_see,2026-10-12,17.5,5
 keutschacher_see,2026-10-13,17.44,38
 keutschacher_see,2026-10-14,17.39,38
-keutschacher_see,2026-10-15,17.26,22
+keutschacher_see,2026-10-15,17.2,28
+keutschacher_see,2026-10-16,16.95,8
 klopeiner_see,2026-09-03,25.25,10
 klopeiner_see,2026-09-04,25.35,61
 klopeiner_see,2026-09-05,24.89,41
@@ -244,7 +249,8 @@ klopeiner_see,2026-10-11,18.24,24
 klopeiner_see,2026-10-12,17.93,6
 klopeiner_see,2026-10-13,17.81,42
 klopeiner_see,2026-10-14,17.57,31
-klopeiner_see,2026-10-15,17.56,30
+klopeiner_see,2026-10-15,17.53,34
+klopeiner_see,2026-10-16,17.26,10
 laengsee,2026-09-03,24.65,6
 laengsee,2026-09-04,24.48,51
 laengsee,2026-09-05,24.3,26
@@ -285,7 +291,8 @@ laengsee,2026-10-11,17.4,27
 laengsee,2026-10-12,17.23,3
 laengsee,2026-10-13,16.82,19
 laengsee,2026-10-14,16.93,35
-laengsee,2026-10-15,16.61,24
+laengsee,2026-10-15,16.59,28
+laengsee,2026-10-16,16.47,3
 maltschacher_see,2026-09-03,24.9,8
 maltschacher_see,2026-09-04,25.14,53
 maltschacher_see,2026-09-05,24.7,50
@@ -326,7 +333,8 @@ maltschacher_see,2026-10-11,17.16,46
 maltschacher_see,2026-10-12,16.83,7
 maltschacher_see,2026-10-13,16.88,43
 maltschacher_see,2026-10-14,16.85,52
-maltschacher_see,2026-10-15,16.28,38
+maltschacher_see,2026-10-15,16.28,39
+maltschacher_see,2026-10-16,15.99,7
 millstaetter_see,2026-09-03,24.27,12
 millstaetter_see,2026-09-04,24.59,68
 millstaetter_see,2026-09-05,24.26,55
@@ -367,7 +375,8 @@ millstaetter_see,2026-10-11,18.17,47
 millstaetter_see,2026-10-12,17.73,12
 millstaetter_see,2026-10-13,17.79,51
 millstaetter_see,2026-10-14,17.76,35
-millstaetter_see,2026-10-15,17.48,34
+millstaetter_see,2026-10-15,17.43,40
+millstaetter_see,2026-10-16,16.98,19
 ossiacher_see,2026-09-03,25.04,11
 ossiacher_see,2026-09-04,24.95,58
 ossiacher_see,2026-09-05,23.76,51
@@ -409,6 +418,7 @@ ossiacher_see,2026-10-12,17.35,11
 ossiacher_see,2026-10-13,17.15,45
 ossiacher_see,2026-10-14,17.12,37
 ossiacher_see,2026-10-15,17.0,36
+ossiacher_see,2026-10-16,16.73,22
 pressegger_see,2026-09-03,24.12,17
 pressegger_see,2026-09-04,23.69,81
 pressegger_see,2026-09-05,23.97,67
@@ -449,7 +459,8 @@ pressegger_see,2026-10-11,16.0,48
 pressegger_see,2026-10-12,15.21,18
 pressegger_see,2026-10-13,15.15,69
 pressegger_see,2026-10-14,15.16,63
-pressegger_see,2026-10-15,14.75,54
+pressegger_see,2026-10-15,14.73,56
+pressegger_see,2026-10-16,14.01,22
 rauschele_see,2026-09-03,24.78,13
 rauschele_see,2026-09-04,24.91,57
 rauschele_see,2026-09-05,24.77,51
@@ -490,7 +501,8 @@ rauschele_see,2026-10-11,17.0,34
 rauschele_see,2026-10-12,16.6,4
 rauschele_see,2026-10-13,16.78,33
 rauschele_see,2026-10-14,16.68,46
-rauschele_see,2026-10-15,16.21,38
+rauschele_see,2026-10-15,16.19,40
+rauschele_see,2026-10-16,15.83,3
 turnersee,2026-09-03,24.85,10
 turnersee,2026-09-04,24.95,68
 turnersee,2026-09-05,24.66,61
@@ -531,7 +543,8 @@ turnersee,2026-10-11,17.63,38
 turnersee,2026-10-12,17.09,10
 turnersee,2026-10-13,17.2,48
 turnersee,2026-10-14,17.01,49
-turnersee,2026-10-15,16.92,36
+turnersee,2026-10-15,16.87,43
+turnersee,2026-10-16,16.36,10
 weissensee,2026-09-03,23.1,1
 weissensee,2026-09-04,23.19,16
 weissensee,2026-09-05,23.02,22
@@ -573,6 +586,7 @@ weissensee,2026-10-12,16.63,3
 weissensee,2026-10-13,16.5,8
 weissensee,2026-10-14,16.38,20
 weissensee,2026-10-15,16.22,6
+weissensee,2026-10-16,16.12,9
 woerthersee,2026-09-03,24.99,11
 woerthersee,2026-09-04,25.3,56
 woerthersee,2026-09-05,25.05,32
@@ -613,4 +627,5 @@ woerthersee,2026-10-11,18.66,48
 woerthersee,2026-10-12,18.45,2
 woerthersee,2026-10-13,18.32,46
 woerthersee,2026-10-14,18.22,53
-woerthersee,2026-10-15,18.18,39
+woerthersee,2026-10-15,18.18,43
+woerthersee,2026-10-16,17.86,23
